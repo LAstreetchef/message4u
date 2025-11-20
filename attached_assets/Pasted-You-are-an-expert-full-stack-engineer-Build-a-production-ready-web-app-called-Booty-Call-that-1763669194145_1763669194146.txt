@@ -1,0 +1,157 @@
+You are an expert full-stack engineer. Build a production-ready web app called **"Booty Call"** that runs completely inside Replit.
+
+Goal:
+A sender can create a paywalled message. The recipient only sees and unlocks the message AFTER paying a fee set by the sender. The actual message content is displayed as an IMAGE (not plain text) once unlocked.
+
+Tech stack (please use these unless impossible):
+- Backend: Node.js + Express
+- Frontend: React (Vite or similar SPA setup)
+- Database: SQLite via Prisma ORM
+- Styling: Tailwind CSS
+- Payments: Stripe (test mode is fine)
+- Auth: Simple email/password auth with sessions or JWT
+
+Overall aesthetic:
+- Visual style: **cute cartoon, playful, colorful, and inclusive**.
+- Avoid stereotypes tied to any specific ethnicity; instead use a **global / multicultural vibe**:
+  - Friendly, rounded illustrations of diverse characters (different skin tones, hair textures, body types).
+  - Hand-drawn / doodle elements (stars, hearts, squiggles, speech bubbles).
+- Think “cute messaging app + little comic-book / sticker aesthetic”:
+  - Soft rounded corners, pill-shaped buttons.
+  - Slightly chunky, fun typography for headings, clean sans-serif for body text.
+- Color palette:
+  - Warm and inviting: corals, peaches, soft purples, teal accents, and cream backgrounds.
+  - Use gradients sparingly for hero sections or important buttons (like “Pay to Unlock”).
+- Icons:
+  - Use a simple logo—e.g. a small cartoon phone with a speech bubble and a subtle heart.
+  - Use emoji and small icons (💌 📱 💖) in headings and buttons where appropriate.
+- Keep the whole UI **mobile-first** and thumb-friendly.
+
+High-level behavior:
+1. **User roles**
+   - A normal user account acts as a “sender” by default.
+   - The recipient does NOT need an account to pay and view a single message; they only need the unique link.
+
+2. **Auth & onboarding**
+   - Create email/password sign up and login pages.
+   - Protect the sender dashboard with auth.
+   - Use secure password hashing (e.g., bcrypt).
+   - Style these pages with the cute cartoon vibe:
+     - Illustrated hero area on the right (or top on mobile) with a diverse, cartoon couple or friends texting.
+     - Fun heading like “Welcome to Booty Call 💌” and “Slide into the paywall.”
+
+3. **Create a paywalled message**
+   - Sender logs in and can create a new “Booty Call” message with:
+     - `recipientIdentifier`: freeform text field (could be a name, phone, or email; just store it as a string).
+     - `title` or `short label` for the message.
+     - `messageBody`: the full text the sender wants to send.
+     - `price`: a numeric field (e.g., USD).
+   - UI for this should:
+     - Be in a cute card with doodle borders.
+     - Use helper text and maybe emojis (e.g. “How much should they pay to open this? 💸”).
+   - When the sender clicks “Create,” the backend should:
+     - Store a record in the database.
+     - Generate a unique, hard-to-guess slug (e.g. UUID) that becomes the message’s public URL: `/m/:slug`.
+
+4. **Text must be a picture**
+   - The messageBody MUST NOT be shown as plain text to the recipient after payment. Instead, render it as an image.
+   - Implement a simple text-to-image flow:
+     - Option A (preferred): On the backend, use a Node library (like `node-canvas` or similar) to render `messageBody` into a PNG image and save it to disk or store a base64 string in the DB.
+     - Option B: On the frontend, use an HTML `<canvas>` to render `messageBody` into an image, send the PNG to the backend, and store it.
+   - In the rendering, use:
+     - A playful, rounded font.
+     - A soft background color (e.g., peach or light cream).
+     - Optional doodles (heart, star) in the corners.
+   - Store the image URL/path in the database.
+   - For security, never expose the raw text in the frontend once the message has been created.
+
+5. **Public message page (paywall)**
+   - Route: `GET /m/:slug`
+   - Before payment, this page should show:
+     - Branding header with the Booty Call logo and a cute tagline.
+     - Message title or label.
+     - Price to unlock.
+     - Text like: “Pay to unlock this secret message 👀”.
+     - A “Pay to Unlock” button that triggers Stripe Checkout (or a simple Stripe payment flow).
+   - The message IMAGE should NOT be visible before payment.
+     - Show a blurred or pixelated placeholder card with a little lock icon and text like “Locked”.
+   - Style this page with:
+     - A large illustration of a phone with a lock and hearts.
+     - Confetti or sparkles around the “Pay to Unlock” button.
+
+6. **Payment flow**
+   - Integrate Stripe in test mode.
+   - When the recipient clicks “Pay to Unlock,” create a Stripe Checkout Session with the specified price.
+   - After successful payment, redirect to a “success/unlock” route, e.g. `/m/:slug/unlocked`.
+   - On webhook or callback from Stripe (simplify as needed for Replit), store in the database that this slug has been paid for at least once.
+   - You can treat payment as “global unlock” (anyone with the link can see it once paid) to simplify – no need to tie it to a specific user.
+
+7. **Unlocked view**
+   - When the message has a successful payment recorded:
+     - The `/m/:slug` or `/m/:slug/unlocked` page should:
+       - Check the DB for “paid/unlocked” status.
+       - If unlocked, load and display the messageBody IMAGE at full quality (no blur).
+       - Do NOT send the raw text to the frontend.
+   - Add a cute animation (like a small scale/fade-in) when the image appears.
+   - Optionally show little celebratory elements like confetti or animated sparkles.
+
+8. **Sender dashboard**
+   - Authenticated sender dashboard route: e.g. `/dashboard`
+   - Show:
+     - List of all messages created by the logged-in user.
+     - For each message: title, price, createdAt, status (Unlocked or Not Unlocked), and the public link `/m/:slug`.
+   - UI styling:
+     - Display messages as fun cards with small icons (💌, 🔒, 💸).
+     - Use badges with colors indicating status (e.g. grey “Locked”, green “Unlocked”).
+   - Allow senders to:
+     - Copy the public URL.
+     - Optionally mark a message as “inactive” so new payments are disabled (button: “Deactivate message”).
+
+9. **Database schema (Prisma example)**
+   - `User`:
+     - id
+     - email (unique)
+     - passwordHash
+     - createdAt
+   - `Message`:
+     - id
+     - slug (unique)
+     - userId (FK to User)
+     - title
+     - recipientIdentifier
+     - price (integer or decimal)
+     - imageUrl or imageData
+     - unlocked (boolean, default false)
+     - createdAt
+   - `Payment` (optional but nice):
+     - id
+     - messageId
+     - stripeSessionId
+     - amount
+     - createdAt
+
+10. **Security & UX details**
+    - Make sure API routes are protected: only the owner of a message can see it in the dashboard.
+    - Public route `/m/:slug` should never leak the raw messageBody text.
+    - Basic input validation for price and message text length.
+    - Show user-friendly error messages for missing/invalid slugs and failed payments, styled in the same cute cartoon aesthetic.
+
+11. **Project structure**
+    - Provide a clear README with:
+      - How to run the app on Replit.
+      - Environment variables needed (Stripe keys, JWT secret, etc.).
+    - Add scripts in `package.json` for:
+      - `dev` (start backend + frontend, or a single dev server if using a monorepo or proxy)
+      - `prisma migrate dev` or similar
+    - Include example `.env.example` file.
+
+12. **Branding**
+    - App name **“Booty Call”** should be visible in the navbar and on all main pages.
+    - Include a small footer note like: “Booty Call – pay-to-open messages with cute cartoon flavor 💕”.
+    - Ensure the tone is playful but not explicit: keep it fun, flirty, and light-hearted.
+
+Please generate:
+- All necessary backend and frontend code.
+- Prisma schema and migration commands for SQLite.
+- Stripe integration in test mode.
+- Instructions in the README so that this app can be run on Replit with minimal setup.
