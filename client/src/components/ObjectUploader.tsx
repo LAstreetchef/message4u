@@ -9,8 +9,9 @@ interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
   onGetUploadParameters: () => Promise<{
-    method: "PUT";
-    url: string;
+    method?: "PUT";
+    url?: string;
+    uploadURL?: string;
   }>;
   onComplete?: (result: { successful: Array<{ uploadURL: string; type?: string; name: string; size?: number }> }) => void;
   buttonClassName?: string;
@@ -93,7 +94,12 @@ export function ObjectUploader({
     setUploadProgress(0);
 
     try {
-      const { url } = await onGetUploadParameters();
+      const response = await onGetUploadParameters();
+      const uploadURL = response.url || response.uploadURL;
+
+      if (!uploadURL) {
+        throw new Error("No upload URL received from server");
+      }
 
       const xhr = new XMLHttpRequest();
 
@@ -117,14 +123,14 @@ export function ObjectUploader({
           reject(new Error("Upload failed"));
         });
 
-        xhr.open("PUT", url);
+        xhr.open("PUT", uploadURL);
         xhr.setRequestHeader("Content-Type", selectedFile.type || "application/octet-stream");
         xhr.send(selectedFile);
       });
 
       onComplete?.({
         successful: [{
-          uploadURL: url.split("?")[0],
+          uploadURL: uploadURL.split("?")[0],
           type: selectedFile.type || "application/octet-stream",
           name: selectedFile.name,
           size: selectedFile.size,

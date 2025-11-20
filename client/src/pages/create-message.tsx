@@ -269,10 +269,11 @@ export default function CreateMessage() {
                       maxNumberOfFiles={1}
                       maxFileSize={10485760}
                       onGetUploadParameters={async () => {
-                        const response = await apiRequest("POST", "/api/objects/upload", {}) as { uploadURL: string };
+                        const res = await apiRequest("POST", "/api/objects/upload", {});
+                        const data = await res.json() as { uploadURL: string };
                         return {
                           method: "PUT" as const,
-                          url: response.uploadURL,
+                          url: data.uploadURL,
                         };
                       }}
                       onComplete={(result) => {
