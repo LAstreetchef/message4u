@@ -24,6 +24,7 @@ export interface IStorage {
   getMessageBySlug(slug: string): Promise<Message | undefined>;
   getMessagesByUserId(userId: string): Promise<Message[]>;
   updateMessageImage(messageId: string, imageUrl: string): Promise<void>;
+  updateMessageFile(messageId: string, fileUrl: string, fileType: string): Promise<void>;
   markMessageUnlocked(messageId: string): Promise<void>;
   toggleMessageActive(messageId: string, active: boolean): Promise<void>;
 
@@ -97,6 +98,13 @@ export class DatabaseStorage implements IStorage {
     await db
       .update(messages)
       .set({ imageUrl })
+      .where(eq(messages.id, messageId));
+  }
+
+  async updateMessageFile(messageId: string, fileUrl: string, fileType: string): Promise<void> {
+    await db
+      .update(messages)
+      .set({ fileUrl, fileType })
       .where(eq(messages.id, messageId));
   }
 

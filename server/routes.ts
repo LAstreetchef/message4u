@@ -5,6 +5,8 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertMessageSchema } from "@shared/schema";
 import { generateMessageImage } from "./imageGenerator";
 import Stripe from "stripe";
+import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ObjectPermission } from "./objectAcl";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -39,16 +41,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create message
       const message = await storage.createMessage(userId, validatedData);
       
-      // Generate image asynchronously
-      try {
-        const imageUrl = await generateMessageImage(
-          validatedData.messageBody,
-          message.id
-        );
-        await storage.updateMessageImage(message.id, imageUrl);
-      } catch (imageError) {
-        console.error("Error generating image:", imageError);
-        // Continue even if image generation fails
+      // Generate image only if no file was uploaded and messageBody exists
+      if (!validatedData.fileUrl && validatedData.messageBody) {
+        try {
+          const imageUrl = await generateMessageImage(
+            validatedData.messageBody,
+            message.id
+          );
+          await storage.updateMessageImage(message.id, imageUrl);
+        } catch (imageError) {
+          console.error("Error generating image:", imageError);
+        }
       }
       
       // Don't expose messageBody in response
@@ -298,6 +301,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error checking payment:", error);
       res.status(500).json({ message: "Failed to check payment" });
+    }
+  });
+
+  // Object storage routes for file uploads
+  // Reference: blueprint:javascript_object_storage
+  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  app.put("/api/messages/:id/file", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { fileURL, fileType } = req.body;
+
+      if (!fileURL) {
+        return res.status(400).json({ error: "fileURL is required" });
+      }
+
+      const userId = req.user.claims.sub;
+      const message = await storage.getMessageById(id);
+
+      if (!message || message.userId !== userId) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        fileURL,
+        {
+          owner: userId,
+          visibility: "private",
+        }
+      );
+
+      await storage.updateMessageFile(id, objectPath, fileType);
+
+      res.status(200).json({ objectPath });
+    } catch (error) {
+      console.error("Error setting message file:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const objectStorageService = new ObjectStorageService();
+      
+      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      const canAccess = await objectStorageService.canAccessObjectEntity({
+        objectFile,
+        userId: userId,
+        requestedPermission: ObjectPermission.READ,
+      });
+
+      if (!canAccess) {
+        return res.sendStatus(401);
+      }
+
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error accessing object:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
     }
   });
 

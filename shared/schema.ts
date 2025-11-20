@@ -36,9 +36,11 @@ export const messages = pgTable("messages", {
   userId: varchar("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   recipientIdentifier: text("recipient_identifier").notNull(),
-  messageBody: text("message_body").notNull(),
+  messageBody: text("message_body"),
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   imageUrl: text("image_url"),
+  fileUrl: text("file_url"),
+  fileType: varchar("file_type", { length: 100 }),
   unlocked: boolean("unlocked").notNull().default(false),
   active: boolean("active").notNull().default(true),
   expiresAt: timestamp("expires_at"),
@@ -51,6 +53,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   messageBody: true,
   price: true,
   expiresAt: true,
+  fileUrl: true,
+  fileType: true,
 });
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
