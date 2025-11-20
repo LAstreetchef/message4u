@@ -13,11 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Heart, ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
+import { Heart, ArrowLeft, Calendar as CalendarIcon, FileText, Upload } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { z } from "zod";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 const formSchema = insertMessageSchema.extend({
   price: z.string().min(1, "Price is required").refine(
@@ -32,6 +35,9 @@ export default function CreateMessage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [messageType, setMessageType] = useState<"text" | "file">("text");
+  const [uploadedFile, setUploadedFile] = useState<{ url: string; type: string; name: string } | null>(null);
+  const [newMessageId, setNewMessageId] = useState<string>("");
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -41,6 +47,8 @@ export default function CreateMessage() {
       messageBody: "",
       price: "",
       expiresAt: undefined,
+      fileUrl: undefined,
+      fileType: undefined,
     },
   });
 
@@ -60,11 +68,40 @@ export default function CreateMessage() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const messageData: InsertMessage = {
-        ...data,
-        price: data.price,
-      };
-      const result = await apiRequest("POST", "/api/messages", messageData);
+      let messageData: InsertMessage;
+
+      if (messageType === "file") {
+        if (!uploadedFile) {
+          throw new Error("Please upload a file");
+        }
+        messageData = {
+          ...data,
+          messageBody: undefined,
+          fileUrl: uploadedFile.url,
+          fileType: uploadedFile.type,
+          price: data.price,
+        };
+      } else {
+        if (!data.messageBody || data.messageBody.trim() === "") {
+          throw new Error("Please enter a message");
+        }
+        messageData = {
+          ...data,
+          fileUrl: undefined,
+          fileType: undefined,
+          price: data.price,
+        };
+      }
+
+      const result = await apiRequest("POST", "/api/messages", messageData) as { id: string };
+      
+      if (messageType === "file" && uploadedFile && result.id) {
+        await apiRequest("PUT", `/api/messages/${result.id}/file`, {
+          fileURL: uploadedFile.url,
+          fileType: uploadedFile.type,
+        });
+      }
+      
       return result;
     },
     onSuccess: () => {
@@ -131,12 +168,38 @@ export default function CreateMessage() {
           <CardHeader>
             <CardTitle className="font-heading text-2xl">Message Details</CardTitle>
             <CardDescription>
-              Your message will be converted to an image and locked until payment
+              {messageType === "text" 
+                ? "Your message will be converted to an image and locked until payment"
+                : "Upload any file (max 10MB) - will be locked until payment"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <div className="space-y-3">
+                  <FormLabel>Message Type</FormLabel>
+                  <RadioGroup 
+                    value={messageType} 
+                    onValueChange={(value) => setMessageType(value as "text" | "file")}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="text" id="text" data-testid="radio-text" />
+                      <Label htmlFor="text" className="flex items-center gap-2 cursor-pointer">
+                        <FileText className="w-4 h-4" />
+                        Text Message
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="file" id="file" data-testid="radio-file" />
+                      <Label htmlFor="file" className="flex items-center gap-2 cursor-pointer">
+                        <Upload className="w-4 h-4" />
+                        File Upload
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
                 <FormField
                   control={form.control}
                   name="title"
@@ -176,27 +239,76 @@ export default function CreateMessage() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="messageBody"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Your Message</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Write your secret message here..."
-                          className="min-h-32 resize-none"
-                          {...field}
-                          data-testid="input-message"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        This will be shown as an image after payment
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {messageType === "text" ? (
+                  <FormField
+                    control={form.control}
+                    name="messageBody"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Your Message</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Write your secret message here..."
+                            className="min-h-32 resize-none"
+                            {...field}
+                            value={field.value || ""}
+                            data-testid="input-message"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          This will be shown as an image after payment
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
+                  <div className="space-y-2">
+                    <FormLabel>Upload File</FormLabel>
+                    <ObjectUploader
+                      maxNumberOfFiles={1}
+                      maxFileSize={10485760}
+                      onGetUploadParameters={async () => {
+                        const response = await apiRequest("POST", "/api/objects/upload", {}) as { uploadURL: string };
+                        return {
+                          method: "PUT" as const,
+                          url: response.uploadURL,
+                        };
+                      }}
+                      onComplete={(result) => {
+                        if (result.successful.length > 0) {
+                          const file = result.successful[0];
+                          setUploadedFile({
+                            url: file.uploadURL,
+                            type: file.type || "application/octet-stream",
+                            name: file.name,
+                          });
+                          toast({
+                            title: "File uploaded!",
+                            description: `${file.name} is ready`,
+                          });
+                        }
+                      }}
+                      buttonVariant="outline"
+                      buttonClassName="w-full"
+                    >
+                      {uploadedFile ? (
+                        <span className="flex items-center gap-2">
+                          <Upload className="w-4 h-4" />
+                          {uploadedFile.name}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <Upload className="w-4 h-4" />
+                          Choose File (Max 10MB)
+                        </span>
+                      )}
+                    </ObjectUploader>
+                    <FormDescription>
+                      Any file type accepted - will be revealed after payment
+                    </FormDescription>
+                  </div>
+                )}
 
                 <FormField
                   control={form.control}
@@ -257,7 +369,7 @@ export default function CreateMessage() {
                         <PopoverContent className="w-auto p-0" align="start">
                           <Calendar
                             mode="single"
-                            selected={field.value}
+                            selected={field.value || undefined}
                             onSelect={field.onChange}
                             disabled={(date) => date < new Date()}
                             initialFocus

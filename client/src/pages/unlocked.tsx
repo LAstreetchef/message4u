@@ -3,10 +3,11 @@ import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Unlock, Sparkles } from "lucide-react";
+import { Heart, Unlock, Sparkles, Download, FileIcon } from "lucide-react";
 import { ConfettiEffect } from "@/components/ConfettiEffect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Message } from "@shared/schema";
+import { Button } from "@/components/ui/button";
 
 export default function Unlocked() {
   const [, params] = useRoute("/m/:slug/unlocked");
@@ -119,27 +120,91 @@ export default function Unlocked() {
 
         <Card className="border-2 overflow-hidden">
           <CardContent className="p-0">
-            <div 
-              className={`relative transition-all duration-500 ${
-                imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-              }`}
-            >
-              {message.imageUrl ? (
-                <img
-                  src={message.imageUrl}
-                  alt="Unlocked message"
-                  className="w-full h-auto rounded-lg"
-                  onLoad={() => setImageLoaded(true)}
-                  data-testid="image-message"
-                />
-              ) : (
-                <div className="bg-gradient-to-br from-primary/5 to-chart-2/5 p-12 text-center rounded-lg">
-                  <p className="text-muted-foreground">
-                    Image is being generated...
-                  </p>
-                </div>
-              )}
-            </div>
+            {message.fileUrl ? (
+              <div className="p-8">
+                {message.fileType?.startsWith('image/') ? (
+                  <div 
+                    className={`relative transition-all duration-500 ${
+                      imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                    }`}
+                  >
+                    <img
+                      src={message.fileUrl}
+                      alt="Unlocked file"
+                      className="w-full h-auto rounded-lg"
+                      onLoad={() => setImageLoaded(true)}
+                      data-testid="image-file"
+                    />
+                  </div>
+                ) : message.fileType?.startsWith('video/') ? (
+                  <video 
+                    controls 
+                    className="w-full rounded-lg"
+                    data-testid="video-file"
+                  >
+                    <source src={message.fileUrl} type={message.fileType} />
+                    Your browser does not support the video tag.
+                  </video>
+                ) : message.fileType === 'application/pdf' ? (
+                  <div className="space-y-4">
+                    <embed 
+                      src={message.fileUrl} 
+                      type="application/pdf" 
+                      className="w-full h-[600px] rounded-lg"
+                      data-testid="pdf-file"
+                    />
+                    <Button 
+                      className="w-full" 
+                      onClick={() => window.open(message.fileUrl!, '_blank')}
+                      data-testid="button-download-pdf"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download PDF
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                      <FileIcon className="w-10 h-10 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-heading font-bold mb-2">File Ready to Download</h3>
+                    <p className="text-muted-foreground mb-6">
+                      {message.fileType || 'Unknown file type'}
+                    </p>
+                    <Button 
+                      size="lg"
+                      onClick={() => window.open(message.fileUrl!, '_blank')}
+                      data-testid="button-download-file"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download File
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div 
+                className={`relative transition-all duration-500 ${
+                  imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                }`}
+              >
+                {message.imageUrl ? (
+                  <img
+                    src={message.imageUrl}
+                    alt="Unlocked message"
+                    className="w-full h-auto rounded-lg"
+                    onLoad={() => setImageLoaded(true)}
+                    data-testid="image-message"
+                  />
+                ) : (
+                  <div className="bg-gradient-to-br from-primary/5 to-chart-2/5 p-12 text-center rounded-lg">
+                    <p className="text-muted-foreground">
+                      Image is being generated...
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -84,12 +84,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Return message but don't expose messageBody to protect the content
-      // Also only return imageUrl if message is unlocked
+      // Also only return imageUrl, fileUrl, fileType if message is unlocked
       const { messageBody, ...safeMessage } = message;
       
-      // If not unlocked, also hide the imageUrl
+      // If not unlocked, also hide the imageUrl, fileUrl, and fileType
       if (!message.unlocked) {
-        const { imageUrl, ...lockedMessage } = safeMessage;
+        const { imageUrl, fileUrl, fileType, ...lockedMessage } = safeMessage;
         return res.json(lockedMessage);
       }
       
