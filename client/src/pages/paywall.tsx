@@ -28,8 +28,7 @@ export default function Paywall() {
   const paymentMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/create-payment-intent", {
-        messageId: message!.id,
-        amount: parseFloat(message!.price),
+        messageId: message!.slug,
       });
       return response as { sessionId: string };
     },
