@@ -20,14 +20,17 @@ export interface IStorage {
 
   // Message operations
   createMessage(userId: string, message: InsertMessage): Promise<Message>;
+  getMessageById(id: string): Promise<Message | undefined>;
   getMessageBySlug(slug: string): Promise<Message | undefined>;
   getMessagesByUserId(userId: string): Promise<Message[]>;
   updateMessageImage(messageId: string, imageUrl: string): Promise<void>;
   markMessageUnlocked(messageId: string): Promise<void>;
+  toggleMessageActive(messageId: string, active: boolean): Promise<void>;
 
   // Payment operations
   createPayment(payment: InsertPayment): Promise<Payment>;
   getPaymentBySessionId(sessionId: string): Promise<Payment | undefined>;
+  getPaymentsByMessageId(messageId: string): Promise<Payment[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -66,6 +69,14 @@ export class DatabaseStorage implements IStorage {
     return message;
   }
 
+  async getMessageById(id: string): Promise<Message | undefined> {
+    const [message] = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.id, id));
+    return message;
+  }
+
   async getMessageBySlug(slug: string): Promise<Message | undefined> {
     const [message] = await db
       .select()
@@ -96,6 +107,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(messages.id, messageId));
   }
 
+  async toggleMessageActive(messageId: string, active: boolean): Promise<void> {
+    await db
+      .update(messages)
+      .set({ active })
+      .where(eq(messages.id, messageId));
+  }
+
   // Payment operations
   async createPayment(paymentData: InsertPayment): Promise<Payment> {
     const [payment] = await db
@@ -111,6 +129,14 @@ export class DatabaseStorage implements IStorage {
       .from(payments)
       .where(eq(payments.stripeSessionId, sessionId));
     return payment;
+  }
+
+  async getPaymentsByMessageId(messageId: string): Promise<Payment[]> {
+    return await db
+      .select()
+      .from(payments)
+      .where(eq(payments.messageId, messageId))
+      .orderBy(desc(payments.createdAt));
   }
 }
 

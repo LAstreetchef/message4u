@@ -193,6 +193,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ received: true });
   });
 
+  // Toggle message active status
+  app.patch('/api/messages/:id/toggle-active', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { active } = req.body;
+      const userId = req.user.claims.sub;
+
+      // Verify ownership - id could be either slug or database ID
+      let message = await storage.getMessageById(id);
+      if (!message) {
+        message = await storage.getMessageBySlug(id);
+      }
+      
+      if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+
+      if (message.userId !== userId) {
+        return res.status(403).json({ message: "Unauthorized" });
+      }
+
+      await storage.toggleMessageActive(message.id, active);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error toggling message active status:", error);
+      res.status(500).json({ message: "Failed to update message" });
+    }
+  });
+
   // Manual unlock check for success page (fallback if webhook fails)
   app.get('/api/messages/:slug/check-payment', async (req, res) => {
     try {

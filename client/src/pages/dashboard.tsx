@@ -1,23 +1,59 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Plus, Copy, Lock, Unlock, DollarSign } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power } from "lucide-react";
 import { Link } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Message } from "@shared/schema";
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [messageToToggle, setMessageToToggle] = useState<Message | null>(null);
 
   const { data: messages, isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages"],
     enabled: isAuthenticated,
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ messageId, active }: { messageId: string; active: boolean }) => {
+      return await apiRequest("PATCH", `/api/messages/${messageId}/toggle-active`, { active });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+      toast({
+        title: messageToToggle?.active ? "Message Deactivated" : "Message Activated",
+        description: messageToToggle?.active 
+          ? "Your message is now hidden from recipients" 
+          : "Your message is now visible to recipients",
+      });
+      setMessageToToggle(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update message status",
+        variant: "destructive",
+      });
+      setMessageToToggle(null);
+    },
   });
 
   useEffect(() => {
@@ -169,11 +205,11 @@ export default function Dashboard() {
                     Created {new Date(message.createdAt!).toLocaleDateString()}
                   </div>
                 </CardContent>
-                <CardFooter className="pt-4 border-t">
+                <CardFooter className="pt-4 border-t flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full rounded-full"
+                    className="flex-1 rounded-full"
                     onClick={() => copyLink(message.slug)}
                     data-testid={`button-copy-${message.id}`}
                   >
@@ -185,6 +221,15 @@ export default function Dashboard() {
                         Copy Link
                       </>
                     )}
+                  </Button>
+                  <Button
+                    variant={message.active ? "outline" : "default"}
+                    size="sm"
+                    onClick={() => setMessageToToggle(message)}
+                    data-testid={`button-toggle-active-${message.id}`}
+                    className="rounded-full"
+                  >
+                    <Power className="w-4 h-4" />
                   </Button>
                 </CardFooter>
               </Card>
@@ -200,6 +245,37 @@ export default function Dashboard() {
           </p>
         </div>
       </footer>
+
+      <AlertDialog open={!!messageToToggle} onOpenChange={() => setMessageToToggle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {messageToToggle?.active ? "Deactivate Message?" : "Activate Message?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {messageToToggle?.active 
+                ? "Recipients will no longer be able to view or unlock this message. You can reactivate it later."
+                : "This message will become available for recipients to view and unlock again."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-toggle">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-toggle"
+              onClick={() => {
+                if (messageToToggle) {
+                  toggleActiveMutation.mutate({ 
+                    messageId: messageToToggle.id, 
+                    active: !messageToToggle.active 
+                  });
+                }
+              }}
+            >
+              {messageToToggle?.active ? "Deactivate" : "Activate"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
