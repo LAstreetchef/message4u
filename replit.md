@@ -4,7 +4,7 @@
 
 Booty Call is a playful web application that enables users to send paywalled messages. Senders create messages with custom pricing, and recipients must pay the specified amount to unlock and view the message content. The application features a cute, cartoon-inspired design with warm colors, rounded elements, and an inclusive multicultural aesthetic.
 
-The platform supports authenticated senders who can create and manage multiple paywalled messages, while recipients can access messages without requiring an account. Messages are displayed as images after payment to enhance privacy and visual appeal.
+The platform supports authenticated senders who can create and manage multiple paywalled messages, while recipients can access messages without requiring an account. Messages can be either text-based (converted to images for privacy) or file uploads (any file type up to 10MB), both protected behind payment. Files are stored securely in Replit Object Storage with ACL-based access control.
 
 ## User Preferences
 
@@ -39,6 +39,9 @@ Preferred communication style: Simple, everyday language.
 - `/api/messages` - CRUD operations for messages
 - `/api/create-payment-intent` - Stripe checkout session creation
 - `/api/messages/:slug/check-payment` - Payment verification
+- `/api/objects/upload` - Get presigned upload URL for file uploads
+- `/api/messages/:id/file` - Save file metadata after upload
+- `/objects/*` - Serve uploaded files with ACL-based access control
 
 **Authentication**: Replit Auth (OpenID Connect) with Passport.js strategy. Sessions are stored in PostgreSQL using connect-pg-simple middleware. HTTP-only secure cookies are used for session management with a 7-day TTL.
 
@@ -54,9 +57,11 @@ Preferred communication style: Simple, everyday language.
 
 **Schema Design**:
 - `users` - Stores user profiles from Replit Auth (id, email, firstName, lastName, profileImageUrl)
-- `messages` - Paywalled message data (id, slug, userId, title, recipientIdentifier, messageBody, price, imageUrl, unlocked, active)
+- `messages` - Paywalled message data (id, slug, userId, title, recipientIdentifier, messageBody, price, imageUrl, fileUrl, fileType, unlocked, active, expiresAt)
 - `payments` - Payment transaction records (messageId, amount, stripeSessionId, status)
 - `sessions` - Express session storage for authentication
+
+**Object Storage**: Replit App Storage integration for secure file uploads. Files are stored in Google Cloud Storage with ACL-based access control. Environment variables: `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PUBLIC_OBJECT_SEARCH_PATHS`, `PRIVATE_OBJECT_DIR`.
 
 **Migrations**: Managed through Drizzle Kit with migrations stored in the `/migrations` directory.
 
@@ -68,7 +73,11 @@ Preferred communication style: Simple, everyday language.
 
 **Database Provider**: Neon (PostgreSQL) - Serverless PostgreSQL database with WebSocket connections for low-latency queries. Environment variable: `DATABASE_URL`.
 
+**Object Storage Provider**: Google Cloud Storage via Replit App Storage - Serverless object storage for file uploads with ACL-based access control. Supports any file type up to 10MB. Environment variables: `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PUBLIC_OBJECT_SEARCH_PATHS`, `PRIVATE_OBJECT_DIR`.
+
 **UI Component Library**: Radix UI - Provides accessible, unstyled primitives for building the component system. Integrated with Shadcn UI's opinionated design patterns.
+
+**File Upload Library**: Uppy - Modern file upload library with drag-and-drop support and AWS S3-compatible uploads. Integrated with Replit Object Storage via presigned URLs.
 
 **Styling Framework**: Tailwind CSS - Utility-first CSS framework with custom configuration for the playful design system.
 

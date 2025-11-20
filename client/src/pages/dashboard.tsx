@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check } from "lucide-react";
+import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check, FileIcon, FileText } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Message, Payment } from "@shared/schema";
@@ -266,6 +266,19 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <DollarSign className="w-4 h-4" />
                     <span data-testid={`text-price-${message.id}`}>${message.price}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {message.fileUrl ? (
+                      <>
+                        <FileIcon className="w-4 h-4" />
+                        <span>File Upload</span>
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4" />
+                        <span>Text Message</span>
+                      </>
+                    )}
                   </div>
                   <div className="text-sm">
                     <span className="text-muted-foreground">To: </span>
