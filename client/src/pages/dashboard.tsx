@@ -122,26 +122,24 @@ export default function Dashboard() {
       <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/">
-              <a className="flex items-center gap-2 hover-elevate rounded-lg px-3 py-2 -ml-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center">
-                  <Heart className="w-4 h-4 text-primary-foreground" fill="currentColor" />
-                </div>
-                <span className="text-lg font-heading font-bold text-foreground">Booty Call</span>
-              </a>
+            <Link href="/" className="flex items-center gap-2 hover-elevate rounded-lg px-3 py-2 -ml-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-instagram flex items-center justify-center">
+                <Heart className="w-4 h-4 text-primary-foreground" fill="currentColor" />
+              </div>
+              <span className="text-lg font-heading font-bold text-foreground">Booty Call</span>
             </Link>
             <div className="flex items-center gap-4">
-              <Link href="/create">
-                <Button className="rounded-full" data-testid="button-create-message">
+              <Button className="rounded-full" data-testid="button-create-new" asChild>
+                <Link href="/create">
                   <Plus className="w-4 h-4 mr-2" />
                   New Message
-                </Button>
-              </Link>
-              <a href="/api/logout">
-                <Button variant="outline" className="rounded-full" data-testid="button-logout">
+                </Link>
+              </Button>
+              <Button variant="outline" className="rounded-full" data-testid="button-logout" asChild>
+                <a href="/api/logout">
                   Log Out
-                </Button>
-              </a>
+                </a>
+              </Button>
             </div>
           </div>
         </div>
@@ -223,12 +221,12 @@ export default function Dashboard() {
             <p className="text-muted-foreground mb-6">
               Create your first paywalled message and start earning!
             </p>
-            <Link href="/create">
-              <Button size="lg" className="rounded-full" data-testid="button-create-first">
+            <Button size="lg" className="rounded-full" data-testid="button-create-first" asChild>
+              <Link href="/create">
                 <Plus className="w-5 h-5 mr-2" />
                 Create Your First Message
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
