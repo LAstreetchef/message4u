@@ -90,6 +90,23 @@ export default function Paywall() {
     );
   }
 
+  // Check if message is expired
+  if (message && message.expiresAt && new Date(message.expiresAt) < new Date()) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center p-8" data-testid="card-message-expired">
+          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-10 h-10 text-muted-foreground" />
+          </div>
+          <h2 className="text-2xl font-heading font-bold mb-2">Message Expired</h2>
+          <p className="text-muted-foreground mb-6">
+            This message expired on {new Date(message.expiresAt).toLocaleDateString()} and can no longer be unlocked.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 flex items-center justify-center p-4">

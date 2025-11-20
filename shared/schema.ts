@@ -41,6 +41,7 @@ export const messages = pgTable("messages", {
   imageUrl: text("image_url"),
   unlocked: boolean("unlocked").notNull().default(false),
   active: boolean("active").notNull().default(true),
+  expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -49,6 +50,7 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   recipientIdentifier: true,
   messageBody: true,
   price: true,
+  expiresAt: true,
 });
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;

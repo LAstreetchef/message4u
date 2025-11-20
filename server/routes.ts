@@ -113,6 +113,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message already unlocked" });
       }
 
+      // Don't allow payment if expired
+      if (message.expiresAt && new Date(message.expiresAt) < new Date()) {
+        return res.status(400).json({ message: "Message has expired" });
+      }
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
