@@ -388,7 +388,7 @@ export default function CreateMessage() {
                 <Button 
                   type="submit" 
                   size="lg" 
-                  className="w-full rounded-full text-lg bg-gradient-to-r from-primary to-chart-2 hover:opacity-90"
+                  className="w-full rounded-full text-lg bg-gradient-instagram hover:opacity-90 shadow-lg shadow-primary/30 border-0"
                   disabled={createMutation.isPending}
                   data-testid="button-submit"
                 >

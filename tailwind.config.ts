@@ -102,6 +102,9 @@ export default {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      backgroundImage: {
+        'gradient-instagram': 'linear-gradient(135deg, hsl(270 91% 65%) 0%, hsl(330 81% 60%) 100%)',
+      },
     },
   },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],

@@ -200,7 +200,7 @@ export default function Paywall() {
 
             <Button
               size="lg"
-              className="w-full rounded-full text-lg bg-gradient-to-r from-primary via-chart-2 to-accent hover:opacity-90 shadow-lg relative overflow-hidden group"
+              className="w-full rounded-full text-lg bg-gradient-instagram hover:opacity-90 shadow-lg shadow-primary/30 relative overflow-hidden group border-0"
               onClick={handlePayment}
               disabled={isProcessing}
               data-testid="button-pay-unlock"
