@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -16,10 +16,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power } from "lucide-react";
+import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Message } from "@shared/schema";
+import type { Message, Payment } from "@shared/schema";
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -31,6 +31,23 @@ export default function Dashboard() {
     queryKey: ["/api/messages"],
     enabled: isAuthenticated,
   });
+
+  const { data: allPayments } = useQuery<Payment[]>({
+    queryKey: ["/api/payments"],
+    enabled: isAuthenticated && !!messages && messages.length > 0,
+  });
+
+  // Calculate analytics
+  const analytics = useMemo(() => {
+    if (!messages || !allPayments) return { totalRevenue: 0, unlockCount: 0, messageCount: 0, conversionRate: 0 };
+    
+    const totalRevenue = allPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+    const unlockCount = allPayments.length;
+    const messageCount = messages.length;
+    const conversionRate = messageCount > 0 ? (unlockCount / messageCount) * 100 : 0;
+
+    return { totalRevenue, unlockCount, messageCount, conversionRate };
+  }, [messages, allPayments]);
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ messageId, active }: { messageId: string; active: boolean }) => {
@@ -140,6 +157,61 @@ export default function Dashboard() {
           </p>
         </div>
 
+        {messages && messages.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
+                  <DollarSign className="w-4 h-4 text-muted-foreground" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-heading font-bold" data-testid="text-total-revenue">
+                  ${analytics.totalRevenue.toFixed(2)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  From {analytics.messageCount} {analytics.messageCount === 1 ? 'message' : 'messages'}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Unlocks</p>
+                  <Unlock className="w-4 h-4 text-muted-foreground" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-heading font-bold" data-testid="text-unlock-count">
+                  {analytics.unlockCount}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total messages unlocked
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Conversion Rate</p>
+                  <TrendingUp className="w-4 h-4 text-muted-foreground" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-heading font-bold" data-testid="text-conversion-rate">
+                  {analytics.conversionRate.toFixed(0)}%
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Messages unlocked vs created
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {!messages || messages.length === 0 ? (
           <Card className="max-w-2xl mx-auto text-center p-12">
             <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
@@ -204,6 +276,20 @@ export default function Dashboard() {
                   <div className="text-xs text-muted-foreground">
                     Created {new Date(message.createdAt!).toLocaleDateString()}
                   </div>
+                  
+                  {allPayments && allPayments.some(p => p.messageId === message.id) && (
+                    <div className="mt-3 pt-3 border-t">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Unlock History</p>
+                      {allPayments
+                        .filter(p => p.messageId === message.id)
+                        .map((payment, idx) => (
+                          <div key={payment.id} className="flex items-center gap-2 text-xs text-muted-foreground" data-testid={`payment-history-${payment.id}`}>
+                            <Check className="w-3 h-3 text-primary" />
+                            <span>Unlocked on {new Date(payment.createdAt!).toLocaleDateString()} at {new Date(payment.createdAt!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter className="pt-4 border-t flex gap-2">
                   <Button

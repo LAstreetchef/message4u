@@ -222,6 +222,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all payments for user's messages
+  app.get('/api/payments', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Get all user's messages
+      const messages = await storage.getMessagesByUserId(userId);
+      const messageIds = messages.map(m => m.id);
+      
+      // Get all payments for these messages
+      const allPayments = await Promise.all(
+        messageIds.map(id => storage.getPaymentsByMessageId(id))
+      );
+      
+      // Flatten the array of arrays
+      const payments = allPayments.flat();
+      
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+      res.status(500).json({ message: "Failed to fetch payments" });
+    }
+  });
+
   // Manual unlock check for success page (fallback if webhook fails)
   app.get('/api/messages/:slug/check-payment', async (req, res) => {
     try {
