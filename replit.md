@@ -2,7 +2,7 @@
 
 ## Overview
 
-Booty Call is a playful web application that enables users to send paywalled messages. Senders create messages with custom pricing, and recipients must pay the specified amount to unlock and view the message content. The application features a cute, cartoon-inspired design with warm colors, rounded elements, and an inclusive multicultural aesthetic.
+Booty Call is a playful web application that enables users to send paywalled messages. Senders create messages with custom pricing, and recipients must pay the specified amount to unlock and view the message content. The application features an Instagram-inspired dark mode aesthetic with deep black backgrounds, high-contrast white text, purple-pink gradient accents, and rounded pill-shaped elements.
 
 The platform supports authenticated senders who can create and manage multiple paywalled messages, while recipients can access messages without requiring an account. Messages can be either text-based (converted to images for privacy) or file uploads (any file type up to 10MB), both protected behind payment. Files are stored securely in Replit Object Storage with ACL-based access control.
 
@@ -16,7 +16,7 @@ Preferred communication style: Simple, everyday language.
 
 **Framework**: React with TypeScript, built using Vite for fast development and optimized production builds.
 
-**UI Component Library**: Shadcn UI (Radix UI primitives) with Tailwind CSS for styling. The component library uses the "new-york" style variant with a customized color palette featuring warm corals, peaches, soft purples, and teal accents.
+**UI Component Library**: Shadcn UI (Radix UI primitives) with Tailwind CSS for styling. The component library uses the "new-york" style variant with an Instagram-inspired dark mode color palette featuring pure black backgrounds (#000000), high-contrast white text, and purple-pink gradient accents (270° to 330° hue range).
 
 **Routing**: wouter for lightweight client-side routing with protected routes based on authentication status.
 
@@ -24,11 +24,14 @@ Preferred communication style: Simple, everyday language.
 
 **Form Handling**: React Hook Form with Zod schema validation for type-safe form inputs.
 
-**Design System**: Custom design tokens defined in Tailwind config and CSS variables, implementing a playful aesthetic with:
+**Design System**: Custom design tokens defined in Tailwind config and CSS variables, implementing an Instagram-inspired dark mode aesthetic with:
 - Custom fonts: Poppins for headings, DM Sans for body text
-- Rounded corners and pill-shaped buttons
-- Gradient accents for CTAs
+- Color palette: Pure black background (#000000), white text (#FFFFFF), dark gray cards (#1C1C1C)
+- Instagram gradient (purple-pink): Applied via `bg-gradient-instagram` utility to primary CTAs and logo
+- Rounded corners and pill-shaped buttons (rounded-full)
+- High contrast for accessibility
 - Mobile-first responsive design
+- Dark mode enabled permanently via `class="dark"` on HTML element
 
 ### Backend Architecture
 
