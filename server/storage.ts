@@ -1,38 +1,117 @@
-import { type User, type InsertUser } from "@shared/schema";
+import {
+  users,
+  messages,
+  payments,
+  type User,
+  type UpsertUser,
+  type Message,
+  type InsertMessage,
+  type Payment,
+  type InsertPayment,
+} from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
-// modify the interface with any CRUD methods
-// you might need
-
 export interface IStorage {
+  // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  upsertUser(user: UpsertUser): Promise<User>;
+
+  // Message operations
+  createMessage(userId: string, message: InsertMessage): Promise<Message>;
+  getMessageBySlug(slug: string): Promise<Message | undefined>;
+  getMessagesByUserId(userId: string): Promise<Message[]>;
+  updateMessageImage(messageId: string, imageUrl: string): Promise<void>;
+  markMessageUnlocked(messageId: string): Promise<void>;
+
+  // Payment operations
+  createPayment(payment: InsertPayment): Promise<Payment>;
+  getPaymentBySessionId(sessionId: string): Promise<Payment | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
+  // User operations (required for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(userData)
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return user;
+  }
+
+  // Message operations
+  async createMessage(userId: string, messageData: InsertMessage): Promise<Message> {
+    const slug = randomUUID();
+    const [message] = await db
+      .insert(messages)
+      .values({
+        userId,
+        slug,
+        ...messageData,
+      })
+      .returning();
+    return message;
+  }
+
+  async getMessageBySlug(slug: string): Promise<Message | undefined> {
+    const [message] = await db
+      .select()
+      .from(messages)
+      .where(eq(messages.slug, slug));
+    return message;
+  }
+
+  async getMessagesByUserId(userId: string): Promise<Message[]> {
+    return await db
+      .select()
+      .from(messages)
+      .where(eq(messages.userId, userId))
+      .orderBy(desc(messages.createdAt));
+  }
+
+  async updateMessageImage(messageId: string, imageUrl: string): Promise<void> {
+    await db
+      .update(messages)
+      .set({ imageUrl })
+      .where(eq(messages.id, messageId));
+  }
+
+  async markMessageUnlocked(messageId: string): Promise<void> {
+    await db
+      .update(messages)
+      .set({ unlocked: true })
+      .where(eq(messages.id, messageId));
+  }
+
+  // Payment operations
+  async createPayment(paymentData: InsertPayment): Promise<Payment> {
+    const [payment] = await db
+      .insert(payments)
+      .values(paymentData)
+      .returning();
+    return payment;
+  }
+
+  async getPaymentBySessionId(sessionId: string): Promise<Payment | undefined> {
+    const [payment] = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.stripeSessionId, sessionId));
+    return payment;
+  }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
