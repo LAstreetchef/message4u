@@ -111,7 +111,7 @@ export async function sendMessageNotification({
       : 'You have a new message on Booty Call';
 
     const emailPayload = {
-      from: '[email protected]',
+      from: 'onboarding@resend.dev',
       to: recipientEmail,
       subject,
       html: createEmailTemplate(messageTitle, price, unlockUrl),
