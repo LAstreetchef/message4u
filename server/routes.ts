@@ -7,6 +7,7 @@ import { generateMessageImage } from "./imageGenerator";
 import Stripe from "stripe";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
+import { sendMessageNotification, isValidEmail } from "./emailService";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -61,6 +62,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateMessageImage(message.id, imageUrl);
         } catch (imageError) {
           console.error("Error generating image:", imageError);
+        }
+      }
+      
+      // Send email notification if recipient identifier is a valid email
+      if (isValidEmail(validatedData.recipientIdentifier)) {
+        try {
+          const user = await storage.getUser(userId);
+          const senderName = user?.firstName ? `${user.firstName}` : undefined;
+          
+          await sendMessageNotification({
+            recipientEmail: validatedData.recipientIdentifier,
+            messageTitle: validatedData.title,
+            price: message.price,
+            slug: message.slug,
+            senderName,
+          });
+          
+          console.log(`Email notification sent to ${validatedData.recipientIdentifier}`);
+        } catch (emailError) {
+          // Don't fail the request if email fails, just log it
+          console.error("Error sending email notification:", emailError);
         }
       }
       
