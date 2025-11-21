@@ -5,7 +5,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Heart, Lock, DollarSign, Send } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -36,7 +36,8 @@ export default function Landing() {
     mutationFn: async (data: AuthFormData) => {
       return await apiRequest("POST", "/api/auth/signup", data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Account Created!",
         description: "Welcome to Secret Message. Redirecting to dashboard...",
@@ -56,7 +57,8 @@ export default function Landing() {
     mutationFn: async (data: AuthFormData) => {
       return await apiRequest("POST", "/api/auth/login", data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Welcome Back!",
         description: "Redirecting to dashboard...",
