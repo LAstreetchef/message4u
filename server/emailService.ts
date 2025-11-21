@@ -74,6 +74,51 @@ function createEmailTemplate(messageTitle: string, price: string, unlockUrl: str
   `;
 }
 
+// Magic link email template
+function createMagicLinkTemplate(magicLinkUrl: string): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(to bottom, #000000, #1a1a1a); color: #ffffff;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+    <div style="text-align: center; margin-bottom: 40px;">
+      <div style="display: inline-block; margin-bottom: 20px;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%); margin: 0 auto 8px;"></div>
+        <div style="font-size: 28px; font-weight: 700; color: #FD1D1D;">Secret Message</div>
+      </div>
+    </div>
+    
+    <div style="background: #1C1C1C; border: 1px solid #303030; border-radius: 16px; padding: 32px; margin-bottom: 24px;">
+      <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 16px 0; color: #ffffff; text-align: center;">Sign in to Secret Message</h1>
+      
+      <p style="color: #a8a8a8; line-height: 1.6; margin: 16px 0;">
+        Click the button below to securely sign in to your Secret Message account. This link will expire in 15 minutes.
+      </p>
+      
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${magicLinkUrl}" style="display: inline-block; background: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 9999px; font-weight: 600; font-size: 16px; box-shadow: 0 8px 24px rgba(131, 58, 180, 0.3);">
+          Sign In
+        </a>
+      </div>
+      
+      <p style="color: #6b6b6b; line-height: 1.6; margin: 24px 0 0 0; font-size: 12px;">
+        If you didn't request this email, you can safely ignore it.
+      </p>
+    </div>
+    
+    <div style="text-align: center; color: #6b6b6b; font-size: 14px; margin-top: 40px; padding-top: 24px; border-top: 1px solid #303030;">
+      <p style="margin: 0 0 8px 0;">Sent via Secret Message – pay-to-open messages with cute cartoon flavor</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+}
+
 interface SendMessageNotificationParams {
   recipientEmail: string;
   messageTitle: string;
@@ -150,6 +195,71 @@ export async function sendMessageNotification({
     return { success: true };
   } catch (error: any) {
     console.error('Error sending email:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function sendMagicLinkEmail(
+  email: string,
+  token: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    console.warn('Resend is not configured. Skipping magic link email.');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  if (!isValidEmail(email)) {
+    console.log(`Skipping email - invalid email address: ${email}`);
+    return { success: false, error: 'Invalid email address' };
+  }
+
+  try {
+    let baseUrl = '';
+    
+    if (process.env.REPLIT_APP_URL) {
+      try {
+        const url = new URL(process.env.REPLIT_APP_URL);
+        baseUrl = url.origin;
+      } catch {
+        baseUrl = process.env.REPLIT_APP_URL.replace(/\/$/, '');
+      }
+    } else if (process.env.REPLIT_DEV_DOMAIN) {
+      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    } else if (process.env.REPLIT_DOMAINS) {
+      const domain = process.env.REPLIT_DOMAINS.split(',')[0]?.trim();
+      baseUrl = domain ? `https://${domain}` : '';
+    } else if (!process.env.REPL_ID) {
+      baseUrl = 'http://localhost:5000';
+    }
+    
+    if (!baseUrl) {
+      console.error('No domain configured for magic link - check REPLIT_APP_URL, REPLIT_DEV_DOMAIN, or REPLIT_DOMAINS environment variables');
+      return { success: false, error: 'Email service misconfigured - no domain available' };
+    }
+    
+    const magicLinkUrl = `${baseUrl}/api/auth/verify-magic-link?token=${token}`;
+    console.log(`Magic link URL: ${magicLinkUrl}`);
+
+    const emailPayload = {
+      from: 'onboarding@resend.dev',
+      to: email,
+      subject: 'Sign in to Secret Message',
+      html: createMagicLinkTemplate(magicLinkUrl),
+    };
+
+    console.log('Attempting to send magic link email:', JSON.stringify({ from: emailPayload.from, to: emailPayload.to, subject: emailPayload.subject }));
+
+    const { data, error } = await resend.emails.send(emailPayload);
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('Magic link email sent successfully:', data);
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error sending magic link email:', error);
     return { success: false, error: error.message };
   }
 }

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupMagicLinkAuth, isAuthenticated } from "./magicLinkAuth";
 import { insertMessageSchema } from "@shared/schema";
 import { generateMessageImage } from "./imageGenerator";
 import Stripe from "stripe";
@@ -17,26 +17,24 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-11-17.clover",
 });
 
+// Calculate platform fee: $1.69 + 6.9% of amount
+function calculatePlatformFee(amount: number): { platformFee: number; senderEarnings: number } {
+  const platformFee = 1.69 + (amount * 0.069);
+  const senderEarnings = amount - platformFee;
+  return {
+    platformFee: Math.max(0, Math.round(platformFee * 100) / 100),
+    senderEarnings: Math.max(0, Math.round(senderEarnings * 100) / 100),
+  };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
-  await setupAuth(app);
-
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  await setupMagicLinkAuth(app);
 
   // Message routes
   app.post('/api/messages', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const validatedData = insertMessageSchema.parse(req.body);
       
       // Convert expiresAt from ISO string to Date if present
@@ -68,15 +66,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send email notification if recipient identifier is a valid email
       if (isValidEmail(validatedData.recipientIdentifier)) {
         try {
-          const user = await storage.getUser(userId);
-          const senderName = user?.firstName ? `${user.firstName}` : undefined;
-          
           await sendMessageNotification({
             recipientEmail: validatedData.recipientIdentifier,
             messageTitle: validatedData.title,
             price: message.price,
             slug: message.slug,
-            senderName,
           });
           
           console.log(`Email notification sent to ${validatedData.recipientIdentifier}`);
@@ -97,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/messages', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const userMessages = await storage.getMessagesByUserId(userId);
       res.json(userMessages);
     } catch (error) {
@@ -215,11 +209,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).send('No messageId in metadata');
         }
 
-        // Create payment record
+        // Create payment record with platform fee calculation
+        const amount = session.amount_total! / 100;
+        const { platformFee, senderEarnings } = calculatePlatformFee(amount);
+        
         await storage.createPayment({
           messageId,
           stripeSessionId: session.id,
-          amount: (session.amount_total! / 100).toString(),
+          amount: amount.toString(),
+          platformFee: platformFee.toString(),
+          senderEarnings: senderEarnings.toString(),
         });
 
         // Mark message as unlocked
@@ -238,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const { active } = req.body;
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
 
       // Verify ownership - id could be either slug or database ID
       let message = await storage.getMessageById(id);
@@ -265,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all payments for user's messages
   app.get('/api/payments', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       // Get all user's messages
       const messages = await storage.getMessagesByUserId(userId);
@@ -316,11 +315,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const session = await stripe.checkout.sessions.retrieve(session_id as string);
       
       if (session.payment_status === 'paid') {
-        // Create payment record
+        // Create payment record with platform fee calculation
+        const amount = session.amount_total! / 100;
+        const { platformFee, senderEarnings } = calculatePlatformFee(amount);
+        
         await storage.createPayment({
           messageId: message.id,
           stripeSessionId: session.id,
-          amount: (session.amount_total! / 100).toString(),
+          amount: amount.toString(),
+          platformFee: platformFee.toString(),
+          senderEarnings: senderEarnings.toString(),
         });
 
         // Mark message as unlocked
@@ -358,7 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "fileURL is required" });
       }
 
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const message = await storage.getMessageById(id);
 
       if (!message || message.userId !== userId) {
