@@ -1,35 +1,86 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Heart, Lock, DollarSign, Send, Mail } from "lucide-react";
+import { Heart, Lock, DollarSign, Send } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const authSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+});
+
+type AuthFormData = z.infer<typeof authSchema>;
 
 export default function Landing() {
-  const [email, setEmail] = useState("");
+  const [isSignUp, setIsSignUp] = useState(true);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
-  const requestMagicLinkMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("POST", "/api/auth/request-magic-link", { email });
+  const form = useForm<AuthFormData>({
+    resolver: zodResolver(authSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const signupMutation = useMutation({
+    mutationFn: async (data: AuthFormData) => {
+      return await apiRequest("POST", "/api/auth/signup", data);
     },
     onSuccess: () => {
       toast({
-        title: "Magic Link Sent!",
-        description: "Check your email for a link to sign in.",
+        title: "Account Created!",
+        description: "Welcome to Secret Message. Redirecting to dashboard...",
       });
-      setEmail("");
+      setLocation("/");
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
-        title: "Error",
-        description: "Failed to send magic link. Please try again.",
+        title: "Sign Up Failed",
+        description: error.message || "Unable to create account. Please try again.",
         variant: "destructive",
       });
     },
   });
+
+  const loginMutation = useMutation({
+    mutationFn: async (data: AuthFormData) => {
+      return await apiRequest("POST", "/api/auth/login", data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Welcome Back!",
+        description: "Redirecting to dashboard...",
+      });
+      setLocation("/");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Login Failed",
+        description: error.message || "Invalid email or password.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (data: AuthFormData) => {
+    if (isSignUp) {
+      signupMutation.mutate(data);
+    } else {
+      loginMutation.mutate(data);
+    }
+  };
+
+  const isPending = signupMutation.isPending || loginMutation.isPending;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
@@ -41,25 +92,6 @@ export default function Landing() {
                 <Heart className="w-5 h-5 text-primary-foreground" fill="currentColor" />
               </div>
               <span className="text-xl font-heading font-bold text-foreground">Secret Message</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-48 hidden sm:block"
-                data-testid="input-email"
-              />
-              <Button
-                variant="default"
-                className="rounded-full"
-                data-testid="button-login"
-                onClick={() => requestMagicLinkMutation.mutate()}
-                disabled={!email || requestMagicLinkMutation.isPending}
-              >
-                {requestMagicLinkMutation.isPending ? "Sending..." : "Get Magic Link"}
-              </Button>
             </div>
           </div>
         </div>
@@ -86,32 +118,71 @@ export default function Landing() {
                   Send playful, paywalled messages that unlock with a payment. Set your price, share the link, and have some fun!
                 </p>
                 <Card className="p-6 space-y-4 max-w-md">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-5 h-5 text-primary" />
-                    <h3 className="font-heading font-semibold text-lg">Get Started</h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Enter your email and we'll send you a magic link to sign in
-                  </p>
-                  <div className="flex gap-2">
-                    <Input
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="flex-1"
-                      data-testid="input-email-hero"
-                    />
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-heading font-semibold text-lg">
+                      {isSignUp ? "Create Account" : "Sign In"}
+                    </h3>
                     <Button
-                      size="lg"
-                      className="rounded-full bg-gradient-to-r from-primary to-chart-2 hover:opacity-90"
-                      data-testid="button-get-started"
-                      onClick={() => requestMagicLinkMutation.mutate()}
-                      disabled={!email || requestMagicLinkMutation.isPending}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsSignUp(!isSignUp);
+                        form.reset();
+                      }}
+                      data-testid="button-toggle-auth"
                     >
-                      {requestMagicLinkMutation.isPending ? "Sending..." : "Send Link"}
+                      {isSignUp ? "Already have an account?" : "Need an account?"}
                     </Button>
                   </div>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="email"
+                                placeholder="your@email.com"
+                                data-testid="input-email"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="password"
+                                placeholder={isSignUp ? "At least 8 characters" : "Your password"}
+                                data-testid="input-password"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="submit"
+                        size="lg"
+                        className="w-full rounded-full bg-gradient-to-r from-primary to-chart-2 hover:opacity-90"
+                        data-testid="button-submit"
+                        disabled={isPending}
+                      >
+                        {isPending ? "Please wait..." : (isSignUp ? "Sign Up" : "Sign In")}
+                      </Button>
+                    </form>
+                  </Form>
                 </Card>
               </div>
 

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupMagicLinkAuth, isAuthenticated } from "./magicLinkAuth";
+import { setupAuth, isAuthenticated } from "./passwordAuth";
 import { insertMessageSchema } from "@shared/schema";
 import { generateMessageImage } from "./imageGenerator";
 import Stripe from "stripe";
@@ -40,7 +40,7 @@ function calculatePlatformFee(amount: number): { platformFee: number; senderEarn
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
-  await setupMagicLinkAuth(app);
+  await setupAuth(app);
 
   // Message routes
   app.post('/api/messages', isAuthenticated, async (req: any, res) => {
