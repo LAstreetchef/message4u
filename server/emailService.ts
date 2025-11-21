@@ -26,7 +26,7 @@ function createEmailTemplate(messageTitle: string, price: string, unlockUrl: str
     <div style="text-align: center; margin-bottom: 40px;">
       <div style="display: inline-block; margin-bottom: 20px;">
         <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%); margin: 0 auto 8px;"></div>
-        <div style="font-size: 28px; font-weight: 700; color: #FD1D1D;">Booty Call</div>
+        <div style="font-size: 28px; font-weight: 700; color: #FD1D1D;">Secret Message</div>
       </div>
     </div>
     
@@ -45,7 +45,7 @@ function createEmailTemplate(messageTitle: string, price: string, unlockUrl: str
       <p style="font-size: 20px; font-weight: 600; color: #ffffff; margin: 0 0 8px 0;">"${messageTitle}"</p>
       
       <p style="color: #a8a8a8; line-height: 1.6; margin: 16px 0;">
-        Someone sent you a special paywalled message on Booty Call. Pay to unlock and see what's inside!
+        Someone sent you a special paywalled message on Secret Message. Pay to unlock and see what's inside!
       </p>
       
       <div style="text-align: center;">
@@ -63,7 +63,7 @@ function createEmailTemplate(messageTitle: string, price: string, unlockUrl: str
     </div>
     
     <div style="text-align: center; color: #6b6b6b; font-size: 14px; margin-top: 40px; padding-top: 24px; border-top: 1px solid #303030;">
-      <p style="margin: 0 0 8px 0;">Sent via Booty Call – pay-to-open messages with cute cartoon flavor</p>
+      <p style="margin: 0 0 8px 0;">Sent via Secret Message – pay-to-open messages with cute cartoon flavor</p>
       <p style="margin: 0;">
         This email was sent because someone created a paywalled message for you.
       </p>
@@ -127,8 +127,8 @@ export async function sendMessageNotification({
     console.log(`Email unlock URL: ${unlockUrl}`);
     
     const subject = senderName 
-      ? `${senderName} sent you a message on Booty Call`
-      : 'You have a new message on Booty Call';
+      ? `${senderName} sent you a message on Secret Message`
+      : 'You have a new message on Secret Message';
 
     const emailPayload = {
       from: 'onboarding@resend.dev',

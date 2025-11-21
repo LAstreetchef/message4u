@@ -12,7 +12,7 @@ export default function Landing() {
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center">
                 <Heart className="w-5 h-5 text-primary-foreground" fill="currentColor" />
               </div>
-              <span className="text-xl font-heading font-bold text-foreground">Booty Call</span>
+              <span className="text-xl font-heading font-bold text-foreground">Secret Message</span>
             </div>
             <a href="/api/login">
               <Button variant="default" className="rounded-full" data-testid="button-login">
@@ -37,7 +37,7 @@ export default function Landing() {
                 <h1 className="text-5xl sm:text-6xl lg:text-7xl font-heading font-bold text-foreground leading-tight">
                   Welcome to <br />
                   <span className="bg-gradient-to-r from-primary via-chart-2 to-accent bg-clip-text text-transparent">
-                    Booty Call
+                    Secret Message
                   </span>
                 </h1>
                 <p className="text-xl text-muted-foreground max-w-lg">
@@ -139,7 +139,7 @@ export default function Landing() {
       <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t mt-20">
         <div className="max-w-6xl mx-auto text-center">
           <p className="text-sm text-muted-foreground">
-            Booty Call – pay-to-open messages with cute cartoon flavor
+            Secret Message – pay-to-open messages with cute cartoon flavor
           </p>
         </div>
       </footer>

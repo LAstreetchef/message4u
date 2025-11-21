@@ -126,7 +126,7 @@ export default function Dashboard() {
               <div className="w-8 h-8 rounded-full bg-gradient-instagram flex items-center justify-center">
                 <Heart className="w-4 h-4 text-primary-foreground" fill="currentColor" />
               </div>
-              <span className="text-lg font-heading font-bold text-foreground">Booty Call</span>
+              <span className="text-lg font-heading font-bold text-foreground">Secret Message</span>
             </Link>
             <div className="flex items-center gap-4">
               <Button className="rounded-full" data-testid="button-create-new" asChild>
@@ -338,7 +338,7 @@ export default function Dashboard() {
       <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t mt-20">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-sm text-muted-foreground">
-            Booty Call – pay-to-open messages with cute cartoon flavor
+            Secret Message – pay-to-open messages with cute cartoon flavor
           </p>
         </div>
       </footer>
