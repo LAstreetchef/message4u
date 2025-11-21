@@ -135,8 +135,8 @@ export async function setupMagicLinkAuth(app: Express) {
       (req.session as any).userId = user.id;
       (req.session as any).email = user.email;
 
-      // Redirect to dashboard
-      res.redirect("/dashboard");
+      // Redirect to home (dashboard for authenticated users)
+      res.redirect("/");
     } catch (error) {
       console.error("Error verifying magic link:", error);
       res.redirect("/?error=verification-failed");
