@@ -177,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
-      res.json({ sessionId: session.id });
+      res.json({ sessionId: session.id, url: session.url });
     } catch (error: any) {
       console.error("Error creating payment intent:", error);
       res.status(500).json({ message: "Error creating payment intent: " + error.message });
