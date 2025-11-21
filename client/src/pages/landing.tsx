@@ -1,8 +1,36 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, Lock, DollarSign, Send } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Heart, Lock, DollarSign, Send, Mail } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Landing() {
+  const [email, setEmail] = useState("");
+  const { toast } = useToast();
+
+  const requestMagicLinkMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/auth/request-magic-link", { email });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Magic Link Sent!",
+        description: "Check your email for a link to sign in.",
+      });
+      setEmail("");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to send magic link. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -14,11 +42,25 @@ export default function Landing() {
               </div>
               <span className="text-xl font-heading font-bold text-foreground">Secret Message</span>
             </div>
-            <a href="/api/login">
-              <Button variant="default" className="rounded-full" data-testid="button-login">
-                Log In
+            <div className="flex items-center gap-2">
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-48 hidden sm:block"
+                data-testid="input-email"
+              />
+              <Button
+                variant="default"
+                className="rounded-full"
+                data-testid="button-login"
+                onClick={() => requestMagicLinkMutation.mutate()}
+                disabled={!email || requestMagicLinkMutation.isPending}
+              >
+                {requestMagicLinkMutation.isPending ? "Sending..." : "Get Magic Link"}
               </Button>
-            </a>
+            </div>
           </div>
         </div>
       </nav>
@@ -43,17 +85,34 @@ export default function Landing() {
                 <p className="text-xl text-muted-foreground max-w-lg">
                   Send playful, paywalled messages that unlock with a payment. Set your price, share the link, and have some fun!
                 </p>
-                <div className="flex flex-wrap gap-4">
-                  <a href="/api/login">
-                    <Button 
-                      size="lg" 
-                      className="rounded-full text-lg px-8 bg-gradient-to-r from-primary to-chart-2 hover:opacity-90"
+                <Card className="p-6 space-y-4 max-w-md">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-primary" />
+                    <h3 className="font-heading font-semibold text-lg">Get Started</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Enter your email and we'll send you a magic link to sign in
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="flex-1"
+                      data-testid="input-email-hero"
+                    />
+                    <Button
+                      size="lg"
+                      className="rounded-full bg-gradient-to-r from-primary to-chart-2 hover:opacity-90"
                       data-testid="button-get-started"
+                      onClick={() => requestMagicLinkMutation.mutate()}
+                      disabled={!email || requestMagicLinkMutation.isPending}
                     >
-                      Get Started
+                      {requestMagicLinkMutation.isPending ? "Sending..." : "Send Link"}
                     </Button>
-                  </a>
-                </div>
+                  </div>
+                </Card>
               </div>
 
               <div className="relative">

@@ -16,16 +16,35 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check, FileIcon, FileText } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check, FileIcon, FileText, Wallet } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Message, Payment } from "@shared/schema";
+import type { Message, Payment, User } from "@shared/schema";
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [messageToToggle, setMessageToToggle] = useState<Message | null>(null);
+  const [payoutMethod, setPayoutMethod] = useState<string>("");
+  const [payoutAddress, setPayoutAddress] = useState<string>("");
+
+  // Update payout fields when user data loads
+  useEffect(() => {
+    if (user) {
+      setPayoutMethod(user.payoutMethod || "");
+      setPayoutAddress(user.payoutAddress || "");
+    }
+  }, [user]);
 
   const { data: messages, isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages"],
@@ -39,14 +58,15 @@ export default function Dashboard() {
 
   // Calculate analytics
   const analytics = useMemo(() => {
-    if (!messages || !allPayments) return { totalRevenue: 0, unlockCount: 0, messageCount: 0, conversionRate: 0 };
+    if (!messages || !allPayments) return { totalEarnings: 0, totalPlatformFees: 0, unlockCount: 0, messageCount: 0, conversionRate: 0 };
     
-    const totalRevenue = allPayments.reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
+    const totalEarnings = allPayments.reduce((sum, payment) => sum + parseFloat(payment.senderEarnings || '0'), 0);
+    const totalPlatformFees = allPayments.reduce((sum, payment) => sum + parseFloat(payment.platformFee || '0'), 0);
     const unlockCount = allPayments.length;
     const messageCount = messages.length;
     const conversionRate = messageCount > 0 ? (unlockCount / messageCount) * 100 : 0;
 
-    return { totalRevenue, unlockCount, messageCount, conversionRate };
+    return { totalEarnings, totalPlatformFees, unlockCount, messageCount, conversionRate };
   }, [messages, allPayments]);
 
   const toggleActiveMutation = useMutation({
@@ -70,6 +90,29 @@ export default function Dashboard() {
         variant: "destructive",
       });
       setMessageToToggle(null);
+    },
+  });
+
+  const updatePayoutMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("PATCH", "/api/auth/payout", {
+        payoutMethod,
+        payoutAddress,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Payout Info Updated",
+        description: "Your payout information has been saved successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update payout information",
+        variant: "destructive",
+      });
     },
   });
 
@@ -135,10 +178,16 @@ export default function Dashboard() {
                   New Message
                 </Link>
               </Button>
-              <Button variant="outline" className="rounded-full" data-testid="button-logout" asChild>
-                <a href="/api/logout">
-                  Log Out
-                </a>
+              <Button 
+                variant="outline" 
+                className="rounded-full" 
+                data-testid="button-logout"
+                onClick={async () => {
+                  await apiRequest("POST", "/api/auth/logout", {});
+                  window.location.href = "/";
+                }}
+              >
+                Log Out
               </Button>
             </div>
           </div>
@@ -155,21 +204,81 @@ export default function Dashboard() {
           </p>
         </div>
 
+        {analytics.totalEarnings > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Wallet className="w-5 h-5" />
+                <h2 className="text-xl font-heading font-semibold">Payout Information</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Set up how you'd like to receive your earnings. We'll manually send payments to your specified address.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="payout-method">Payment Method</Label>
+                  <Select
+                    value={payoutMethod}
+                    onValueChange={setPayoutMethod}
+                  >
+                    <SelectTrigger id="payout-method" data-testid="select-payout-method">
+                      <SelectValue placeholder="Select method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="venmo">Venmo</SelectItem>
+                      <SelectItem value="cashapp">Cash App</SelectItem>
+                      <SelectItem value="crypto">Crypto Wallet</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="payout-address">
+                    {payoutMethod === "venmo" ? "Venmo @username" : 
+                     payoutMethod === "cashapp" ? "Cash App $cashtag" : 
+                     payoutMethod === "crypto" ? "Wallet Address" : "Payout Address"}
+                  </Label>
+                  <Input
+                    id="payout-address"
+                    data-testid="input-payout-address"
+                    placeholder={
+                      payoutMethod === "venmo" ? "@username" : 
+                      payoutMethod === "cashapp" ? "$cashtag" : 
+                      payoutMethod === "crypto" ? "0x..." : "Enter address"
+                    }
+                    value={payoutAddress}
+                    onChange={(e) => setPayoutAddress(e.target.value)}
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={() => updatePayoutMutation.mutate()}
+                disabled={!payoutMethod || !payoutAddress || updatePayoutMutation.isPending}
+                data-testid="button-save-payout"
+                className="rounded-full"
+              >
+                {updatePayoutMutation.isPending ? "Saving..." : "Save Payout Info"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {messages && messages.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
+                  <p className="text-sm font-medium text-muted-foreground">Your Earnings</p>
                   <DollarSign className="w-4 h-4 text-muted-foreground" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-heading font-bold" data-testid="text-total-revenue">
-                  ${analytics.totalRevenue.toFixed(2)}
+                <div className="text-3xl font-heading font-bold" data-testid="text-total-earnings">
+                  ${analytics.totalEarnings.toFixed(2)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  From {analytics.messageCount} {analytics.messageCount === 1 ? 'message' : 'messages'}
+                  After platform fees (${analytics.totalPlatformFees.toFixed(2)})
                 </p>
               </CardContent>
             </Card>

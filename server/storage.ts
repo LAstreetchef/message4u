@@ -14,9 +14,10 @@ import { eq, and, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
-  // User operations (required for Replit Auth)
+  // User operations
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserPayout(userId: string, payoutMethod: string, payoutAddress: string): Promise<void>;
 
   // Message operations
   createMessage(userId: string, message: InsertMessage): Promise<Message>;
@@ -35,7 +36,7 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations (required for Replit Auth)
+  // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
@@ -54,6 +55,17 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  async updateUserPayout(userId: string, payoutMethod: string, payoutAddress: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        payoutMethod,
+        payoutAddress,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
   }
 
   // Message operations
