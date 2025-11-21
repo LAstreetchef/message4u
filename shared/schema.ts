@@ -67,8 +67,8 @@ export const payments = pgTable("payments", {
   messageId: varchar("message_id").notNull().references(() => messages.id),
   stripeSessionId: varchar("stripe_session_id").notNull().unique(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  platformFee: decimal("platform_fee", { precision: 10, scale: 2 }).notNull(),
-  senderEarnings: decimal("sender_earnings", { precision: 10, scale: 2 }).notNull(),
+  platformFee: decimal("platform_fee", { precision: 10, scale: 2 }),
+  senderEarnings: decimal("sender_earnings", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

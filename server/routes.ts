@@ -18,12 +18,23 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 // Calculate platform fee: $1.69 + 6.9% of amount
+// Works in cents (integers) to avoid floating point rounding errors
 function calculatePlatformFee(amount: number): { platformFee: number; senderEarnings: number } {
-  const platformFee = 1.69 + (amount * 0.069);
-  const senderEarnings = amount - platformFee;
+  // Convert amount to cents for integer arithmetic
+  const amountCents = Math.round(amount * 100);
+  
+  // Calculate platform fee in cents: $1.69 (169 cents) + 6.9% of amount
+  const calculatedFeeCents = 169 + Math.round(amountCents * 0.069);
+  
+  // Clamp platform fee to not exceed the total amount
+  const platformFeeCents = Math.min(calculatedFeeCents, amountCents);
+  
+  // Calculate sender earnings as remainder (guaranteed to sum exactly to amount)
+  const senderEarningsCents = amountCents - platformFeeCents;
+  
   return {
-    platformFee: Math.max(0, Math.round(platformFee * 100) / 100),
-    senderEarnings: Math.max(0, Math.round(senderEarnings * 100) / 100),
+    platformFee: platformFeeCents / 100,
+    senderEarnings: senderEarningsCents / 100,
   };
 }
 
