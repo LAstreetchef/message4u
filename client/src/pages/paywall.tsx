@@ -24,7 +24,8 @@ export default function Paywall() {
       const response = await apiRequest("POST", "/api/create-payment-intent", {
         messageId: message!.slug,
       });
-      return response as unknown as { sessionId: string; url: string };
+      const data = await response.json();
+      return data as { sessionId: string; url: string };
     },
     onSuccess: async (data) => {
       if (!data.url) {
