@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { useRoute } from "wouter";
+import { useRoute, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Heart, Lock, DollarSign, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +16,8 @@ export default function Paywall() {
   const [, params] = useRoute("/m/:slug");
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [smsConsent, setSmsConsent] = useState(false);
 
   const { data: message, isLoading, error } = useQuery<Message>({
     queryKey: ["/api/messages", params?.slug],
@@ -177,6 +182,59 @@ export default function Paywall() {
                 <div className="text-sm text-muted-foreground">Unlock Price</div>
                 <div className="text-4xl font-heading font-bold text-primary" data-testid="text-price">
                   ${message.price}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t pt-6 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="recipient-phone" className="text-sm font-medium">
+                  Get notified via SMS (optional)
+                </Label>
+                <Input
+                  id="recipient-phone"
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  data-testid="input-recipient-phone"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Receive an SMS when the message is unlocked
+                </p>
+              </div>
+
+              <div className="flex items-start space-x-3 p-3 rounded-md bg-secondary/20">
+                <Checkbox
+                  id="sms-consent-paywall"
+                  checked={smsConsent}
+                  onCheckedChange={(checked) => setSmsConsent(checked === true)}
+                  disabled={!phoneNumber}
+                  data-testid="checkbox-sms-consent"
+                />
+                <div className="space-y-1 leading-none">
+                  <Label
+                    htmlFor="sms-consent-paywall"
+                    className="text-xs font-normal cursor-pointer"
+                  >
+                    I agree to receive SMS notifications from <strong>Secret Message</strong> when 
+                    this message is unlocked. Message and data rates may apply. Reply STOP to opt-out. 
+                    Reply HELP for support.
+                  </Label>
+                  <p className="text-xs text-muted-foreground pt-1">
+                    Read our{" "}
+                    <Link href="/privacy">
+                      <a className="text-primary hover:underline" data-testid="link-privacy-inline">
+                        Privacy Policy
+                      </a>
+                    </Link>
+                    {" | "}
+                    <Link href="/sms-consent">
+                      <a className="text-primary hover:underline" data-testid="link-sms-consent-info">
+                        SMS Consent Info
+                      </a>
+                    </Link>
+                  </p>
                 </div>
               </div>
             </div>

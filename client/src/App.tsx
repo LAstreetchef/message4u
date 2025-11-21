@@ -10,12 +10,18 @@ import Dashboard from "@/pages/dashboard";
 import CreateMessage from "@/pages/create-message";
 import Paywall from "@/pages/paywall";
 import Unlocked from "@/pages/unlocked";
+import SmsConsent from "@/pages/sms-consent";
+import Privacy from "@/pages/privacy";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
   return (
     <Switch>
+      {/* Public routes accessible to everyone */}
+      <Route path="/sms-consent" component={SmsConsent} />
+      <Route path="/privacy" component={Privacy} />
+      
       {isLoading || !isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
