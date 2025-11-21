@@ -6,14 +6,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Lock, DollarSign, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { loadStripe } from "@stripe/stripe-js";
 import { useToast } from "@/hooks/use-toast";
 import type { Message } from "@shared/schema";
-
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
-}
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 export default function Paywall() {
   const [, params] = useRoute("/m/:slug");
@@ -30,26 +24,14 @@ export default function Paywall() {
       const response = await apiRequest("POST", "/api/create-payment-intent", {
         messageId: message!.slug,
       });
-      return response as { sessionId: string };
+      return response as unknown as { sessionId: string; url: string };
     },
     onSuccess: async (data) => {
-      const stripe = await stripePromise;
-      if (!stripe) {
-        throw new Error("Stripe failed to load");
+      if (!data.url) {
+        throw new Error("No checkout URL received from server");
       }
       
-      const { error } = await stripe.redirectToCheckout({
-        sessionId: data.sessionId,
-      });
-
-      if (error) {
-        toast({
-          title: "Payment Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        setIsProcessing(false);
-      }
+      window.location.href = data.url;
     },
     onError: (error: Error) => {
       toast({
