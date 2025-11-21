@@ -27,6 +27,7 @@ const formSchema = insertMessageSchema.extend({
     (val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
     "Price must be greater than 0"
   ),
+  expiresAt: z.date().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -80,7 +81,8 @@ export default function CreateMessage() {
           fileUrl: uploadedFile.url,
           fileType: uploadedFile.type,
           price: data.price,
-        };
+          expiresAt: data.expiresAt ? data.expiresAt.toISOString() : undefined,
+        } as InsertMessage;
       } else {
         if (!data.messageBody || data.messageBody.trim() === "") {
           throw new Error("Please enter a message");
@@ -90,10 +92,12 @@ export default function CreateMessage() {
           fileUrl: undefined,
           fileType: undefined,
           price: data.price,
-        };
+          expiresAt: data.expiresAt ? data.expiresAt.toISOString() : undefined,
+        } as InsertMessage;
       }
 
-      const result = await apiRequest("POST", "/api/messages", messageData) as { id: string };
+      const response = await apiRequest("POST", "/api/messages", messageData);
+      const result = await response.json() as { id: string };
       
       if (messageType === "file" && uploadedFile && result.id) {
         await apiRequest("PUT", `/api/messages/${result.id}/file`, {

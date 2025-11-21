@@ -55,6 +55,8 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   expiresAt: true,
   fileUrl: true,
   fileType: true,
+}).extend({
+  expiresAt: z.union([z.string(), z.date()]).optional(),
 });
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;

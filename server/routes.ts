@@ -38,8 +38,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.claims.sub;
       const validatedData = insertMessageSchema.parse(req.body);
       
+      // Convert expiresAt from ISO string to Date if present
+      const messageData = {
+        ...validatedData,
+        expiresAt: validatedData.expiresAt 
+          ? (typeof validatedData.expiresAt === 'string' 
+              ? new Date(validatedData.expiresAt) 
+              : validatedData.expiresAt)
+          : undefined,
+      };
+      
       // Create message
-      const message = await storage.createMessage(userId, validatedData);
+      const message = await storage.createMessage(userId, messageData);
       
       // Generate image only if no file was uploaded and messageBody exists
       if (!validatedData.fileUrl && validatedData.messageBody) {
