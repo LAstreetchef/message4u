@@ -14,10 +14,11 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table (magic link auth)
+// User storage table (password auth)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique().notNull(),
+  passwordHash: text("password_hash"),
   payoutAddress: text("payout_address"),
   payoutMethod: varchar("payout_method", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow(),
