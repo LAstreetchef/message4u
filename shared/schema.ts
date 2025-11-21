@@ -14,13 +14,12 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table (required for Replit Auth)
+// User storage table (magic link auth)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
+  email: varchar("email").unique().notNull(),
+  payoutAddress: text("payout_address"),
+  payoutMethod: varchar("payout_method", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -68,6 +67,8 @@ export const payments = pgTable("payments", {
   messageId: varchar("message_id").notNull().references(() => messages.id),
   stripeSessionId: varchar("stripe_session_id").notNull().unique(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  platformFee: decimal("platform_fee", { precision: 10, scale: 2 }).notNull(),
+  senderEarnings: decimal("sender_earnings", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -75,7 +76,28 @@ export const insertPaymentSchema = createInsertSchema(payments).pick({
   messageId: true,
   stripeSessionId: true,
   amount: true,
+  platformFee: true,
+  senderEarnings: true,
 });
 
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
+
+// Magic links table for authentication
+export const magicLinks = pgTable("magic_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMagicLinkSchema = createInsertSchema(magicLinks).pick({
+  email: true,
+  token: true,
+  expiresAt: true,
+});
+
+export type InsertMagicLink = z.infer<typeof insertMagicLinkSchema>;
+export type MagicLink = typeof magicLinks.$inferSelect;
