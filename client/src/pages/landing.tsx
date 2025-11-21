@@ -115,7 +115,7 @@ export default function Landing() {
                   </span>
                 </h1>
                 <p className="text-xl text-muted-foreground max-w-lg">
-                  Send playful, paywalled messages that unlock with a payment. Set your price, share the link, and have some fun!
+                  Send pictures, files, and messages that unlock with a payment. Set your price, share the link, get paid!
                 </p>
                 <Card className="p-6 space-y-4 max-w-md">
                   <div className="flex items-center justify-between">
