@@ -111,7 +111,7 @@ export async function sendMessageNotification({
       : 'You have a new message on Booty Call';
 
     const { data, error} = await resend.emails.send({
-      from: 'Booty Call <[email protected]>',
+      from: '[email protected]',
       to: recipientEmail,
       subject,
       html: createEmailTemplate(messageTitle, price, unlockUrl),
