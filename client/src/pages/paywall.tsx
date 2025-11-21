@@ -132,7 +132,7 @@ export default function Paywall() {
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center">
                 <Heart className="w-4 h-4 text-primary-foreground" fill="currentColor" />
               </div>
-              <span className="text-lg font-heading font-bold text-foreground">Booty Call</span>
+              <span className="text-lg font-heading font-bold text-foreground">Secret Message</span>
             </div>
           </div>
         </div>
@@ -214,7 +214,7 @@ export default function Paywall() {
       <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t mt-20">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-sm text-muted-foreground">
-            Booty Call – pay-to-open messages with cute cartoon flavor 💕
+            Secret Message – secure pay-to-open messaging
           </p>
         </div>
       </footer>

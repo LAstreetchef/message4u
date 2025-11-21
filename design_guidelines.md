@@ -1,4 +1,4 @@
-# Booty Call - Design Guidelines
+# Secret Message - Design Guidelines
 
 ## Design Approach
 **Instagram-Inspired Dark Mode**: Modern, sleek dark aesthetic with purple-pink gradients and high contrast, inspired by Instagram's signature dark mode experience.
@@ -39,7 +39,7 @@
 ## Component Library
 
 ### Navigation/Header
-- Booty Call logo with icon
+- Secret Message logo with icon
 - Simple, rounded button for login/logout
 - Dark background with subtle border
 
@@ -47,7 +47,7 @@
 - Two-column layout (desktop): Form on left, hero content on right
 - Mobile: Stacked vertically
 - Dark card backgrounds with purple-pink accent highlights
-- Headings: "Welcome to Booty Call", "Send a Paywalled Message"
+- Headings: "Welcome to Secret Message", "Send a Secure Paywalled Message"
 - Form cards with dark backgrounds and purple accent borders
 
 ### Message Creation Card
@@ -90,7 +90,7 @@
 - All buttons have rounded-full or rounded-xl styling
 
 ### Footer
-- Simple footer note: "Booty Call – pay-to-open messages with Instagram vibes 💕"
+- Simple footer note: "Secret Message – secure pay-to-open messaging"
 - Centered text, muted gray color on dark background
 
 ## Images & Illustrations
