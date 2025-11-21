@@ -100,8 +100,8 @@ export async function sendMessageNotification({
   }
 
   try {
-    const baseUrl = process.env.REPL_SLUG 
-      ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+    const baseUrl = process.env.REPLIT_DOMAINS 
+      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
       : 'http://localhost:5000';
     
     const unlockUrl = `${baseUrl}/m/${slug}`;
