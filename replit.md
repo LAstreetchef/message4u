@@ -4,7 +4,7 @@
 
 Booty Call is a playful web application that enables users to send paywalled messages. Senders create messages with custom pricing, and recipients must pay the specified amount to unlock and view the message content. The application features an Instagram-inspired dark mode aesthetic with deep black backgrounds, high-contrast white text, purple-pink gradient accents, and rounded pill-shaped elements.
 
-The platform supports authenticated senders who can create and manage multiple paywalled messages, while recipients can access messages without requiring an account. Messages can be either text-based (converted to images for privacy) or file uploads (any file type up to 10MB), both protected behind payment. Files are stored securely in Replit Object Storage with ACL-based access control.
+The platform supports authenticated senders who can create and manage multiple paywalled messages, while recipients can access messages without requiring an account. Messages can be either text-based (converted to images for privacy) or file uploads (any file type up to 10MB), both protected behind payment. Files are stored securely in Replit Object Storage with ACL-based access control. When recipients provide a valid email address, they automatically receive beautifully styled email notifications with direct links to unlock their messages.
 
 ## User Preferences
 
@@ -73,6 +73,8 @@ Preferred communication style: Simple, everyday language.
 **Authentication Service**: Replit Auth (OpenID Connect provider) - Handles user identity, authentication flows, and session establishment. Environment variable: `ISSUER_URL`, `REPL_ID`, `SESSION_SECRET`.
 
 **Payment Gateway**: Stripe - Processes payments and manages checkout sessions. Uses test mode for development. Environment variables: `STRIPE_SECRET_KEY` (server), `VITE_STRIPE_PUBLIC_KEY` (client).
+
+**Email Service**: Resend - Transactional email API for sending message notifications to recipients. Gracefully degrades if not configured. Environment variable: `RESEND_API_KEY` (optional). Uses verified testing domain `[email protected]` for development.
 
 **Database Provider**: Neon (PostgreSQL) - Serverless PostgreSQL database with WebSocket connections for low-latency queries. Environment variable: `DATABASE_URL`.
 
