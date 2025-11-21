@@ -18,7 +18,7 @@ export const sessions = pgTable(
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: varchar("email").unique().notNull(),
-  passwordHash: text("password_hash"),
+  passwordHash: text("password_hash").notNull(),
   payoutAddress: text("payout_address"),
   payoutMethod: varchar("payout_method", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow(),
@@ -84,21 +84,3 @@ export const insertPaymentSchema = createInsertSchema(payments).pick({
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
 
-// Magic links table for authentication
-export const magicLinks = pgTable("magic_links", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").notNull(),
-  token: varchar("token", { length: 64 }).notNull().unique(),
-  expiresAt: timestamp("expires_at").notNull(),
-  used: boolean("used").notNull().default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertMagicLinkSchema = createInsertSchema(magicLinks).pick({
-  email: true,
-  token: true,
-  expiresAt: true,
-});
-
-export type InsertMagicLink = z.infer<typeof insertMagicLinkSchema>;
-export type MagicLink = typeof magicLinks.$inferSelect;

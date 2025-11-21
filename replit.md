@@ -4,7 +4,7 @@
 
 Secret Message is a playful web application that enables users to send paywalled messages. Senders create messages with custom pricing, and recipients must pay the specified amount to unlock and view the message content. The platform acts as a payment processor, collecting payments via Stripe, deducting a platform fee ($1.69 + 6.9% of the message price), and facilitating manual payouts to senders via Venmo, CashApp, or cryptocurrency. The application features an Instagram-inspired dark mode aesthetic with deep black backgrounds, high-contrast white text, purple-pink gradient accents, and rounded pill-shaped elements.
 
-The platform supports authenticated senders using magic link email-based authentication (passwordless sign-in via email) who can create and manage multiple paywalled messages, set up payout addresses, and track earnings after platform fees. Recipients can access messages without requiring an account. Messages can be either text-based (converted to images for privacy) or file uploads (any file type up to 10MB), both protected behind payment. Files are stored securely in Replit Object Storage with ACL-based access control. When recipients provide a valid email address, they automatically receive beautifully styled email notifications with direct links to unlock their messages.
+The platform supports authenticated senders using password-based authentication (email + password sign-up and login) who can create and manage multiple paywalled messages, set up payout addresses, and track earnings after platform fees. Recipients can access messages without requiring an account. Messages can be either text-based (converted to images for privacy) or file uploads (any file type up to 10MB), both protected behind payment. Files are stored securely in Replit Object Storage with ACL-based access control. When recipients provide a valid email address, they automatically receive beautifully styled email notifications with direct links to unlock their messages.
 
 ## User Preferences
 
@@ -38,8 +38,8 @@ Preferred communication style: Simple, everyday language.
 **Runtime**: Node.js with Express.js handling HTTP requests and middleware.
 
 **API Design**: RESTful API endpoints with session-based authentication:
-- `/api/auth/request-magic-link` - Request a magic link for passwordless email authentication
-- `/api/auth/verify-magic-link` - Verify magic link token and establish session
+- `/api/auth/signup` - Create new account with email and password
+- `/api/auth/login` - Authenticate with email and password
 - `/api/auth/user` - Get current authenticated user information
 - `/api/auth/logout` - Destroy user session
 - `/api/auth/payout` - Update sender payout information (Venmo/CashApp/Crypto address)
@@ -50,7 +50,7 @@ Preferred communication style: Simple, everyday language.
 - `/api/messages/:id/file` - Save file metadata after upload
 - `/objects/*` - Serve uploaded files with ACL-based access control
 
-**Authentication**: Magic link email-based authentication (passwordless). When users request a magic link, a token is generated, stored in the database with a 15-minute expiration, and sent via email. Clicking the link verifies the token and establishes a session. Sessions are stored in PostgreSQL using connect-pg-simple middleware. HTTP-only secure cookies are used for session management with a 7-day TTL. No passwords are stored, providing enhanced security and user privacy.
+**Authentication**: Password-based authentication using bcrypt for secure password hashing. Users create accounts with email and password (minimum 8 characters). Passwords are hashed with bcrypt (10 salt rounds) before storage. Sessions are stored in PostgreSQL using connect-pg-simple middleware. HTTP-only cookies are used for session management with a 7-day TTL. Cookies use `secure` flag in production and `sameSite: lax` for CSRF protection. Environment variable: `SESSION_SECRET`.
 
 **Image Generation**: Server-side canvas rendering converts message text into images using the `canvas` library. Images are generated asynchronously after message creation and stored in the public directory.
 
@@ -63,8 +63,7 @@ Preferred communication style: Simple, everyday language.
 **ORM**: Drizzle ORM for type-safe database queries and schema management. Schema definitions are shared between client and server via the `@shared/schema` module.
 
 **Schema Design**:
-- `users` - Stores minimal user data for authentication (id, email, payoutMethod, payoutAddress, createdAt, updatedAt)
-- `magic_links` - Passwordless authentication tokens (id, email, token, expiresAt, used, createdAt)
+- `users` - Stores user authentication and profile data (id, email, passwordHash, payoutMethod, payoutAddress, createdAt, updatedAt)
 - `messages` - Paywalled message data (id, slug, userId, title, recipientIdentifier, messageBody, price, imageUrl, fileUrl, fileType, unlocked, active, expiresAt)
 - `payments` - Payment transaction records with platform fee tracking (id, messageId, amount, stripeSessionId, platformFee, senderEarnings, createdAt)
 - `sessions` - Express session storage for authentication
@@ -75,11 +74,11 @@ Preferred communication style: Simple, everyday language.
 
 ### External Dependencies
 
-**Authentication System**: Magic link email-based authentication (self-hosted) - Passwordless authentication where users receive a secure token via email that expires in 15 minutes. No external authentication provider required. Environment variable: `SESSION_SECRET`.
+**Authentication System**: Password-based authentication (self-hosted) - Traditional email + password authentication using bcrypt for secure password hashing. No external authentication provider required. Environment variable: `SESSION_SECRET`.
 
 **Payment Gateway**: Stripe - Processes payments and manages checkout sessions. Uses test mode for development. Environment variables: `STRIPE_SECRET_KEY` (server), `VITE_STRIPE_PUBLIC_KEY` (client).
 
-**Email Service**: Resend - Transactional email API for sending magic link authentication emails and message unlock notifications to recipients. Required for authentication. Environment variable: `RESEND_API_KEY`. Uses verified testing domain `[email protected]` for development. Email URLs are constructed using Replit environment variables with precedence: `REPLIT_APP_URL` (production) → `REPLIT_DEV_DOMAIN` (hosted dev) → `REPLIT_DOMAINS` (fallback) → localhost (local dev only when `REPL_ID` is absent).
+**Email Service**: Resend - Transactional email API for sending message unlock notifications to recipients. Optional for core functionality. Environment variable: `RESEND_API_KEY`. Uses verified testing domain `[email protected]` for development. Email URLs are constructed using Replit environment variables with precedence: `REPLIT_APP_URL` (production) → `REPLIT_DEV_DOMAIN` (hosted dev) → `REPLIT_DOMAINS` (fallback) → localhost (local dev only when `REPL_ID` is absent).
 
 **Database Provider**: Neon (PostgreSQL) - Serverless PostgreSQL database with WebSocket connections for low-latency queries. Environment variable: `DATABASE_URL`.
 
