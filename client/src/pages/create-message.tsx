@@ -145,7 +145,7 @@ export default function CreateMessage() {
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center">
                   <Heart className="w-4 h-4 text-primary-foreground" fill="currentColor" />
                 </div>
-                <span className="text-lg font-heading font-bold text-foreground">Secret Message</span>
+                <span className="text-lg font-heading font-bold text-foreground">Booty Call</span>
               </a>
             </Link>
             <Link href="/">
@@ -407,7 +407,7 @@ export default function CreateMessage() {
       <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t mt-20">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-sm text-muted-foreground">
-            Secret Message – secure pay-to-open messaging
+            Booty Call – pay-to-open messages with cute cartoon flavor
           </p>
         </div>
       </footer>

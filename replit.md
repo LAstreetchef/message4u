@@ -1,8 +1,8 @@
-# Secret Message - Pay-to-Open Messages
+# Booty Call - Pay-to-Open Messages
 
 ## Overview
 
-Secret Message is a secure web application that enables users to send paywalled messages. Senders create messages with custom pricing, and recipients must pay the specified amount to unlock and view the message content. The application features an Instagram-inspired dark mode aesthetic with deep black backgrounds, high-contrast white text, purple-pink gradient accents, and rounded pill-shaped elements.
+Booty Call is a playful web application that enables users to send paywalled messages. Senders create messages with custom pricing, and recipients must pay the specified amount to unlock and view the message content. The application features an Instagram-inspired dark mode aesthetic with deep black backgrounds, high-contrast white text, purple-pink gradient accents, and rounded pill-shaped elements.
 
 The platform supports authenticated senders who can create and manage multiple paywalled messages, while recipients can access messages without requiring an account. Messages can be either text-based (converted to images for privacy) or file uploads (any file type up to 10MB), both protected behind payment. Files are stored securely in Replit Object Storage with ACL-based access control. When recipients provide a valid email address, they automatically receive beautifully styled email notifications with direct links to unlock their messages.
 
