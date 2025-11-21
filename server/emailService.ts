@@ -110,12 +110,16 @@ export async function sendMessageNotification({
       ? `${senderName} sent you a message on Booty Call`
       : 'You have a new message on Booty Call';
 
-    const { data, error} = await resend.emails.send({
+    const emailPayload = {
       from: '[email protected]',
       to: recipientEmail,
       subject,
       html: createEmailTemplate(messageTitle, price, unlockUrl),
-    });
+    };
+
+    console.log('Attempting to send email with payload:', JSON.stringify({ from: emailPayload.from, to: emailPayload.to, subject: emailPayload.subject }));
+
+    const { data, error} = await resend.emails.send(emailPayload);
 
     if (error) {
       console.error('Resend error:', error);
