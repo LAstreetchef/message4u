@@ -100,11 +100,31 @@ export async function sendMessageNotification({
   }
 
   try {
-    const baseUrl = process.env.REPLIT_DOMAINS 
-      ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-      : 'http://localhost:5000';
+    let baseUrl = '';
+    
+    if (process.env.REPLIT_APP_URL) {
+      try {
+        const url = new URL(process.env.REPLIT_APP_URL);
+        baseUrl = url.origin;
+      } catch {
+        baseUrl = process.env.REPLIT_APP_URL.replace(/\/$/, '');
+      }
+    } else if (process.env.REPLIT_DEV_DOMAIN) {
+      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    } else if (process.env.REPLIT_DOMAINS) {
+      const domain = process.env.REPLIT_DOMAINS.split(',')[0]?.trim();
+      baseUrl = domain ? `https://${domain}` : '';
+    } else if (!process.env.REPL_ID) {
+      baseUrl = 'http://localhost:5000';
+    }
+    
+    if (!baseUrl) {
+      console.error('No domain configured for email links - check REPLIT_APP_URL, REPLIT_DEV_DOMAIN, or REPLIT_DOMAINS environment variables');
+      return { success: false, error: 'Email service misconfigured - no domain available' };
+    }
     
     const unlockUrl = `${baseUrl}/m/${slug}`;
+    console.log(`Email unlock URL: ${unlockUrl}`);
     
     const subject = senderName 
       ? `${senderName} sent you a message on Booty Call`

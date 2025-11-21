@@ -74,7 +74,7 @@ Preferred communication style: Simple, everyday language.
 
 **Payment Gateway**: Stripe - Processes payments and manages checkout sessions. Uses test mode for development. Environment variables: `STRIPE_SECRET_KEY` (server), `VITE_STRIPE_PUBLIC_KEY` (client).
 
-**Email Service**: Resend - Transactional email API for sending message notifications to recipients. Gracefully degrades if not configured. Environment variable: `RESEND_API_KEY` (optional). Uses verified testing domain `[email protected]` for development.
+**Email Service**: Resend - Transactional email API for sending message notifications to recipients. Gracefully degrades if not configured. Environment variable: `RESEND_API_KEY` (optional). Uses verified testing domain `[email protected]` for development. Email unlock URLs are constructed using Replit environment variables with precedence: `REPLIT_APP_URL` (production) → `REPLIT_DEV_DOMAIN` (hosted dev) → `REPLIT_DOMAINS` (fallback) → localhost (local dev only when `REPL_ID` is absent).
 
 **Database Provider**: Neon (PostgreSQL) - Serverless PostgreSQL database with WebSocket connections for low-latency queries. Environment variable: `DATABASE_URL`.
 
