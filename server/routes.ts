@@ -38,15 +38,17 @@ function calculatePlatformFee(amount: number): { platformFee: number; senderEarn
   };
 }
 
-// Admin middleware - validates admin status from database, not session
+// Admin middleware - only allows specific admin email
+const ADMIN_EMAIL = "message4u@secretmessage4u.com";
+
 const isAdmin = async (req: any, res: any, next: any) => {
   if (!req.user || !req.user.id) {
     return res.status(403).json({ message: "Unauthorized - Admin access required" });
   }
   
-  // Fetch fresh user data from database to verify admin status
+  // Fetch fresh user data from database to verify email
   const user = await storage.getUser(req.user.id);
-  if (!user || !user.isAdmin) {
+  if (!user || user.email !== ADMIN_EMAIL) {
     return res.status(403).json({ message: "Unauthorized - Admin access required" });
   }
   

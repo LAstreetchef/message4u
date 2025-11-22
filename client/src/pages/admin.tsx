@@ -49,6 +49,8 @@ interface Analytics {
   totalUnlocks: number;
 }
 
+const ADMIN_EMAIL = "message4u@secretmessage4u.com";
+
 export default function AdminDashboard() {
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
@@ -57,8 +59,8 @@ export default function AdminDashboard() {
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutNotes, setPayoutNotes] = useState("");
 
-  // Check if user is admin
-  if (!isAuthenticated || !user?.isAdmin) {
+  // Check if user is admin - only specific email allowed
+  if (!isAuthenticated || user?.email !== ADMIN_EMAIL) {
     navigate("/");
     return null;
   }
