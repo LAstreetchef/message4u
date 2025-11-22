@@ -37,6 +37,7 @@ export interface IStorage {
   createPayment(payment: InsertPayment): Promise<Payment>;
   getPaymentBySessionId(sessionId: string): Promise<Payment | undefined>;
   getPaymentByChargeId(chargeId: string): Promise<Payment | undefined>;
+  getPaymentByNowPaymentsId(paymentId: string): Promise<Payment | undefined>;
   getPaymentsByMessageId(messageId: string): Promise<Payment[]>;
 
   // Admin operations
@@ -195,6 +196,14 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(payments)
       .where(eq(payments.coinbaseChargeId, chargeId));
+    return payment;
+  }
+
+  async getPaymentByNowPaymentsId(paymentId: string): Promise<Payment | undefined> {
+    const [payment] = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.nowpaymentsPaymentId, paymentId));
     return payment;
   }
 

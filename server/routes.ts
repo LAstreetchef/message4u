@@ -9,9 +9,6 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { sendMessageNotification, isValidEmail } from "./emailService";
 
-const coinbaseCommerceModule = await import('coinbase-commerce-node');
-const coinbaseCommerce = coinbaseCommerceModule.default || coinbaseCommerceModule;
-
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
 }
@@ -20,16 +17,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-11-17.clover",
 });
 
-const CoinbaseClient = coinbaseCommerce.Client;
-const CoinbaseWebhook = coinbaseCommerce.Webhook;
+// NOWPayments configuration
+const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1';
 
-if (!process.env.COINBASE_COMMERCE_API_KEY) {
-  console.warn('COINBASE_COMMERCE_API_KEY not set - crypto payments will not work');
+if (!process.env.NOWPAYMENTS_API_KEY) {
+  console.warn('NOWPAYMENTS_API_KEY not set - crypto payments will not work');
 } else {
-  CoinbaseClient.init(process.env.COINBASE_COMMERCE_API_KEY);
-  console.log('Coinbase Commerce initialized successfully');
-  console.log('Resources available:', coinbaseCommerce.resources ? 'YES' : 'NO');
-  console.log('Charge available:', coinbaseCommerce.resources?.Charge ? 'YES' : 'NO');
+  console.log('NOWPayments configured successfully');
 }
 
 // Calculate platform fee: $1.69 + 6.9% of amount
@@ -328,16 +322,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Coinbase Commerce charge creation
-  app.post("/api/create-coinbase-charge", async (req, res) => {
+  // NOWPayments invoice creation
+  app.post("/api/create-crypto-payment", async (req, res) => {
     try {
-      if (!process.env.COINBASE_COMMERCE_API_KEY) {
-        return res.status(500).json({ message: "Coinbase Commerce not configured - missing API key" });
-      }
-
-      if (!coinbaseCommerce.resources?.Charge) {
-        console.error('Coinbase Charge resource not available');
-        return res.status(500).json({ message: "Coinbase Commerce SDK not properly initialized" });
+      if (!process.env.NOWPAYMENTS_API_KEY) {
+        return res.status(500).json({ message: "Crypto payments not configured - missing API key" });
       }
 
       const { messageId } = req.body;
@@ -355,116 +344,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message has expired" });
       }
 
-      const chargeData = {
-        name: message.title,
-        description: 'Unlock this secret message',
-        pricing_type: 'fixed_price',
-        local_price: {
-          amount: message.price,
-          currency: 'USD'
-        },
-        metadata: {
-          messageId: message.id,
-          slug: message.slug,
-        },
-        redirect_url: `${req.protocol}://${req.get('host')}/m/${message.slug}/unlocked`,
+      const invoiceData = {
+        price_amount: parseFloat(message.price),
+        price_currency: 'usd',
+        order_id: `msg_${message.id}_${Date.now()}`,
+        order_description: `Unlock message: ${message.title}`,
+        ipn_callback_url: `${req.protocol}://${req.get('host')}/api/webhook/nowpayments`,
+        success_url: `${req.protocol}://${req.get('host')}/m/${message.slug}/unlocked`,
         cancel_url: `${req.protocol}://${req.get('host')}/m/${message.slug}`,
       };
 
-      console.log('Creating Coinbase charge with data:', JSON.stringify(chargeData, null, 2));
-      const charge = await coinbaseCommerce.resources.Charge.create(chargeData);
+      console.log('Creating NOWPayments invoice with data:', JSON.stringify(invoiceData, null, 2));
       
-      // Log the full response from Coinbase for debugging
-      console.log('Coinbase charge created successfully!');
-      console.log('Full Coinbase response:', JSON.stringify(charge, null, 2));
-      console.log('Charge ID:', charge.id);
-      console.log('Hosted URL:', charge.hosted_url);
-      console.log('Charge Code:', charge.code);
-      console.log('Status:', charge.timeline ? charge.timeline[0]?.status : 'N/A');
-      
-      // Validate that we got a hosted URL
-      if (!charge.hosted_url) {
-        console.warn('WARNING: Coinbase charge was created but no hosted_url was returned!');
-        console.warn('This may indicate an account configuration issue with Coinbase Commerce.');
+      const response = await fetch(`${NOWPAYMENTS_API_URL}/invoice`, {
+        method: 'POST',
+        headers: {
+          'x-api-key': process.env.NOWPAYMENTS_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(invoiceData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('NOWPayments API error:', errorData);
+        throw new Error(`NOWPayments API error: ${response.status} - ${JSON.stringify(errorData)}`);
       }
+
+      const invoice = await response.json();
+      
+      console.log('NOWPayments invoice created successfully!');
+      console.log('Full NOWPayments response:', JSON.stringify(invoice, null, 2));
+      console.log('Invoice ID:', invoice.id);
+      console.log('Invoice URL:', invoice.invoice_url);
+      
+      // Store the invoice ID and message mapping for webhook processing
+      // We'll use the order_id to track which message this payment is for
       
       res.json({ 
-        chargeId: charge.id, 
-        hostedUrl: charge.hosted_url,
-        chargeCode: charge.code,
-        expiresAt: charge.expires_at,
-        status: charge.timeline?.[0]?.status || 'unknown'
+        invoiceId: invoice.id,
+        hostedUrl: invoice.invoice_url,
+        orderId: invoice.order_id,
       });
     } catch (error: any) {
-      console.error("Error creating Coinbase charge - Full error details:");
+      console.error("Error creating NOWPayments invoice - Full error details:");
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
-      if (error.response) {
-        console.error("Coinbase API response status:", error.response.status);
-        console.error("Coinbase API response data:", JSON.stringify(error.response.data, null, 2));
-      }
       res.status(500).json({ 
         message: "Error creating crypto payment: " + error.message,
-        details: error.response?.data || error.message
       });
     }
   });
 
-  // Coinbase Commerce webhook for payment confirmation
-  app.post('/api/webhook/coinbase', async (req: any, res) => {
+  // NOWPayments IPN webhook for payment confirmation
+  app.post('/api/webhook/nowpayments', async (req: any, res) => {
     try {
-      const signature = req.headers['x-cc-webhook-signature'];
+      const signature = req.headers['x-nowpayments-sig'];
       
-      if (!signature || !process.env.COINBASE_COMMERCE_WEBHOOK_SECRET) {
-        console.error('Missing webhook signature or secret');
-        return res.status(400).send('No signature or webhook secret');
+      if (!signature || !process.env.NOWPAYMENTS_IPN_SECRET) {
+        console.error('Missing webhook signature or IPN secret');
+        return res.status(400).send('No signature or IPN secret');
       }
 
-      // Use raw body for signature verification
-      const rawBody = req.rawBody;
-      if (!rawBody) {
-        console.error('No raw body available for signature verification');
-        return res.status(400).send('Missing raw body');
+      // Verify signature using HMAC
+      const crypto = await import('crypto');
+      const payload = JSON.stringify(req.body);
+      const hmac = crypto.createHmac('sha512', process.env.NOWPAYMENTS_IPN_SECRET);
+      const calculatedSignature = hmac.update(payload).digest('hex');
+      
+      if (signature !== calculatedSignature) {
+        console.error('NOWPayments webhook signature verification failed');
+        return res.status(400).send('Invalid signature');
       }
 
-      let event;
-      try {
-        event = CoinbaseWebhook.verifyEventBody(
-          rawBody.toString(),
-          signature as string,
-          process.env.COINBASE_COMMERCE_WEBHOOK_SECRET
-        );
-      } catch (err: any) {
-        console.error('Coinbase webhook signature verification failed:', err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-      }
+      console.log(`NOWPayments webhook event received:`, JSON.stringify(req.body, null, 2));
 
-      console.log(`Coinbase webhook event received: ${event.type}`);
-
-      if (event.type === 'charge:confirmed' || event.type === 'charge:resolved') {
-        const charge = event.data;
+      const payment = req.body;
+      
+      // NOWPayments sends payment_status: finished when payment is complete
+      if (payment.payment_status === 'finished' || payment.payment_status === 'confirmed') {
+        // Extract messageId from order_id (format: msg_{messageId}_{timestamp})
+        const orderId = payment.order_id;
+        if (!orderId || !orderId.startsWith('msg_')) {
+          console.error('Invalid order_id format:', orderId);
+          return res.status(400).send('Invalid order_id');
+        }
         
-        const messageId = charge.metadata?.messageId;
+        const messageId = orderId.split('_')[1];
         if (!messageId) {
-          console.error('No messageId in charge metadata');
-          return res.status(400).send('No messageId in metadata');
+          console.error('No messageId in order_id:', orderId);
+          return res.status(400).send('No messageId in order_id');
         }
 
         // Check if payment already exists to prevent duplicates
-        const existingPayment = await storage.getPaymentByChargeId(charge.id);
+        const existingPayment = await storage.getPaymentByNowPaymentsId(payment.payment_id);
         if (existingPayment) {
-          console.log(`Payment already processed for charge ${charge.id}`);
+          console.log(`Payment already processed for NOWPayments ID ${payment.payment_id}`);
           return res.json({ received: true, status: 'already_processed' });
         }
 
-        const amount = parseFloat(charge.pricing.local.amount);
+        const amount = parseFloat(payment.price_amount);
         const { platformFee, senderEarnings } = calculatePlatformFee(amount);
         
         await storage.createPayment({
           messageId,
-          paymentProvider: 'coinbase',
-          coinbaseChargeId: charge.id,
-          coinbaseChargeCode: charge.code,
+          paymentProvider: 'nowpayments',
+          nowpaymentsPaymentId: payment.payment_id.toString(),
+          nowpaymentsOrderId: orderId,
           amount: amount.toString(),
           platformFee: platformFee.toString(),
           senderEarnings: senderEarnings.toString(),
@@ -472,12 +458,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         await storage.markMessageUnlocked(messageId);
         
-        console.log(`Successfully processed Coinbase payment for message ${messageId}`);
+        console.log(`Successfully processed NOWPayments payment for message ${messageId}`);
       }
 
       res.json({ received: true });
     } catch (error) {
-      console.error('Error processing Coinbase webhook:', error);
+      console.error('Error processing NOWPayments webhook:', error);
       res.status(500).send('Error processing payment');
     }
   });

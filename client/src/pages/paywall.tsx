@@ -51,13 +51,13 @@ export default function Paywall() {
     },
   });
 
-  const coinbasePaymentMutation = useMutation({
+  const cryptoPaymentMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/create-coinbase-charge", {
+      const response = await apiRequest("POST", "/api/create-crypto-payment", {
         messageId: message!.slug,
       });
       const data = await response.json();
-      return data as { chargeId: string; hostedUrl: string };
+      return data as { invoiceId: string; hostedUrl: string };
     },
     onSuccess: async (data) => {
       if (!data.hostedUrl) {
@@ -81,7 +81,7 @@ export default function Paywall() {
     if (paymentMethod === "stripe") {
       stripePaymentMutation.mutate();
     } else {
-      coinbasePaymentMutation.mutate();
+      cryptoPaymentMutation.mutate();
     }
   };
 
