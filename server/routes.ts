@@ -8,7 +8,9 @@ import Stripe from "stripe";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { sendMessageNotification, isValidEmail } from "./emailService";
-import * as coinbaseCommerce from 'coinbase-commerce-node';
+
+const coinbaseCommerceModule = await import('coinbase-commerce-node');
+const coinbaseCommerce = coinbaseCommerceModule.default || coinbaseCommerceModule;
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -18,13 +20,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-11-17.clover",
 });
 
-const { Client: CoinbaseClient, Webhook: CoinbaseWebhook } = coinbaseCommerce;
+const CoinbaseClient = coinbaseCommerce.Client;
+const CoinbaseWebhook = coinbaseCommerce.Webhook;
 
 if (!process.env.COINBASE_COMMERCE_API_KEY) {
   console.warn('COINBASE_COMMERCE_API_KEY not set - crypto payments will not work');
 } else {
   CoinbaseClient.init(process.env.COINBASE_COMMERCE_API_KEY);
   console.log('Coinbase Commerce initialized successfully');
+  console.log('Resources available:', coinbaseCommerce.resources ? 'YES' : 'NO');
+  console.log('Charge available:', coinbaseCommerce.resources?.Charge ? 'YES' : 'NO');
 }
 
 // Calculate platform fee: $1.69 + 6.9% of amount
@@ -330,10 +335,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Coinbase Commerce not configured - missing API key" });
       }
 
-      // Access resources after Client.init() has been called
-      const { resources } = coinbaseCommerce;
-      if (!resources || !resources.Charge) {
-        console.error('Coinbase resources not available - SDK may not be initialized');
+      if (!coinbaseCommerce.resources?.Charge) {
+        console.error('Coinbase Charge resource not available');
         return res.status(500).json({ message: "Coinbase Commerce SDK not properly initialized" });
       }
 
@@ -369,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       console.log('Creating Coinbase charge with data:', JSON.stringify(chargeData, null, 2));
-      const charge = await resources.Charge.create(chargeData);
+      const charge = await coinbaseCommerce.resources.Charge.create(chargeData);
       
       res.json({ 
         chargeId: charge.id, 
