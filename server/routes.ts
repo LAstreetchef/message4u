@@ -457,6 +457,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public endpoint to serve files for unlocked messages
+  app.get('/api/messages/:slug/file', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const message = await storage.getMessageBySlug(slug);
+      
+      if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+
+      // Only serve file if message is unlocked
+      if (!message.unlocked) {
+        return res.status(403).json({ message: "Message not unlocked" });
+      }
+
+      // Check if message has a file
+      if (!message.fileUrl) {
+        return res.status(404).json({ message: "No file attached to this message" });
+      }
+
+      // Get the file from object storage
+      const objectStorageService = new ObjectStorageService();
+      const objectFile = await objectStorageService.getObjectEntityFile(message.fileUrl);
+      
+      // Serve the file
+      await objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error serving message file:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      return res.status(500).json({ message: "Failed to serve file" });
+    }
+  });
+
   // Object storage routes for file uploads
   // Reference: blueprint:javascript_object_storage
   app.post("/api/objects/upload", isAuthenticated, async (req, res) => {

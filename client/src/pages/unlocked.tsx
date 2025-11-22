@@ -129,7 +129,7 @@ export default function Unlocked() {
                     }`}
                   >
                     <img
-                      src={message.fileUrl}
+                      src={`/api/messages/${params?.slug}/file`}
                       alt="Unlocked file"
                       className="w-full h-auto rounded-lg"
                       onLoad={() => setImageLoaded(true)}
@@ -142,20 +142,20 @@ export default function Unlocked() {
                     className="w-full rounded-lg"
                     data-testid="video-file"
                   >
-                    <source src={message.fileUrl} type={message.fileType} />
+                    <source src={`/api/messages/${params?.slug}/file`} type={message.fileType} />
                     Your browser does not support the video tag.
                   </video>
                 ) : message.fileType === 'application/pdf' ? (
                   <div className="space-y-4">
                     <embed 
-                      src={message.fileUrl} 
+                      src={`/api/messages/${params?.slug}/file`}
                       type="application/pdf" 
                       className="w-full h-[600px] rounded-lg"
                       data-testid="pdf-file"
                     />
                     <Button 
                       className="w-full" 
-                      onClick={() => window.open(message.fileUrl!, '_blank')}
+                      onClick={() => window.open(`/api/messages/${params?.slug}/file`, '_blank')}
                       data-testid="button-download-pdf"
                     >
                       <Download className="w-4 h-4 mr-2" />
@@ -173,7 +173,7 @@ export default function Unlocked() {
                     </p>
                     <Button 
                       size="lg"
-                      onClick={() => window.open(message.fileUrl!, '_blank')}
+                      onClick={() => window.open(`/api/messages/${params?.slug}/file`, '_blank')}
                       data-testid="button-download-file"
                     >
                       <Download className="w-4 h-4 mr-2" />
