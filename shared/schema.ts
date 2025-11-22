@@ -21,6 +21,7 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   payoutAddress: text("payout_address"),
   payoutMethod: varchar("payout_method", { length: 50 }),
+  isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -83,4 +84,28 @@ export const insertPaymentSchema = createInsertSchema(payments).pick({
 
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
+
+// Payout history table (tracks completed payouts to users)
+export const payoutHistory = pgTable("payout_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  payoutMethod: varchar("payout_method", { length: 50 }).notNull(),
+  payoutAddress: text("payout_address").notNull(),
+  adminNotes: text("admin_notes"),
+  completedBy: varchar("completed_by").notNull().references(() => users.id),
+  completedAt: timestamp("completed_at").defaultNow(),
+});
+
+export const insertPayoutHistorySchema = createInsertSchema(payoutHistory).pick({
+  userId: true,
+  amount: true,
+  payoutMethod: true,
+  payoutAddress: true,
+  adminNotes: true,
+  completedBy: true,
+});
+
+export type InsertPayoutHistory = z.infer<typeof insertPayoutHistorySchema>;
+export type PayoutHistory = typeof payoutHistory.$inferSelect;
 
