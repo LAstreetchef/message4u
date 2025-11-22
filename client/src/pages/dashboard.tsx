@@ -204,65 +204,63 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {analytics.totalEarnings > 0 && (
-          <Card className="mb-8">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Wallet className="w-5 h-5" />
-                <h2 className="text-xl font-heading font-semibold">Payout Information</h2>
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Wallet className="w-5 h-5" />
+              <h2 className="text-xl font-heading font-semibold">Payout Information</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Set up how you'd like to receive your earnings. We'll manually send payments to your specified address.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="payout-method">Payment Method</Label>
+                <Select
+                  value={payoutMethod}
+                  onValueChange={setPayoutMethod}
+                >
+                  <SelectTrigger id="payout-method" data-testid="select-payout-method">
+                    <SelectValue placeholder="Select method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="venmo">Venmo</SelectItem>
+                    <SelectItem value="cashapp">Cash App</SelectItem>
+                    <SelectItem value="crypto">Crypto Wallet</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Set up how you'd like to receive your earnings. We'll manually send payments to your specified address.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="payout-method">Payment Method</Label>
-                  <Select
-                    value={payoutMethod}
-                    onValueChange={setPayoutMethod}
-                  >
-                    <SelectTrigger id="payout-method" data-testid="select-payout-method">
-                      <SelectValue placeholder="Select method" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="venmo">Venmo</SelectItem>
-                      <SelectItem value="cashapp">Cash App</SelectItem>
-                      <SelectItem value="crypto">Crypto Wallet</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="payout-address">
-                    {payoutMethod === "venmo" ? "Venmo @username" : 
-                     payoutMethod === "cashapp" ? "Cash App $cashtag" : 
-                     payoutMethod === "crypto" ? "Wallet Address" : "Payout Address"}
-                  </Label>
-                  <Input
-                    id="payout-address"
-                    data-testid="input-payout-address"
-                    placeholder={
-                      payoutMethod === "venmo" ? "@username" : 
-                      payoutMethod === "cashapp" ? "$cashtag" : 
-                      payoutMethod === "crypto" ? "0x..." : "Enter address"
-                    }
-                    value={payoutAddress}
-                    onChange={(e) => setPayoutAddress(e.target.value)}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="payout-address">
+                  {payoutMethod === "venmo" ? "Venmo @username" : 
+                   payoutMethod === "cashapp" ? "Cash App $cashtag" : 
+                   payoutMethod === "crypto" ? "Wallet Address" : "Payout Address"}
+                </Label>
+                <Input
+                  id="payout-address"
+                  data-testid="input-payout-address"
+                  placeholder={
+                    payoutMethod === "venmo" ? "@username" : 
+                    payoutMethod === "cashapp" ? "$cashtag" : 
+                    payoutMethod === "crypto" ? "0x..." : "Enter address"
+                  }
+                  value={payoutAddress}
+                  onChange={(e) => setPayoutAddress(e.target.value)}
+                />
               </div>
-              <Button
-                onClick={() => updatePayoutMutation.mutate()}
-                disabled={!payoutMethod || !payoutAddress || updatePayoutMutation.isPending}
-                data-testid="button-save-payout"
-                className="rounded-full"
-              >
-                {updatePayoutMutation.isPending ? "Saving..." : "Save Payout Info"}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+            </div>
+            <Button
+              onClick={() => updatePayoutMutation.mutate()}
+              disabled={!payoutMethod || !payoutAddress || updatePayoutMutation.isPending}
+              data-testid="button-save-payout"
+              className="rounded-full"
+            >
+              {updatePayoutMutation.isPending ? "Saving..." : "Save Payout Info"}
+            </Button>
+          </CardContent>
+        </Card>
 
         {messages && messages.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
