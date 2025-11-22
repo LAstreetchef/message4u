@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
+import AdminDashboard from "@/pages/admin";
 import CreateMessage from "@/pages/create-message";
 import Paywall from "@/pages/paywall";
 import Unlocked from "@/pages/unlocked";
@@ -31,6 +32,7 @@ function Router() {
       ) : (
         <>
           <Route path="/" component={Dashboard} />
+          <Route path="/admin" component={AdminDashboard} />
           <Route path="/create" component={CreateMessage} />
           <Route path="/m/:slug" component={Paywall} />
           <Route path="/m/:slug/unlocked" component={Unlocked} />

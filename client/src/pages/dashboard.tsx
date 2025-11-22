@@ -172,6 +172,13 @@ export default function Dashboard() {
               <span className="text-lg font-heading font-bold text-foreground">Secret Message</span>
             </Link>
             <div className="flex items-center gap-4">
+              {user?.isAdmin && (
+                <Button variant="outline" className="rounded-full" data-testid="button-admin" asChild>
+                  <Link href="/admin">
+                    Admin Dashboard
+                  </Link>
+                </Button>
+              )}
               <Button className="rounded-full" data-testid="button-create-new" asChild>
                 <Link href="/create">
                   <Plus className="w-4 h-4 mr-2" />

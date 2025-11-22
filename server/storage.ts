@@ -2,12 +2,15 @@ import {
   users,
   messages,
   payments,
+  payoutHistory,
   type User,
   type UpsertUser,
   type Message,
   type InsertMessage,
   type Payment,
   type InsertPayment,
+  type PayoutHistory,
+  type InsertPayoutHistory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -33,6 +36,29 @@ export interface IStorage {
   createPayment(payment: InsertPayment): Promise<Payment>;
   getPaymentBySessionId(sessionId: string): Promise<Payment | undefined>;
   getPaymentsByMessageId(messageId: string): Promise<Payment[]>;
+
+  // Admin operations
+  getAllUsers(): Promise<User[]>;
+  getAllPayments(): Promise<Payment[]>;
+  getAdminAnalytics(): Promise<{
+    totalRevenue: number;
+    totalPlatformFees: number;
+    totalPayouts: number;
+    totalUsers: number;
+    totalMessages: number;
+    totalUnlocks: number;
+  }>;
+  getPendingPayouts(): Promise<Array<{
+    userId: string;
+    email: string;
+    payoutMethod: string | null;
+    payoutAddress: string | null;
+    totalEarnings: number;
+    totalPaidOut: number;
+    pendingAmount: number;
+  }>>;
+  createPayout(payout: InsertPayoutHistory): Promise<PayoutHistory>;
+  getPayoutHistory(): Promise<PayoutHistory[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -157,6 +183,113 @@ export class DatabaseStorage implements IStorage {
       .from(payments)
       .where(eq(payments.messageId, messageId))
       .orderBy(desc(payments.createdAt));
+  }
+
+  // Admin operations
+  async getAllUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .orderBy(desc(users.createdAt));
+  }
+
+  async getAllPayments(): Promise<Payment[]> {
+    return await db
+      .select()
+      .from(payments)
+      .orderBy(desc(payments.createdAt));
+  }
+
+  async getAdminAnalytics(): Promise<{
+    totalRevenue: number;
+    totalPlatformFees: number;
+    totalPayouts: number;
+    totalUsers: number;
+    totalMessages: number;
+    totalUnlocks: number;
+  }> {
+    const allPayments = await this.getAllPayments();
+    const allUsers = await this.getAllUsers();
+    const allMessages = await db.select().from(messages);
+    const allPayoutHistory = await this.getPayoutHistory();
+
+    const totalRevenue = allPayments.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0);
+    const totalPlatformFees = allPayments.reduce((sum, p) => sum + parseFloat(p.platformFee || '0'), 0);
+    const totalPayouts = allPayoutHistory.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0);
+
+    return {
+      totalRevenue,
+      totalPlatformFees,
+      totalPayouts,
+      totalUsers: allUsers.length,
+      totalMessages: allMessages.length,
+      totalUnlocks: allPayments.length,
+    };
+  }
+
+  async getPendingPayouts(): Promise<Array<{
+    userId: string;
+    email: string;
+    payoutMethod: string | null;
+    payoutAddress: string | null;
+    totalEarnings: number;
+    totalPaidOut: number;
+    pendingAmount: number;
+  }>> {
+    const allUsers = await this.getAllUsers();
+    const result = [];
+
+    for (const user of allUsers) {
+      // Get all messages for this user
+      const userMessages = await this.getMessagesByUserId(user.id);
+      const messageIds = userMessages.map(m => m.id);
+
+      // Get all payments for these messages
+      let totalEarnings = 0;
+      for (const messageId of messageIds) {
+        const messagePayments = await this.getPaymentsByMessageId(messageId);
+        totalEarnings += messagePayments.reduce((sum, p) => sum + parseFloat(p.senderEarnings || '0'), 0);
+      }
+
+      // Get total paid out
+      const userPayouts = await db
+        .select()
+        .from(payoutHistory)
+        .where(eq(payoutHistory.userId, user.id));
+      
+      const totalPaidOut = userPayouts.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0);
+      const pendingAmount = totalEarnings - totalPaidOut;
+
+      // Only include users with pending payouts or earnings
+      if (totalEarnings > 0) {
+        result.push({
+          userId: user.id,
+          email: user.email,
+          payoutMethod: user.payoutMethod,
+          payoutAddress: user.payoutAddress,
+          totalEarnings,
+          totalPaidOut,
+          pendingAmount,
+        });
+      }
+    }
+
+    return result;
+  }
+
+  async createPayout(payoutData: InsertPayoutHistory): Promise<PayoutHistory> {
+    const [payout] = await db
+      .insert(payoutHistory)
+      .values(payoutData)
+      .returning();
+    return payout;
+  }
+
+  async getPayoutHistory(): Promise<PayoutHistory[]> {
+    return await db
+      .select()
+      .from(payoutHistory)
+      .orderBy(desc(payoutHistory.completedAt));
   }
 }
 

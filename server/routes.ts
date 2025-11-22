@@ -38,9 +38,113 @@ function calculatePlatformFee(amount: number): { platformFee: number; senderEarn
   };
 }
 
+// Admin middleware - validates admin status from database, not session
+const isAdmin = async (req: any, res: any, next: any) => {
+  if (!req.user || !req.user.id) {
+    return res.status(403).json({ message: "Unauthorized - Admin access required" });
+  }
+  
+  // Fetch fresh user data from database to verify admin status
+  const user = await storage.getUser(req.user.id);
+  if (!user || !user.isAdmin) {
+    return res.status(403).json({ message: "Unauthorized - Admin access required" });
+  }
+  
+  next();
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+
+  // Admin routes
+  app.get('/api/admin/users', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const allUsers = await storage.getAllUsers();
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.get('/api/admin/payments', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const allPayments = await storage.getAllPayments();
+      res.json(allPayments);
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+      res.status(500).json({ message: "Failed to fetch payments" });
+    }
+  });
+
+  app.get('/api/admin/analytics', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const analytics = await storage.getAdminAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  app.get('/api/admin/payouts/pending', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const pendingPayouts = await storage.getPendingPayouts();
+      res.json(pendingPayouts);
+    } catch (error) {
+      console.error("Error fetching pending payouts:", error);
+      res.status(500).json({ message: "Failed to fetch pending payouts" });
+    }
+  });
+
+  app.post('/api/admin/payouts', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { userId, amount, payoutMethod, payoutAddress, adminNotes } = req.body;
+      const adminId = req.user.id;
+
+      // Validate required fields
+      if (!userId || !amount || !payoutMethod || !payoutAddress) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Validate amount is a positive number
+      const parsedAmount = parseFloat(amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        return res.status(400).json({ message: "Amount must be a positive number" });
+      }
+
+      // Verify user exists
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const payout = await storage.createPayout({
+        userId,
+        amount: parsedAmount.toString(),
+        payoutMethod,
+        payoutAddress,
+        adminNotes: adminNotes || null,
+        completedBy: adminId,
+      });
+
+      res.json(payout);
+    } catch (error) {
+      console.error("Error creating payout:", error);
+      res.status(500).json({ message: "Failed to create payout" });
+    }
+  });
+
+  app.get('/api/admin/payouts/history', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const payoutHistory = await storage.getPayoutHistory();
+      res.json(payoutHistory);
+    } catch (error) {
+      console.error("Error fetching payout history:", error);
+      res.status(500).json({ message: "Failed to fetch payout history" });
+    }
+  });
 
   // Message routes
   app.post('/api/messages', isAuthenticated, async (req: any, res) => {
