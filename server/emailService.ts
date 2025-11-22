@@ -132,7 +132,7 @@ export async function sendMessageNotification({
       : 'You have a new message on Secret Message';
 
     const emailPayload = {
-      from: 'onboarding@resend.dev',
+      from: 'message4u@secretmessage4u.com',
       to: recipientEmail,
       subject,
       html: createEmailTemplate(messageTitle, price, unlockUrl),
