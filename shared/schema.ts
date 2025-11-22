@@ -21,6 +21,8 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   payoutAddress: text("payout_address"),
   payoutMethod: varchar("payout_method", { length: 50 }),
+  cryptoWalletAddress: text("crypto_wallet_address"),
+  cryptoWalletType: varchar("crypto_wallet_type", { length: 50 }),
   isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -67,7 +69,10 @@ export type Message = typeof messages.$inferSelect;
 export const payments = pgTable("payments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   messageId: varchar("message_id").notNull().references(() => messages.id),
-  stripeSessionId: varchar("stripe_session_id").notNull().unique(),
+  paymentProvider: varchar("payment_provider", { length: 50 }).notNull().default("stripe"),
+  stripeSessionId: varchar("stripe_session_id"),
+  coinbaseChargeId: varchar("coinbase_charge_id"),
+  coinbaseChargeCode: varchar("coinbase_charge_code"),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   platformFee: decimal("platform_fee", { precision: 10, scale: 2 }),
   senderEarnings: decimal("sender_earnings", { precision: 10, scale: 2 }),
@@ -76,7 +81,10 @@ export const payments = pgTable("payments", {
 
 export const insertPaymentSchema = createInsertSchema(payments).pick({
   messageId: true,
+  paymentProvider: true,
   stripeSessionId: true,
+  coinbaseChargeId: true,
+  coinbaseChargeCode: true,
   amount: true,
   platformFee: true,
   senderEarnings: true,

@@ -21,6 +21,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserPayout(userId: string, payoutMethod: string, payoutAddress: string): Promise<void>;
+  updateUserCryptoWallet(userId: string, cryptoWalletAddress: string, cryptoWalletType: string): Promise<void>;
 
   // Message operations
   createMessage(userId: string, message: InsertMessage): Promise<Message>;
@@ -89,6 +90,17 @@ export class DatabaseStorage implements IStorage {
       .set({
         payoutMethod,
         payoutAddress,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserCryptoWallet(userId: string, cryptoWalletAddress: string, cryptoWalletType: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        cryptoWalletAddress,
+        cryptoWalletType,
         updatedAt: new Date(),
       })
       .where(eq(users.id, userId));

@@ -8,6 +8,7 @@ import Stripe from "stripe";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { sendMessageNotification, isValidEmail } from "./emailService";
+const coinbaseCommerce = require('coinbase-commerce-node');
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -16,6 +17,13 @@ if (!process.env.STRIPE_SECRET_KEY) {
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-11-17.clover",
 });
+
+const CoinbaseClient = coinbaseCommerce.Client;
+const CoinbaseCharge = coinbaseCommerce.resources.Charge;
+
+if (process.env.COINBASE_COMMERCE_API_KEY) {
+  CoinbaseClient.init(process.env.COINBASE_COMMERCE_API_KEY);
+}
 
 // Calculate platform fee: $1.69 + 6.9% of amount
 // Works in cents (integers) to avoid floating point rounding errors
