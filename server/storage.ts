@@ -36,6 +36,7 @@ export interface IStorage {
   // Payment operations
   createPayment(payment: InsertPayment): Promise<Payment>;
   getPaymentBySessionId(sessionId: string): Promise<Payment | undefined>;
+  getPaymentByChargeId(chargeId: string): Promise<Payment | undefined>;
   getPaymentsByMessageId(messageId: string): Promise<Payment[]>;
 
   // Admin operations
@@ -189,6 +190,14 @@ export class DatabaseStorage implements IStorage {
     return payment;
   }
 
+  async getPaymentByChargeId(chargeId: string): Promise<Payment | undefined> {
+    const [payment] = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.coinbaseChargeId, chargeId));
+    return payment;
+  }
+
   async getPaymentsByMessageId(messageId: string): Promise<Payment[]> {
     return await db
       .select()
@@ -244,6 +253,8 @@ export class DatabaseStorage implements IStorage {
     email: string;
     payoutMethod: string | null;
     payoutAddress: string | null;
+    cryptoWalletType: string | null;
+    cryptoWalletAddress: string | null;
     totalEarnings: number;
     totalPaidOut: number;
     pendingAmount: number;
@@ -279,6 +290,8 @@ export class DatabaseStorage implements IStorage {
           email: user.email,
           payoutMethod: user.payoutMethod,
           payoutAddress: user.payoutAddress,
+          cryptoWalletType: user.cryptoWalletType,
+          cryptoWalletAddress: user.cryptoWalletAddress,
           totalEarnings,
           totalPaidOut,
           pendingAmount,

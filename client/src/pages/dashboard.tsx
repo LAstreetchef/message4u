@@ -37,12 +37,16 @@ export default function Dashboard() {
   const [messageToToggle, setMessageToToggle] = useState<Message | null>(null);
   const [payoutMethod, setPayoutMethod] = useState<string>("");
   const [payoutAddress, setPayoutAddress] = useState<string>("");
+  const [cryptoWalletType, setCryptoWalletType] = useState<string>("");
+  const [cryptoWalletAddress, setCryptoWalletAddress] = useState<string>("");
 
   // Update payout fields when user data loads
   useEffect(() => {
     if (user) {
       setPayoutMethod(user.payoutMethod || "");
       setPayoutAddress(user.payoutAddress || "");
+      setCryptoWalletType(user.cryptoWalletType || "");
+      setCryptoWalletAddress(user.cryptoWalletAddress || "");
     }
   }, [user]);
 
@@ -111,6 +115,29 @@ export default function Dashboard() {
       toast({
         title: "Error",
         description: "Failed to update payout information",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateCryptoWalletMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("PATCH", "/api/auth/crypto-wallet", {
+        cryptoWalletType,
+        cryptoWalletAddress,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      toast({
+        title: "Crypto Wallet Updated",
+        description: "Your crypto wallet information has been saved successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update crypto wallet information",
         variant: "destructive",
       });
     },
@@ -221,10 +248,10 @@ export default function Dashboard() {
               Set up how you'd like to receive your earnings. We'll manually send payments to your specified address.
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="payout-method">Payment Method</Label>
+                <Label htmlFor="payout-method">Fiat Payment Method</Label>
                 <Select
                   value={payoutMethod}
                   onValueChange={setPayoutMethod}
@@ -235,23 +262,20 @@ export default function Dashboard() {
                   <SelectContent>
                     <SelectItem value="venmo">Venmo</SelectItem>
                     <SelectItem value="cashapp">Cash App</SelectItem>
-                    <SelectItem value="crypto">Crypto Wallet</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="payout-address">
                   {payoutMethod === "venmo" ? "Venmo @username" : 
-                   payoutMethod === "cashapp" ? "Cash App $cashtag" : 
-                   payoutMethod === "crypto" ? "Wallet Address" : "Payout Address"}
+                   payoutMethod === "cashapp" ? "Cash App $cashtag" : "Payout Address"}
                 </Label>
                 <Input
                   id="payout-address"
                   data-testid="input-payout-address"
                   placeholder={
                     payoutMethod === "venmo" ? "@username" : 
-                    payoutMethod === "cashapp" ? "$cashtag" : 
-                    payoutMethod === "crypto" ? "0x..." : "Enter address"
+                    payoutMethod === "cashapp" ? "$cashtag" : "Enter address"
                   }
                   value={payoutAddress}
                   onChange={(e) => setPayoutAddress(e.target.value)}
@@ -264,8 +288,52 @@ export default function Dashboard() {
               data-testid="button-save-payout"
               className="rounded-full"
             >
-              {updatePayoutMutation.isPending ? "Saving..." : "Save Payout Info"}
+              {updatePayoutMutation.isPending ? "Saving..." : "Save Fiat Payout Info"}
             </Button>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-heading font-semibold mb-4">Crypto Wallet (Optional)</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Receive payouts in cryptocurrency. Configure your crypto wallet address below.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="crypto-wallet-type">Cryptocurrency</Label>
+                  <Select
+                    value={cryptoWalletType}
+                    onValueChange={setCryptoWalletType}
+                  >
+                    <SelectTrigger id="crypto-wallet-type" data-testid="select-crypto-type">
+                      <SelectValue placeholder="Select cryptocurrency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bitcoin">Bitcoin (BTC)</SelectItem>
+                      <SelectItem value="ethereum">Ethereum (ETH)</SelectItem>
+                      <SelectItem value="litecoin">Litecoin (LTC)</SelectItem>
+                      <SelectItem value="usdc">USD Coin (USDC)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="crypto-wallet-address">Wallet Address</Label>
+                  <Input
+                    id="crypto-wallet-address"
+                    data-testid="input-crypto-wallet-address"
+                    placeholder="Enter your wallet address"
+                    value={cryptoWalletAddress}
+                    onChange={(e) => setCryptoWalletAddress(e.target.value)}
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={() => updateCryptoWalletMutation.mutate()}
+                disabled={!cryptoWalletType || !cryptoWalletAddress || updateCryptoWalletMutation.isPending}
+                data-testid="button-save-crypto-wallet"
+                className="rounded-full mt-4"
+              >
+                {updateCryptoWalletMutation.isPending ? "Saving..." : "Save Crypto Wallet"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

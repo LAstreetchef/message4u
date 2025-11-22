@@ -8,7 +8,7 @@ import Stripe from "stripe";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { sendMessageNotification, isValidEmail } from "./emailService";
-const coinbaseCommerce = require('coinbase-commerce-node');
+import * as coinbaseCommerce from 'coinbase-commerce-node';
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -18,10 +18,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-11-17.clover",
 });
 
-const CoinbaseClient = coinbaseCommerce.Client;
-const CoinbaseCharge = coinbaseCommerce.resources.Charge;
+const { Client: CoinbaseClient, resources, Webhook: CoinbaseWebhook } = coinbaseCommerce;
+const CoinbaseCharge = resources?.Charge;
 
-if (process.env.COINBASE_COMMERCE_API_KEY) {
+if (process.env.COINBASE_COMMERCE_API_KEY && CoinbaseClient) {
   CoinbaseClient.init(process.env.COINBASE_COMMERCE_API_KEY);
 }
 
@@ -153,6 +153,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching payout history:", error);
       res.status(500).json({ message: "Failed to fetch payout history" });
+    }
+  });
+
+  // User crypto wallet routes
+  app.patch('/api/auth/crypto-wallet', isAuthenticated, async (req: any, res) => {
+    try {
+      const { cryptoWalletType, cryptoWalletAddress } = req.body;
+      const userId = req.user.id;
+
+      if (!cryptoWalletType || !cryptoWalletAddress) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      await storage.updateUserCryptoWallet(userId, cryptoWalletAddress, cryptoWalletType);
+      res.json({ message: "Crypto wallet updated successfully" });
+    } catch (error) {
+      console.error("Error updating crypto wallet:", error);
+      res.status(500).json({ message: "Failed to update crypto wallet" });
     }
   });
 
@@ -303,6 +321,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Coinbase Commerce charge creation
+  app.post("/api/create-coinbase-charge", async (req, res) => {
+    try {
+      if (!process.env.COINBASE_COMMERCE_API_KEY) {
+        return res.status(500).json({ message: "Coinbase Commerce not configured" });
+      }
+
+      const { messageId } = req.body;
+      
+      const message = await storage.getMessageBySlug(messageId);
+      if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+
+      if (message.unlocked) {
+        return res.status(400).json({ message: "Message already unlocked" });
+      }
+
+      if (message.expiresAt && new Date(message.expiresAt) < new Date()) {
+        return res.status(400).json({ message: "Message has expired" });
+      }
+
+      const chargeData = {
+        name: message.title,
+        description: 'Unlock this secret message',
+        pricing_type: 'fixed_price',
+        local_price: {
+          amount: message.price,
+          currency: 'USD'
+        },
+        metadata: {
+          messageId: message.id,
+          slug: message.slug,
+        },
+        redirect_url: `${req.protocol}://${req.get('host')}/m/${message.slug}/unlocked`,
+        cancel_url: `${req.protocol}://${req.get('host')}/m/${message.slug}`,
+      };
+
+      const charge = await CoinbaseCharge.create(chargeData);
+      
+      res.json({ 
+        chargeId: charge.id, 
+        hostedUrl: charge.hosted_url,
+        chargeCode: charge.code 
+      });
+    } catch (error: any) {
+      console.error("Error creating Coinbase charge:", error);
+      res.status(500).json({ message: "Error creating crypto payment: " + error.message });
+    }
+  });
+
+  // Coinbase Commerce webhook for payment confirmation
+  app.post('/api/webhook/coinbase', async (req: any, res) => {
+    try {
+      const signature = req.headers['x-cc-webhook-signature'];
+      
+      if (!signature || !process.env.COINBASE_COMMERCE_WEBHOOK_SECRET) {
+        console.error('Missing webhook signature or secret');
+        return res.status(400).send('No signature or webhook secret');
+      }
+
+      // Use raw body for signature verification
+      const rawBody = req.rawBody;
+      if (!rawBody) {
+        console.error('No raw body available for signature verification');
+        return res.status(400).send('Missing raw body');
+      }
+
+      let event;
+      try {
+        event = CoinbaseWebhook.verifyEventBody(
+          rawBody.toString(),
+          signature as string,
+          process.env.COINBASE_COMMERCE_WEBHOOK_SECRET
+        );
+      } catch (err: any) {
+        console.error('Coinbase webhook signature verification failed:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+      }
+
+      console.log(`Coinbase webhook event received: ${event.type}`);
+
+      if (event.type === 'charge:confirmed' || event.type === 'charge:resolved') {
+        const charge = event.data;
+        
+        const messageId = charge.metadata?.messageId;
+        if (!messageId) {
+          console.error('No messageId in charge metadata');
+          return res.status(400).send('No messageId in metadata');
+        }
+
+        // Check if payment already exists to prevent duplicates
+        const existingPayment = await storage.getPaymentByChargeId(charge.id);
+        if (existingPayment) {
+          console.log(`Payment already processed for charge ${charge.id}`);
+          return res.json({ received: true, status: 'already_processed' });
+        }
+
+        const amount = parseFloat(charge.pricing.local.amount);
+        const { platformFee, senderEarnings } = calculatePlatformFee(amount);
+        
+        await storage.createPayment({
+          messageId,
+          paymentProvider: 'coinbase',
+          coinbaseChargeId: charge.id,
+          coinbaseChargeCode: charge.code,
+          amount: amount.toString(),
+          platformFee: platformFee.toString(),
+          senderEarnings: senderEarnings.toString(),
+        });
+
+        await storage.markMessageUnlocked(messageId);
+        
+        console.log(`Successfully processed Coinbase payment for message ${messageId}`);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Error processing Coinbase webhook:', error);
+      res.status(500).send('Error processing payment');
+    }
+  });
+
   // Stripe webhook for payment confirmation
   app.post('/api/webhook/stripe', async (req, res) => {
     const sig = req.headers['stripe-signature'];
@@ -340,6 +481,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         await storage.createPayment({
           messageId,
+          paymentProvider: 'stripe',
           stripeSessionId: session.id,
           amount: amount.toString(),
           platformFee: platformFee.toString(),

@@ -35,6 +35,8 @@ interface PendingPayout {
   email: string;
   payoutMethod: string | null;
   payoutAddress: string | null;
+  cryptoWalletType: string | null;
+  cryptoWalletAddress: string | null;
   totalEarnings: number;
   totalPaidOut: number;
   pendingAmount: number;
@@ -229,8 +231,9 @@ export default function AdminDashboard() {
                       <TableHead>Total Earnings</TableHead>
                       <TableHead>Paid Out</TableHead>
                       <TableHead>Pending</TableHead>
-                      <TableHead>Payout Method</TableHead>
-                      <TableHead>Payout Address</TableHead>
+                      <TableHead>Fiat Method</TableHead>
+                      <TableHead>Fiat Address</TableHead>
+                      <TableHead>Crypto Wallet</TableHead>
                       <TableHead>Action</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -256,6 +259,18 @@ export default function AdminDashboard() {
                           {payout.payoutAddress || "—"}
                         </TableCell>
                         <TableCell>
+                          {payout.cryptoWalletType ? (
+                            <div className="flex flex-col gap-1">
+                              <Badge variant="secondary">{payout.cryptoWalletType}</Badge>
+                              <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+                                {payout.cryptoWalletAddress}
+                              </span>
+                            </div>
+                          ) : (
+                            <Badge variant="outline">Not Set</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <Button
                             size="sm"
                             className="rounded-full"
@@ -263,7 +278,7 @@ export default function AdminDashboard() {
                               setSelectedPayout(payout);
                               setPayoutAmount(payout.pendingAmount.toFixed(2));
                             }}
-                            disabled={!payout.payoutMethod || !payout.payoutAddress || payout.pendingAmount <= 0}
+                            disabled={(!payout.payoutMethod || !payout.payoutAddress) && (!payout.cryptoWalletType || !payout.cryptoWalletAddress) || payout.pendingAmount <= 0}
                             data-testid={`button-complete-payout-${payout.userId}`}
                           >
                             Complete Payout
@@ -273,7 +288,7 @@ export default function AdminDashboard() {
                     ))}
                     {(!pendingPayouts || pendingPayouts.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                           No pending payouts
                         </TableCell>
                       </TableRow>
