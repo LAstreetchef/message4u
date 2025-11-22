@@ -374,14 +374,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('Creating Coinbase charge with data:', JSON.stringify(chargeData, null, 2));
       const charge = await coinbaseCommerce.resources.Charge.create(chargeData);
       
+      // Log the full response from Coinbase for debugging
+      console.log('Coinbase charge created successfully!');
+      console.log('Full Coinbase response:', JSON.stringify(charge, null, 2));
+      console.log('Charge ID:', charge.id);
+      console.log('Hosted URL:', charge.hosted_url);
+      console.log('Charge Code:', charge.code);
+      console.log('Status:', charge.timeline ? charge.timeline[0]?.status : 'N/A');
+      
+      // Validate that we got a hosted URL
+      if (!charge.hosted_url) {
+        console.warn('WARNING: Coinbase charge was created but no hosted_url was returned!');
+        console.warn('This may indicate an account configuration issue with Coinbase Commerce.');
+      }
+      
       res.json({ 
         chargeId: charge.id, 
         hostedUrl: charge.hosted_url,
-        chargeCode: charge.code 
+        chargeCode: charge.code,
+        expiresAt: charge.expires_at,
+        status: charge.timeline?.[0]?.status || 'unknown'
       });
     } catch (error: any) {
-      console.error("Error creating Coinbase charge:", error);
-      res.status(500).json({ message: "Error creating crypto payment: " + error.message });
+      console.error("Error creating Coinbase charge - Full error details:");
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+      if (error.response) {
+        console.error("Coinbase API response status:", error.response.status);
+        console.error("Coinbase API response data:", JSON.stringify(error.response.data, null, 2));
+      }
+      res.status(500).json({ 
+        message: "Error creating crypto payment: " + error.message,
+        details: error.response?.data || error.message
+      });
     }
   });
 
