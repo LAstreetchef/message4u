@@ -19,11 +19,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 const { Client: CoinbaseClient, resources, Webhook: CoinbaseWebhook } = coinbaseCommerce;
-const CoinbaseCharge = resources?.Charge;
 
-if (process.env.COINBASE_COMMERCE_API_KEY && CoinbaseClient) {
+if (!process.env.COINBASE_COMMERCE_API_KEY) {
+  console.warn('COINBASE_COMMERCE_API_KEY not set - crypto payments will not work');
+}
+
+if (process.env.COINBASE_COMMERCE_API_KEY) {
   CoinbaseClient.init(process.env.COINBASE_COMMERCE_API_KEY);
 }
+
+const { Charge: CoinbaseCharge } = resources || {};
 
 // Calculate platform fee: $1.69 + 6.9% of amount
 // Works in cents (integers) to avoid floating point rounding errors
@@ -325,7 +330,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/create-coinbase-charge", async (req, res) => {
     try {
       if (!process.env.COINBASE_COMMERCE_API_KEY) {
-        return res.status(500).json({ message: "Coinbase Commerce not configured" });
+        return res.status(500).json({ message: "Coinbase Commerce not configured - missing API key" });
+      }
+
+      if (!CoinbaseCharge) {
+        console.error('CoinbaseCharge is undefined - SDK initialization failed');
+        return res.status(500).json({ message: "Coinbase Commerce SDK not properly initialized" });
       }
 
       const { messageId } = req.body;
@@ -359,6 +369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cancel_url: `${req.protocol}://${req.get('host')}/m/${message.slug}`,
       };
 
+      console.log('Creating Coinbase charge with data:', JSON.stringify(chargeData, null, 2));
       const charge = await CoinbaseCharge.create(chargeData);
       
       res.json({ 
