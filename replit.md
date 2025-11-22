@@ -10,6 +10,8 @@ The platform supports authenticated senders using password-based authentication 
 
 Preferred communication style: Simple, everyday language.
 
+**Platform Administrator**: message4u@secretmessage4u.com (has admin access to /admin dashboard)
+
 ## System Architecture
 
 ### Frontend Architecture
