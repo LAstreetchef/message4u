@@ -869,25 +869,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update payout information
-  app.patch("/api/auth/payout", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.id;
-      const { payoutMethod, payoutAddress } = req.body;
-
-      if (!payoutMethod || !payoutAddress) {
-        return res.status(400).json({ error: "Payment method and address are required" });
-      }
-
-      await storage.updateUserPayout(userId, payoutMethod, payoutAddress);
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error updating payout info:", error);
-      res.status(500).json({ error: "Failed to update payout information" });
-    }
-  });
-
   app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;

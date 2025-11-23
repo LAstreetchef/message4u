@@ -21,7 +21,6 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByStripeAccountId(stripeAccountId: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  updateUserPayout(userId: string, payoutMethod: string, payoutAddress: string): Promise<void>;
   updateUserCryptoWallet(userId: string, cryptoWalletAddress: string, cryptoWalletType: string): Promise<void>;
   updateUserStripeAccount(userId: string, stripeAccountId: string, onboardingComplete: boolean): Promise<void>;
 
@@ -91,17 +90,6 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
-  }
-
-  async updateUserPayout(userId: string, payoutMethod: string, payoutAddress: string): Promise<void> {
-    await db
-      .update(users)
-      .set({
-        payoutMethod,
-        payoutAddress,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, userId));
   }
 
   async updateUserCryptoWallet(userId: string, cryptoWalletAddress: string, cryptoWalletType: string): Promise<void> {
