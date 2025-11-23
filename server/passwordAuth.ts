@@ -22,6 +22,7 @@ export function getSession() {
   
   const isProduction = process.env.NODE_ENV === 'production';
   
+  // Temporary: disable secure cookies until SSL is working on custom domain
   return session({
     secret: process.env.SESSION_SECRET,
     store: sessionStore,
@@ -29,10 +30,9 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: isProduction,
+      secure: false, // TODO: Change back to isProduction once SSL certificate is working
       sameSite: 'lax',
       maxAge: sessionTtl,
-      domain: isProduction ? '.secretmessage4u.com' : undefined,
     },
   });
 }
