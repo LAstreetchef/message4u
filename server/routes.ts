@@ -8,6 +8,7 @@ import Stripe from "stripe";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { sendMessageNotification, isValidEmail } from "./emailService";
+import { NOWPaymentsPayoutService } from "./nowpaymentsPayoutService";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -25,6 +26,8 @@ if (!process.env.NOWPAYMENTS_API_KEY) {
 } else {
   console.log('NOWPayments configured successfully');
 }
+
+// Pending crypto payouts are now stored in the database (see schema.ts)
 
 // Calculate platform fee: $1.69 + 6.9% of amount
 // Works in cents (integers) to avoid floating point rounding errors
@@ -199,6 +202,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching payout history:", error);
       res.status(500).json({ message: "Failed to fetch payout history" });
+    }
+  });
+
+  // NOWPayments crypto payout routes
+  app.post('/api/admin/payouts/crypto/create', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      if (!process.env.NOWPAYMENTS_API_KEY) {
+        return res.status(500).json({ message: "NOWPayments not configured" });
+      }
+
+      const { userId, amount, currency, adminNotes } = req.body;
+      const adminId = req.user.id;
+
+      if (!userId || !amount || !currency) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const parsedAmount = parseFloat(amount);
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        return res.status(400).json({ message: "Amount must be a positive number" });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (!user.cryptoWalletAddress) {
+        return res.status(400).json({ message: "User doesn't have a crypto wallet configured" });
+      }
+
+      const payoutService = new NOWPaymentsPayoutService(process.env.NOWPAYMENTS_API_KEY);
+
+      const payout = await payoutService.createPayout({
+        address: user.cryptoWalletAddress,
+        currency: currency.toLowerCase(),
+        amount: parsedAmount,
+        ipn_callback_url: `${req.protocol}://${req.get('host')}/api/webhook/nowpayments-payout`,
+      });
+
+      // Store payout data server-side to prevent tampering
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+      await storage.createPendingCryptoPayout({
+        payoutId: payout.id,
+        userId,
+        amount: parsedAmount.toString(),
+        currency: currency.toLowerCase(),
+        adminNotes: adminNotes || null,
+        createdBy: adminId,
+        expiresAt,
+      });
+
+      res.json({
+        payoutId: payout.id,
+        status: payout.status,
+        amount: payout.amount,
+        currency: payout.currency,
+        address: payout.address,
+        requiresVerification: true,
+        message: "Payout created. Please verify with 2FA code."
+      });
+    } catch (error: any) {
+      console.error("Error creating crypto payout:", error);
+      res.status(500).json({ message: error.message || "Failed to create crypto payout" });
+    }
+  });
+
+  app.post('/api/admin/payouts/crypto/verify', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      if (!process.env.NOWPAYMENTS_API_KEY) {
+        return res.status(500).json({ message: "NOWPayments not configured" });
+      }
+
+      const { payoutId, verificationCode } = req.body;
+      const adminId = req.user.id;
+
+      if (!payoutId || !verificationCode) {
+        return res.status(400).json({ message: "Missing payout ID or verification code" });
+      }
+
+      // Retrieve stored payout data (prevents tampering)
+      const storedPayout = await storage.getPendingCryptoPayout(payoutId);
+      if (!storedPayout) {
+        return res.status(400).json({ message: "Invalid payout ID or payout expired" });
+      }
+
+      // Check if payout has expired
+      if (new Date() > new Date(storedPayout.expiresAt)) {
+        await storage.deletePendingCryptoPayout(payoutId);
+        return res.status(400).json({ message: "Payout verification expired" });
+      }
+
+      const payoutService = new NOWPaymentsPayoutService(process.env.NOWPAYMENTS_API_KEY);
+
+      await payoutService.verifyPayout({
+        id: payoutId,
+        verification_code: verificationCode,
+      });
+
+      const user = await storage.getUser(storedPayout.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const payoutHistory = await storage.createPayout({
+        userId: storedPayout.userId,
+        amount: storedPayout.amount,
+        payoutMethod: 'nowpayments',
+        payoutAddress: user.cryptoWalletAddress || '',
+        nowpaymentsPayoutId: payoutId,
+        cryptoCurrency: storedPayout.currency,
+        payoutStatus: 'processing',
+        adminNotes: storedPayout.adminNotes,
+        completedBy: adminId,
+      });
+
+      // Remove from pending table after successful verification
+      await storage.deletePendingCryptoPayout(payoutId);
+
+      res.json({
+        success: true,
+        message: "Payout verified and processing",
+        payoutHistory
+      });
+    } catch (error: any) {
+      console.error("Error verifying crypto payout:", error);
+      res.status(500).json({ message: error.message || "Failed to verify crypto payout" });
+    }
+  });
+
+  app.get('/api/admin/payouts/crypto/balance', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      if (!process.env.NOWPAYMENTS_API_KEY) {
+        return res.status(500).json({ message: "NOWPayments not configured" });
+      }
+
+      const payoutService = new NOWPaymentsPayoutService(process.env.NOWPAYMENTS_API_KEY);
+      const balance = await payoutService.getCustodyBalance();
+
+      res.json(balance);
+    } catch (error: any) {
+      console.error("Error getting custody balance:", error);
+      res.status(500).json({ message: error.message || "Failed to get custody balance" });
+    }
+  });
+
+  app.get('/api/admin/payouts/crypto/:id/status', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      if (!process.env.NOWPAYMENTS_API_KEY) {
+        return res.status(500).json({ message: "NOWPayments not configured" });
+      }
+
+      const { id } = req.params;
+
+      const payoutService = new NOWPaymentsPayoutService(process.env.NOWPAYMENTS_API_KEY);
+      const status = await payoutService.getPayoutStatus(id);
+
+      res.json(status);
+    } catch (error: any) {
+      console.error("Error getting payout status:", error);
+      res.status(500).json({ message: error.message || "Failed to get payout status" });
     }
   });
 

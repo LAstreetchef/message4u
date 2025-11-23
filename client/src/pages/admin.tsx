@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -25,7 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Heart, Users, DollarSign, TrendingUp, CreditCard, CheckCircle, XCircle } from "lucide-react";
+import { Heart, Users, DollarSign, TrendingUp, CreditCard, CheckCircle, XCircle, Wallet } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { User, Payment, PayoutHistory } from "@shared/schema";
@@ -60,6 +67,9 @@ export default function AdminDashboard() {
   const [selectedPayout, setSelectedPayout] = useState<PendingPayout | null>(null);
   const [payoutAmount, setPayoutAmount] = useState("");
   const [payoutNotes, setPayoutNotes] = useState("");
+  const [cryptoPayoutId, setCryptoPayoutId] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [selectedCurrency, setSelectedCurrency] = useState("usdt");
 
   // Check if user is admin - only specific email allowed
   if (!isAuthenticated || user?.email !== ADMIN_EMAIL) {
@@ -85,6 +95,71 @@ export default function AdminDashboard() {
 
   const { data: payoutHistory } = useQuery<PayoutHistory[]>({
     queryKey: ["/api/admin/payouts/history"],
+  });
+
+  const { data: custodyBalance } = useQuery({
+    queryKey: ["/api/admin/payouts/crypto/balance"],
+  });
+
+  const createCryptoPayoutMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedPayout) return;
+      const response = await apiRequest("POST", "/api/admin/payouts/crypto/create", {
+        userId: selectedPayout.userId,
+        amount: parseFloat(payoutAmount),
+        currency: selectedCurrency,
+        adminNotes: payoutNotes,
+      });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      setCryptoPayoutId(data.payoutId);
+      toast({
+        title: "Crypto Payout Created",
+        description: "Please enter your 2FA code to verify the payout",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create crypto payout",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const verifyCryptoPayoutMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedPayout) return;
+      const response = await apiRequest("POST", "/api/admin/payouts/crypto/verify", {
+        payoutId: cryptoPayoutId,
+        verificationCode,
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/payouts/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/payouts/history"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/payouts/crypto/balance"] });
+      toast({
+        title: "Crypto Payout Verified",
+        description: `Successfully initiated ${selectedCurrency.toUpperCase()} payout to ${selectedPayout?.email}`,
+      });
+      setSelectedPayout(null);
+      setPayoutAmount("");
+      setPayoutNotes("");
+      setCryptoPayoutId("");
+      setVerificationCode("");
+      setSelectedCurrency("usdt");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to verify crypto payout",
+        variant: "destructive",
+      });
+    },
   });
 
   const completePayoutMutation = useMutation({
@@ -439,7 +514,12 @@ export default function AdminDashboard() {
         </Tabs>
       </main>
 
-      <Dialog open={!!selectedPayout} onOpenChange={() => setSelectedPayout(null)}>
+      <Dialog open={!!selectedPayout} onOpenChange={() => {
+        setSelectedPayout(null);
+        setCryptoPayoutId("");
+        setVerificationCode("");
+        setSelectedCurrency("usdt");
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Complete Payout</DialogTitle>
@@ -456,8 +536,13 @@ export default function AdminDashboard() {
                     <CheckCircle className="h-3 w-3" />
                     Stripe Connect (Automated)
                   </Badge>
+                ) : selectedPayout?.cryptoWalletType ? (
+                  <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                    <Wallet className="h-3 w-3" />
+                    Crypto Payout (Automated)
+                  </Badge>
                 ) : (
-                  <Badge variant="outline">Manual Crypto Payout</Badge>
+                  <Badge variant="outline">No Payout Method</Badge>
                 )}
               </div>
             </div>
@@ -469,18 +554,35 @@ export default function AdminDashboard() {
               </div>
             )}
             {!selectedPayout?.stripeOnboardingComplete && selectedPayout?.cryptoWalletType && (
-              <div className="space-y-2">
-                <Label>Crypto Wallet</Label>
-                <div className="flex gap-2 items-center">
-                  <Badge variant="secondary">{selectedPayout.cryptoWalletType}</Badge>
-                  <span className="text-xs text-muted-foreground font-mono truncate">
-                    {selectedPayout.cryptoWalletAddress}
-                  </span>
+              <>
+                <div className="space-y-2">
+                  <Label>Crypto Wallet</Label>
+                  <div className="flex gap-2 items-center">
+                    <Badge variant="secondary">{selectedPayout.cryptoWalletType}</Badge>
+                    <span className="text-xs text-muted-foreground font-mono truncate max-w-[300px]">
+                      {selectedPayout.cryptoWalletAddress}
+                    </span>
+                  </div>
                 </div>
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="crypto-currency">Cryptocurrency</Label>
+                  <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                    <SelectTrigger id="crypto-currency" data-testid="select-currency">
+                      <SelectValue placeholder="Select cryptocurrency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="usdt">USDT (Tether)</SelectItem>
+                      <SelectItem value="btc">BTC (Bitcoin)</SelectItem>
+                      <SelectItem value="eth">ETH (Ethereum)</SelectItem>
+                      <SelectItem value="usdttrc20">USDT TRC20</SelectItem>
+                      <SelectItem value="bnb">BNB (Binance Coin)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
             <div className="space-y-2">
-              <Label htmlFor="payout-amount">Amount</Label>
+              <Label htmlFor="payout-amount">Amount (USD)</Label>
               <Input
                 id="payout-amount"
                 type="number"
@@ -488,8 +590,25 @@ export default function AdminDashboard() {
                 value={payoutAmount}
                 onChange={(e) => setPayoutAmount(e.target.value)}
                 data-testid="input-payout-amount"
+                disabled={!!cryptoPayoutId}
               />
             </div>
+            {cryptoPayoutId && (
+              <div className="space-y-2">
+                <Label htmlFor="verification-code">2FA Verification Code</Label>
+                <Input
+                  id="verification-code"
+                  type="text"
+                  placeholder="Enter your 2FA code"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  data-testid="input-verification-code"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Check your authenticator app for the verification code
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="payout-notes">Admin Notes (Optional)</Label>
               <Textarea
@@ -498,24 +617,50 @@ export default function AdminDashboard() {
                 value={payoutNotes}
                 onChange={(e) => setPayoutNotes(e.target.value)}
                 data-testid="input-payout-notes"
+                disabled={!!cryptoPayoutId}
               />
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setSelectedPayout(null)}
+              onClick={() => {
+                setSelectedPayout(null);
+                setCryptoPayoutId("");
+                setVerificationCode("");
+                setSelectedCurrency("usdt");
+              }}
               data-testid="button-cancel-payout"
             >
               Cancel
             </Button>
-            <Button
-              onClick={() => completePayoutMutation.mutate()}
-              disabled={completePayoutMutation.isPending || !payoutAmount}
-              data-testid="button-confirm-payout"
-            >
-              {completePayoutMutation.isPending ? "Processing..." : "Complete Payout"}
-            </Button>
+            {!selectedPayout?.stripeOnboardingComplete && selectedPayout?.cryptoWalletType ? (
+              cryptoPayoutId ? (
+                <Button
+                  onClick={() => verifyCryptoPayoutMutation.mutate()}
+                  disabled={verifyCryptoPayoutMutation.isPending || !verificationCode}
+                  data-testid="button-verify-crypto-payout"
+                >
+                  {verifyCryptoPayoutMutation.isPending ? "Verifying..." : "Verify & Complete"}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => createCryptoPayoutMutation.mutate()}
+                  disabled={createCryptoPayoutMutation.isPending || !payoutAmount}
+                  data-testid="button-create-crypto-payout"
+                >
+                  {createCryptoPayoutMutation.isPending ? "Creating..." : "Create Crypto Payout"}
+                </Button>
+              )
+            ) : (
+              <Button
+                onClick={() => completePayoutMutation.mutate()}
+                disabled={completePayoutMutation.isPending || !payoutAmount}
+                data-testid="button-confirm-payout"
+              >
+                {completePayoutMutation.isPending ? "Processing..." : "Complete Payout"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

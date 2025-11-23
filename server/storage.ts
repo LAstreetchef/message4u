@@ -3,6 +3,7 @@ import {
   messages,
   payments,
   payoutHistory,
+  pendingCryptoPayouts,
   type User,
   type UpsertUser,
   type Message,
@@ -11,6 +12,8 @@ import {
   type InsertPayment,
   type PayoutHistory,
   type InsertPayoutHistory,
+  type PendingCryptoPayout,
+  type InsertPendingCryptoPayout,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
@@ -65,6 +68,12 @@ export interface IStorage {
   }>>;
   createPayout(payout: InsertPayoutHistory): Promise<PayoutHistory>;
   getPayoutHistory(): Promise<PayoutHistory[]>;
+  
+  // Pending crypto payout operations
+  createPendingCryptoPayout(payout: InsertPendingCryptoPayout): Promise<PendingCryptoPayout>;
+  getPendingCryptoPayout(payoutId: string): Promise<PendingCryptoPayout | undefined>;
+  deletePendingCryptoPayout(payoutId: string): Promise<void>;
+  cleanupExpiredPendingPayouts(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -332,6 +341,36 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(payoutHistory)
       .orderBy(desc(payoutHistory.completedAt));
+  }
+
+  // Pending crypto payout operations
+  async createPendingCryptoPayout(payoutData: InsertPendingCryptoPayout): Promise<PendingCryptoPayout> {
+    const [payout] = await db
+      .insert(pendingCryptoPayouts)
+      .values(payoutData)
+      .returning();
+    return payout;
+  }
+
+  async getPendingCryptoPayout(payoutId: string): Promise<PendingCryptoPayout | undefined> {
+    const [payout] = await db
+      .select()
+      .from(pendingCryptoPayouts)
+      .where(eq(pendingCryptoPayouts.payoutId, payoutId));
+    return payout;
+  }
+
+  async deletePendingCryptoPayout(payoutId: string): Promise<void> {
+    await db
+      .delete(pendingCryptoPayouts)
+      .where(eq(pendingCryptoPayouts.payoutId, payoutId));
+  }
+
+  async cleanupExpiredPendingPayouts(): Promise<void> {
+    const now = new Date();
+    await db
+      .delete(pendingCryptoPayouts)
+      .where(eq(pendingCryptoPayouts.expiresAt, now));
   }
 }
 

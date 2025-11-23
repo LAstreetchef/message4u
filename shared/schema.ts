@@ -108,6 +108,9 @@ export const payoutHistory = pgTable("payout_history", {
   payoutAddress: text("payout_address").notNull(),
   stripePayoutId: varchar("stripe_payout_id"),
   stripeTransferId: varchar("stripe_transfer_id"),
+  nowpaymentsPayoutId: varchar("nowpayments_payout_id"),
+  nowpaymentsWithdrawalId: varchar("nowpayments_withdrawal_id"),
+  cryptoCurrency: varchar("crypto_currency", { length: 20 }),
   payoutStatus: varchar("payout_status", { length: 50 }).notNull().default("completed"),
   adminNotes: text("admin_notes"),
   completedBy: varchar("completed_by").notNull().references(() => users.id),
@@ -121,6 +124,9 @@ export const insertPayoutHistorySchema = createInsertSchema(payoutHistory).pick(
   payoutAddress: true,
   stripePayoutId: true,
   stripeTransferId: true,
+  nowpaymentsPayoutId: true,
+  nowpaymentsWithdrawalId: true,
+  cryptoCurrency: true,
   payoutStatus: true,
   adminNotes: true,
   completedBy: true,
@@ -128,4 +134,29 @@ export const insertPayoutHistorySchema = createInsertSchema(payoutHistory).pick(
 
 export type InsertPayoutHistory = z.infer<typeof insertPayoutHistorySchema>;
 export type PayoutHistory = typeof payoutHistory.$inferSelect;
+
+// Pending crypto payouts table (temporary storage before 2FA verification)
+export const pendingCryptoPayouts = pgTable("pending_crypto_payouts", {
+  payoutId: varchar("payout_id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 20 }).notNull(),
+  adminNotes: text("admin_notes"),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const insertPendingCryptoPayoutSchema = createInsertSchema(pendingCryptoPayouts).pick({
+  payoutId: true,
+  userId: true,
+  amount: true,
+  currency: true,
+  adminNotes: true,
+  createdBy: true,
+  expiresAt: true,
+});
+
+export type InsertPendingCryptoPayout = z.infer<typeof insertPendingCryptoPayoutSchema>;
+export type PendingCryptoPayout = typeof pendingCryptoPayouts.$inferSelect;
 
