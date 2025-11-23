@@ -32,6 +32,7 @@ export function getSession() {
       secure: isProduction,
       sameSite: 'lax',
       maxAge: sessionTtl,
+      domain: isProduction ? '.secretmessage4u.com' : undefined,
     },
   });
 }
