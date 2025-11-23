@@ -208,6 +208,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // NOWPayments crypto payout routes
   app.post('/api/admin/payouts/crypto/create', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
+      // Clean up expired pending payouts
+      await storage.cleanupExpiredPendingPayouts();
+
       if (!process.env.NOWPAYMENTS_API_KEY) {
         return res.status(500).json({ message: "NOWPayments not configured" });
       }

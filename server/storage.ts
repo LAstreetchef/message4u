@@ -16,7 +16,7 @@ import {
   type InsertPendingCryptoPayout,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, lt } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -370,7 +370,7 @@ export class DatabaseStorage implements IStorage {
     const now = new Date();
     await db
       .delete(pendingCryptoPayouts)
-      .where(eq(pendingCryptoPayouts.expiresAt, now));
+      .where(lt(pendingCryptoPayouts.expiresAt, now));
   }
 }
 
