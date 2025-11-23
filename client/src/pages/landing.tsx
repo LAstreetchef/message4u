@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useLocation } from "wouter";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -21,6 +22,7 @@ type AuthFormData = z.infer<typeof authSchema>;
 export default function Landing() {
   const [isSignUp, setIsSignUp] = useState(true);
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const form = useForm<AuthFormData>({
     resolver: zodResolver(authSchema),
@@ -40,6 +42,7 @@ export default function Landing() {
         title: "Account Created!",
         description: "Welcome to Secret Message. Redirecting to dashboard...",
       });
+      setLocation("/dashboard");
     },
     onError: (error: any) => {
       toast({
@@ -60,6 +63,7 @@ export default function Landing() {
         title: "Welcome Back!",
         description: "Redirecting to dashboard...",
       });
+      setLocation("/dashboard");
     },
     onError: (error: any) => {
       toast({

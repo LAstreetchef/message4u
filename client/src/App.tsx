@@ -18,24 +18,23 @@ function Router() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <Switch key={isAuthenticated ? 'authenticated' : 'guest'}>
+    <Switch>
       {/* Public routes accessible to everyone */}
       <Route path="/sms-consent" component={SmsConsent} />
       <Route path="/privacy" component={Privacy} />
+      <Route path="/m/:slug" component={Paywall} />
+      <Route path="/m/:slug/unlocked" component={Unlocked} />
       
       {isAuthenticated ? (
         <>
-          <Route path="/" component={Dashboard} />
+          <Route path="/dashboard" component={Dashboard} />
           <Route path="/admin" component={AdminDashboard} />
           <Route path="/create" component={CreateMessage} />
-          <Route path="/m/:slug" component={Paywall} />
-          <Route path="/m/:slug/unlocked" component={Unlocked} />
+          <Route path="/" component={Dashboard} />
         </>
       ) : (
         <>
           <Route path="/" component={Landing} />
-          <Route path="/m/:slug" component={Paywall} />
-          <Route path="/m/:slug/unlocked" component={Unlocked} />
         </>
       )}
       <Route component={NotFound} />
