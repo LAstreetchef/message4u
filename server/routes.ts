@@ -115,7 +115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminId = req.user.id;
 
       // Validate required fields
-      if (!userId || !amount || !payoutMethod || !payoutAddress) {
+      if (!userId || !amount) {
         return res.status(400).json({ message: "Missing required fields" });
       }
 
@@ -131,11 +131,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
+      let stripePayoutId = null;
+      let stripeTransferId = null;
+      let actualPayoutMethod = payoutMethod;
+      let actualPayoutAddress = payoutAddress;
+      let payoutStatus = "completed";
+
+      // Check if user has Stripe Connect account configured
+      if (user.stripeAccountId && user.stripeOnboardingComplete) {
+        try {
+          // Perform automated Stripe transfer
+          const transfer = await stripe.transfers.create({
+            amount: Math.round(parsedAmount * 100),
+            currency: 'usd',
+            destination: user.stripeAccountId,
+            description: `Payout for message earnings`,
+          });
+
+          stripeTransferId = transfer.id;
+          actualPayoutMethod = 'stripe';
+          actualPayoutAddress = user.stripeAccountId;
+          payoutStatus = 'completed';
+
+          console.log(`Automated Stripe transfer completed: ${transfer.id} for $${parsedAmount}`);
+        } catch (stripeError: any) {
+          console.error("Error creating Stripe transfer:", stripeError);
+          return res.status(500).json({ 
+            message: `Failed to process Stripe transfer: ${stripeError.message}` 
+          });
+        }
+      } else {
+        // Manual payout - require method and address
+        if (!payoutMethod || !payoutAddress) {
+          return res.status(400).json({ 
+            message: "User doesn't have Stripe Connect configured. Payout method and address are required for manual payouts." 
+          });
+        }
+      }
+
       const payout = await storage.createPayout({
         userId,
         amount: parsedAmount.toString(),
-        payoutMethod,
-        payoutAddress,
+        payoutMethod: actualPayoutMethod,
+        payoutAddress: actualPayoutAddress,
+        stripePayoutId,
+        stripeTransferId,
+        payoutStatus,
         adminNotes: adminNotes || null,
         completedBy: adminId,
       });
@@ -172,6 +213,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating crypto wallet:", error);
       res.status(500).json({ message: "Failed to update crypto wallet" });
+    }
+  });
+
+  // Stripe Connect routes
+  app.post('/api/stripe/create-connect-account', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (user.stripeAccountId) {
+        return res.json({ 
+          accountId: user.stripeAccountId,
+          onboardingComplete: user.stripeOnboardingComplete 
+        });
+      }
+
+      const account = await stripe.accounts.create({
+        type: 'express',
+        email: user.email,
+        capabilities: {
+          transfers: { requested: true },
+        },
+      });
+
+      await storage.updateUserStripeAccount(userId, account.id, false);
+
+      res.json({ accountId: account.id, onboardingComplete: false });
+    } catch (error) {
+      console.error("Error creating Stripe Connect account:", error);
+      res.status(500).json({ message: "Failed to create Connect account" });
+    }
+  });
+
+  app.post('/api/stripe/create-account-link', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+
+      if (!user || !user.stripeAccountId) {
+        return res.status(400).json({ message: "No Stripe account found" });
+      }
+
+      const returnUrl = `${req.protocol}://${req.get('host')}/profile?stripe_onboarding=complete`;
+      const refreshUrl = `${req.protocol}://${req.get('host')}/profile?stripe_onboarding=refresh`;
+
+      const accountLink = await stripe.accountLinks.create({
+        account: user.stripeAccountId,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
+        type: 'account_onboarding',
+      });
+
+      res.json({ url: accountLink.url });
+    } catch (error) {
+      console.error("Error creating account link:", error);
+      res.status(500).json({ message: "Failed to create account link" });
+    }
+  });
+
+  app.get('/api/stripe/connect-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+
+      if (!user || !user.stripeAccountId) {
+        return res.json({ 
+          connected: false, 
+          onboardingComplete: false 
+        });
+      }
+
+      const account = await stripe.accounts.retrieve(user.stripeAccountId);
+      const onboardingComplete = account.details_submitted && account.charges_enabled;
+
+      if (onboardingComplete && !user.stripeOnboardingComplete) {
+        await storage.updateUserStripeAccount(userId, user.stripeAccountId, true);
+      }
+
+      res.json({ 
+        connected: true,
+        onboardingComplete,
+        payoutsEnabled: account.payouts_enabled,
+        chargesEnabled: account.charges_enabled,
+      });
+    } catch (error) {
+      console.error("Error checking connect status:", error);
+      res.status(500).json({ message: "Failed to check connect status" });
     }
   });
 
