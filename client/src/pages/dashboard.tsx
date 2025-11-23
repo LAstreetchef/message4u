@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [payoutAddress, setPayoutAddress] = useState<string>("");
   const [cryptoWalletType, setCryptoWalletType] = useState<string>("");
   const [cryptoWalletAddress, setCryptoWalletAddress] = useState<string>("");
+  const [stripeConnectLoading, setStripeConnectLoading] = useState(false);
 
   // Update payout fields when user data loads
   useEffect(() => {
@@ -49,6 +50,12 @@ export default function Dashboard() {
       setCryptoWalletAddress(user.cryptoWalletAddress || "");
     }
   }, [user]);
+
+  // Fetch Stripe Connect status
+  const { data: stripeConnectStatus } = useQuery({
+    queryKey: ["/api/stripe/connect-status"],
+    enabled: isAuthenticated,
+  });
 
   const { data: messages, isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages"],
@@ -142,6 +149,26 @@ export default function Dashboard() {
       });
     },
   });
+
+  const connectStripeAccount = async () => {
+    try {
+      setStripeConnectLoading(true);
+      
+      await apiRequest("POST", "/api/stripe/create-connect-account", {});
+      
+      const linkResponse = await apiRequest("POST", "/api/stripe/create-account-link", {});
+      const linkData = await linkResponse.json();
+      
+      window.location.href = linkData.url;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to connect Stripe account",
+        variant: "destructive",
+      });
+      setStripeConnectLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -333,6 +360,51 @@ export default function Dashboard() {
               >
                 {updateCryptoWalletMutation.isPending ? "Saving..." : "Save Crypto Wallet"}
               </Button>
+            </div>
+
+            <div className="border-t pt-6">
+              <h3 className="text-lg font-heading font-semibold mb-4 flex items-center gap-2">
+                <Wallet className="w-5 h-5" />
+                Automated Bank Payouts (Recommended)
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Connect your bank account via Stripe for instant automated payouts when the admin processes your earnings. No more manual Venmo/CashApp transfers!
+              </p>
+              
+              {(stripeConnectStatus as any)?.connected && (stripeConnectStatus as any)?.onboardingComplete ? (
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Check className="w-5 h-5 text-green-500" />
+                    <p className="font-semibold text-green-500">Bank Account Connected</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    You'll automatically receive payouts to your bank account when the admin processes them. 
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                    <p className="text-sm font-medium mb-2">Benefits of Automated Payouts:</p>
+                    <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
+                      <li>Instant transfers to your bank account</li>
+                      <li>No manual coordination with admin required</li>
+                      <li>Secure processing through Stripe</li>
+                      <li>Track all payout history automatically</li>
+                    </ul>
+                  </div>
+                  <Button
+                    onClick={connectStripeAccount}
+                    disabled={stripeConnectLoading}
+                    data-testid="button-connect-stripe"
+                    className="rounded-full w-full"
+                  >
+                    {stripeConnectLoading ? "Connecting..." : "Connect Bank Account with Stripe"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    You'll be redirected to Stripe's secure platform to connect your bank account
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
