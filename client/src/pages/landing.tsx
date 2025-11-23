@@ -7,7 +7,6 @@ import { Heart, Lock, DollarSign, Send } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,7 +21,6 @@ type AuthFormData = z.infer<typeof authSchema>;
 export default function Landing() {
   const [isSignUp, setIsSignUp] = useState(true);
   const { toast } = useToast();
-  const [, setLocation] = useLocation();
 
   const form = useForm<AuthFormData>({
     resolver: zodResolver(authSchema),
@@ -36,13 +34,13 @@ export default function Landing() {
     mutationFn: async (data: AuthFormData) => {
       return await apiRequest("POST", "/api/auth/signup", data);
     },
-    onSuccess: async () => {
+    onSuccess: async (response: any) => {
+      queryClient.setQueryData(["/api/auth/user"], response.user);
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Account Created!",
         description: "Welcome to Secret Message. Redirecting to dashboard...",
       });
-      setLocation("/");
     },
     onError: (error: any) => {
       toast({
@@ -57,13 +55,13 @@ export default function Landing() {
     mutationFn: async (data: AuthFormData) => {
       return await apiRequest("POST", "/api/auth/login", data);
     },
-    onSuccess: async () => {
+    onSuccess: async (response: any) => {
+      queryClient.setQueryData(["/api/auth/user"], response.user);
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Welcome Back!",
         description: "Redirecting to dashboard...",
       });
-      setLocation("/");
     },
     onError: (error: any) => {
       toast({

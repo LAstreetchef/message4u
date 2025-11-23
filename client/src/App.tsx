@@ -15,7 +15,8 @@ import SmsConsent from "@/pages/sms-consent";
 import Privacy from "@/pages/privacy";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user } = useAuth();
+  const shouldShowAuthRoutes = !!user;
 
   return (
     <Switch>
@@ -23,17 +24,17 @@ function Router() {
       <Route path="/sms-consent" component={SmsConsent} />
       <Route path="/privacy" component={Privacy} />
       
-      {isLoading || !isAuthenticated ? (
+      {shouldShowAuthRoutes ? (
         <>
-          <Route path="/" component={Landing} />
+          <Route path="/" component={Dashboard} />
+          <Route path="/admin" component={AdminDashboard} />
+          <Route path="/create" component={CreateMessage} />
           <Route path="/m/:slug" component={Paywall} />
           <Route path="/m/:slug/unlocked" component={Unlocked} />
         </>
       ) : (
         <>
-          <Route path="/" component={Dashboard} />
-          <Route path="/admin" component={AdminDashboard} />
-          <Route path="/create" component={CreateMessage} />
+          <Route path="/" component={Landing} />
           <Route path="/m/:slug" component={Paywall} />
           <Route path="/m/:slug/unlocked" component={Unlocked} />
         </>
