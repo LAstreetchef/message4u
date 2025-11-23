@@ -35,17 +35,13 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [messageToToggle, setMessageToToggle] = useState<Message | null>(null);
-  const [payoutMethod, setPayoutMethod] = useState<string>("");
-  const [payoutAddress, setPayoutAddress] = useState<string>("");
   const [cryptoWalletType, setCryptoWalletType] = useState<string>("");
   const [cryptoWalletAddress, setCryptoWalletAddress] = useState<string>("");
   const [stripeConnectLoading, setStripeConnectLoading] = useState(false);
 
-  // Update payout fields when user data loads
+  // Update crypto wallet fields when user data loads
   useEffect(() => {
     if (user) {
-      setPayoutMethod(user.payoutMethod || "");
-      setPayoutAddress(user.payoutAddress || "");
       setCryptoWalletType(user.cryptoWalletType || "");
       setCryptoWalletAddress(user.cryptoWalletAddress || "");
     }
@@ -101,29 +97,6 @@ export default function Dashboard() {
         variant: "destructive",
       });
       setMessageToToggle(null);
-    },
-  });
-
-  const updatePayoutMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("PATCH", "/api/auth/payout", {
-        payoutMethod,
-        payoutAddress,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Payout Info Updated",
-        description: "Your payout information has been saved successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update payout information",
-        variant: "destructive",
-      });
     },
   });
 
@@ -273,56 +246,59 @@ export default function Dashboard() {
               <h2 className="text-xl font-heading font-semibold">Payout Information</h2>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              Set up how you'd like to receive your earnings. We'll manually send payments to your specified address.
+              Connect your bank account for automated payouts or set up a crypto wallet for manual transfers.
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="payout-method">Fiat Payment Method</Label>
-                <Select
-                  value={payoutMethod}
-                  onValueChange={setPayoutMethod}
-                >
-                  <SelectTrigger id="payout-method" data-testid="select-payout-method">
-                    <SelectValue placeholder="Select method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="venmo">Venmo</SelectItem>
-                    <SelectItem value="cashapp">Cash App</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="payout-address">
-                  {payoutMethod === "venmo" ? "Venmo @username" : 
-                   payoutMethod === "cashapp" ? "Cash App $cashtag" : "Payout Address"}
-                </Label>
-                <Input
-                  id="payout-address"
-                  data-testid="input-payout-address"
-                  placeholder={
-                    payoutMethod === "venmo" ? "@username" : 
-                    payoutMethod === "cashapp" ? "$cashtag" : "Enter address"
-                  }
-                  value={payoutAddress}
-                  onChange={(e) => setPayoutAddress(e.target.value)}
-                />
-              </div>
+            <div>
+              <h3 className="text-lg font-heading font-semibold mb-4 flex items-center gap-2">
+                <Wallet className="w-5 h-5" />
+                Automated Bank Payouts (Recommended)
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Connect your bank account via Stripe for instant automated payouts. Fast, secure, and no manual coordination needed!
+              </p>
+              
+              {(stripeConnectStatus as any)?.connected && (stripeConnectStatus as any)?.onboardingComplete ? (
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Check className="w-5 h-5 text-green-500" />
+                    <p className="font-semibold text-green-500">Bank Account Connected</p>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    You'll automatically receive payouts to your bank account when the admin processes them. 
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                    <p className="text-sm font-medium mb-2">Benefits of Automated Payouts:</p>
+                    <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
+                      <li>Instant transfers to your bank account</li>
+                      <li>No manual coordination with admin required</li>
+                      <li>Secure processing through Stripe</li>
+                      <li>Track all payout history automatically</li>
+                    </ul>
+                  </div>
+                  <Button
+                    onClick={connectStripeAccount}
+                    disabled={stripeConnectLoading}
+                    data-testid="button-connect-stripe"
+                    className="rounded-full w-full"
+                  >
+                    {stripeConnectLoading ? "Connecting..." : "Connect Bank Account with Stripe"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    You'll be redirected to Stripe's secure platform to connect your bank account
+                  </p>
+                </div>
+              )}
             </div>
-            <Button
-              onClick={() => updatePayoutMutation.mutate()}
-              disabled={!payoutMethod || !payoutAddress || updatePayoutMutation.isPending}
-              data-testid="button-save-payout"
-              className="rounded-full"
-            >
-              {updatePayoutMutation.isPending ? "Saving..." : "Save Fiat Payout Info"}
-            </Button>
 
             <div className="border-t pt-6">
-              <h3 className="text-lg font-heading font-semibold mb-4">Crypto Wallet (Optional)</h3>
+              <h3 className="text-lg font-heading font-semibold mb-4">Crypto Wallet (Alternative)</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Receive payouts in cryptocurrency. Configure your crypto wallet address below.
+                Prefer cryptocurrency? Set up your wallet address for manual crypto payouts.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -361,51 +337,6 @@ export default function Dashboard() {
               >
                 {updateCryptoWalletMutation.isPending ? "Saving..." : "Save Crypto Wallet"}
               </Button>
-            </div>
-
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-heading font-semibold mb-4 flex items-center gap-2">
-                <Wallet className="w-5 h-5" />
-                Automated Bank Payouts (Recommended)
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Connect your bank account via Stripe for instant automated payouts when the admin processes your earnings. No more manual Venmo/CashApp transfers!
-              </p>
-              
-              {(stripeConnectStatus as any)?.connected && (stripeConnectStatus as any)?.onboardingComplete ? (
-                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Check className="w-5 h-5 text-green-500" />
-                    <p className="font-semibold text-green-500">Bank Account Connected</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    You'll automatically receive payouts to your bank account when the admin processes them. 
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                    <p className="text-sm font-medium mb-2">Benefits of Automated Payouts:</p>
-                    <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
-                      <li>Instant transfers to your bank account</li>
-                      <li>No manual coordination with admin required</li>
-                      <li>Secure processing through Stripe</li>
-                      <li>Track all payout history automatically</li>
-                    </ul>
-                  </div>
-                  <Button
-                    onClick={connectStripeAccount}
-                    disabled={stripeConnectLoading}
-                    data-testid="button-connect-stripe"
-                    className="rounded-full w-full"
-                  >
-                    {stripeConnectLoading ? "Connecting..." : "Connect Bank Account with Stripe"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    You'll be redirected to Stripe's secure platform to connect your bank account
-                  </p>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
