@@ -55,8 +55,10 @@ export interface IStorage {
   getPendingPayouts(): Promise<Array<{
     userId: string;
     email: string;
-    payoutMethod: string | null;
-    payoutAddress: string | null;
+    stripeAccountId: string | null;
+    stripeOnboardingComplete: boolean;
+    cryptoWalletType: string | null;
+    cryptoWalletAddress: string | null;
     totalEarnings: number;
     totalPaidOut: number;
     pendingAmount: number;
@@ -266,8 +268,8 @@ export class DatabaseStorage implements IStorage {
   async getPendingPayouts(): Promise<Array<{
     userId: string;
     email: string;
-    payoutMethod: string | null;
-    payoutAddress: string | null;
+    stripeAccountId: string | null;
+    stripeOnboardingComplete: boolean;
     cryptoWalletType: string | null;
     cryptoWalletAddress: string | null;
     totalEarnings: number;
@@ -303,8 +305,8 @@ export class DatabaseStorage implements IStorage {
         result.push({
           userId: user.id,
           email: user.email,
-          payoutMethod: user.payoutMethod,
-          payoutAddress: user.payoutAddress,
+          stripeAccountId: user.stripeAccountId,
+          stripeOnboardingComplete: user.stripeOnboardingComplete || false,
           cryptoWalletType: user.cryptoWalletType,
           cryptoWalletAddress: user.cryptoWalletAddress,
           totalEarnings,

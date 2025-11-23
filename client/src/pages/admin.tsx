@@ -33,8 +33,8 @@ import type { User, Payment, PayoutHistory } from "@shared/schema";
 interface PendingPayout {
   userId: string;
   email: string;
-  payoutMethod: string | null;
-  payoutAddress: string | null;
+  stripeAccountId: string | null;
+  stripeOnboardingComplete: boolean;
   cryptoWalletType: string | null;
   cryptoWalletAddress: string | null;
   totalEarnings: number;
@@ -93,8 +93,6 @@ export default function AdminDashboard() {
       return await apiRequest("POST", "/api/admin/payouts", {
         userId: selectedPayout.userId,
         amount: parseFloat(payoutAmount),
-        payoutMethod: selectedPayout.payoutMethod,
-        payoutAddress: selectedPayout.payoutAddress,
         adminNotes: payoutNotes,
       });
     },
@@ -231,8 +229,7 @@ export default function AdminDashboard() {
                       <TableHead>Total Earnings</TableHead>
                       <TableHead>Paid Out</TableHead>
                       <TableHead>Pending</TableHead>
-                      <TableHead>Fiat Method</TableHead>
-                      <TableHead>Fiat Address</TableHead>
+                      <TableHead>Stripe Connect</TableHead>
                       <TableHead>Crypto Wallet</TableHead>
                       <TableHead>Action</TableHead>
                     </TableRow>
@@ -249,14 +246,16 @@ export default function AdminDashboard() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          {payout.payoutMethod ? (
-                            <Badge variant="secondary">{payout.payoutMethod}</Badge>
+                          {payout.stripeOnboardingComplete ? (
+                            <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                              <CheckCircle className="h-3 w-3" />
+                              Connected
+                            </Badge>
+                          ) : payout.stripeAccountId ? (
+                            <Badge variant="outline">Pending Setup</Badge>
                           ) : (
-                            <Badge variant="outline">Not Set</Badge>
+                            <Badge variant="outline">Not Connected</Badge>
                           )}
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {payout.payoutAddress || "—"}
                         </TableCell>
                         <TableCell>
                           {payout.cryptoWalletType ? (
@@ -278,7 +277,7 @@ export default function AdminDashboard() {
                               setSelectedPayout(payout);
                               setPayoutAmount(payout.pendingAmount.toFixed(2));
                             }}
-                            disabled={(!payout.payoutMethod || !payout.payoutAddress) && (!payout.cryptoWalletType || !payout.cryptoWalletAddress) || payout.pendingAmount <= 0}
+                            disabled={!payout.stripeOnboardingComplete || payout.pendingAmount <= 0}
                             data-testid={`button-complete-payout-${payout.userId}`}
                           >
                             Complete Payout
@@ -288,7 +287,7 @@ export default function AdminDashboard() {
                     ))}
                     {(!pendingPayouts || pendingPayouts.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                           No pending payouts
                         </TableCell>
                       </TableRow>
@@ -449,15 +448,34 @@ export default function AdminDashboard() {
             <div className="space-y-2">
               <Label>Payout Method</Label>
               <div className="text-sm">
-                <Badge variant="secondary">{selectedPayout?.payoutMethod}</Badge>
+                {selectedPayout?.stripeOnboardingComplete ? (
+                  <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                    <CheckCircle className="h-3 w-3" />
+                    Stripe Connect (Automated)
+                  </Badge>
+                ) : (
+                  <Badge variant="outline">Manual Crypto Payout</Badge>
+                )}
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Payout Address</Label>
-              <div className="text-sm font-mono bg-muted p-2 rounded-md">
-                {selectedPayout?.payoutAddress}
+            {selectedPayout?.stripeOnboardingComplete && (
+              <div className="bg-muted p-3 rounded-md text-sm">
+                <p className="text-muted-foreground">
+                  Funds will be automatically transferred to the sender's connected bank account via Stripe Connect.
+                </p>
               </div>
-            </div>
+            )}
+            {!selectedPayout?.stripeOnboardingComplete && selectedPayout?.cryptoWalletType && (
+              <div className="space-y-2">
+                <Label>Crypto Wallet</Label>
+                <div className="flex gap-2 items-center">
+                  <Badge variant="secondary">{selectedPayout.cryptoWalletType}</Badge>
+                  <span className="text-xs text-muted-foreground font-mono truncate">
+                    {selectedPayout.cryptoWalletAddress}
+                  </span>
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="payout-amount">Amount</Label>
               <Input
