@@ -111,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/payouts', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
-      const { userId, amount, payoutMethod, payoutAddress, adminNotes } = req.body;
+      const { userId, amount, adminNotes } = req.body;
       const adminId = req.user.id;
 
       // Validate required fields
@@ -133,8 +133,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let stripePayoutId = null;
       let stripeTransferId = null;
-      let actualPayoutMethod = payoutMethod;
-      let actualPayoutAddress = payoutAddress;
+      let actualPayoutMethod = null;
+      let actualPayoutAddress = null;
       let payoutStatus = "completed";
 
       // Check if user has Stripe Connect account configured
@@ -160,13 +160,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: `Failed to process Stripe transfer: ${stripeError.message}` 
           });
         }
+      } else if (user.cryptoWalletType && user.cryptoWalletAddress) {
+        // Crypto wallet payout - use stored wallet info
+        actualPayoutMethod = user.cryptoWalletType;
+        actualPayoutAddress = user.cryptoWalletAddress;
+        payoutStatus = 'completed';
+        console.log(`Manual crypto payout marked for ${user.email}: ${actualPayoutMethod} - ${actualPayoutAddress}`);
       } else {
-        // Manual payout - require method and address
-        if (!payoutMethod || !payoutAddress) {
-          return res.status(400).json({ 
-            message: "User doesn't have Stripe Connect configured. Payout method and address are required for manual payouts." 
-          });
-        }
+        // No payout method configured
+        return res.status(400).json({ 
+          message: "User doesn't have Stripe Connect or crypto wallet configured." 
+        });
       }
 
       const payout = await storage.createPayout({

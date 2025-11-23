@@ -277,7 +277,10 @@ export default function AdminDashboard() {
                               setSelectedPayout(payout);
                               setPayoutAmount(payout.pendingAmount.toFixed(2));
                             }}
-                            disabled={!payout.stripeOnboardingComplete || payout.pendingAmount <= 0}
+                            disabled={
+                              payout.pendingAmount <= 0 ||
+                              (!payout.stripeOnboardingComplete && (!payout.cryptoWalletType || !payout.cryptoWalletAddress))
+                            }
                             data-testid={`button-complete-payout-${payout.userId}`}
                           >
                             Complete Payout
