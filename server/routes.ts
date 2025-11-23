@@ -289,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const account = await stripe.accounts.retrieve(user.stripeAccountId);
-      const onboardingComplete = account.details_submitted && account.charges_enabled;
+      const onboardingComplete = account.details_submitted && account.charges_enabled && account.payouts_enabled;
 
       if (onboardingComplete && !user.stripeOnboardingComplete) {
         await storage.updateUserStripeAccount(userId, user.stripeAccountId, true);
@@ -650,6 +650,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Error processing webhook:', error);
         return res.status(500).send('Error processing payment');
       }
+    }
+    
+    if (event.type === 'account.updated') {
+      const account = event.data.object as Stripe.Account;
+      
+      try {
+        const user = await storage.getUserByStripeAccountId(account.id);
+        
+        if (user) {
+          const onboardingComplete = account.details_submitted && account.charges_enabled && account.payouts_enabled;
+          
+          if (onboardingComplete !== user.stripeOnboardingComplete) {
+            await storage.updateUserStripeAccount(user.id, account.id, onboardingComplete);
+            console.log(`Stripe Connect account ${account.id} onboarding status changed to ${onboardingComplete} for user ${user.id}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error updating Connect account status:', error);
+      }
+    }
+    
+    if (event.type === 'transfer.created' || event.type === 'transfer.paid') {
+      const transfer = event.data.object as Stripe.Transfer;
+      console.log(`Stripe transfer ${event.type}: ${transfer.id} for $${transfer.amount / 100}`);
     }
 
     res.json({ received: true });

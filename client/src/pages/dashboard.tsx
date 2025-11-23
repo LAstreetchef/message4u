@@ -157,13 +157,14 @@ export default function Dashboard() {
       await apiRequest("POST", "/api/stripe/create-connect-account", {});
       
       const linkResponse = await apiRequest("POST", "/api/stripe/create-account-link", {});
-      const linkData = await linkResponse.json();
+      const linkData: { url: string } = await linkResponse.json();
       
       window.location.href = linkData.url;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Stripe Connect error:', error);
       toast({
         title: "Error",
-        description: "Failed to connect Stripe account",
+        description: error.message || "Failed to connect Stripe account",
         variant: "destructive",
       });
       setStripeConnectLoading(false);
