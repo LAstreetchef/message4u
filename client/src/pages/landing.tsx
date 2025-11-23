@@ -34,9 +34,8 @@ export default function Landing() {
     mutationFn: async (data: AuthFormData) => {
       return await apiRequest("POST", "/api/auth/signup", data);
     },
-    onSuccess: async (response: any) => {
-      queryClient.setQueryData(["/api/auth/user"], response.user);
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Account Created!",
         description: "Welcome to Secret Message. Redirecting to dashboard...",
@@ -55,9 +54,8 @@ export default function Landing() {
     mutationFn: async (data: AuthFormData) => {
       return await apiRequest("POST", "/api/auth/login", data);
     },
-    onSuccess: async (response: any) => {
-      queryClient.setQueryData(["/api/auth/user"], response.user);
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Welcome Back!",
         description: "Redirecting to dashboard...",
