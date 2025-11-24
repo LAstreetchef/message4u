@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { getBaseUrl } from './url';
 
 if (!process.env.RESEND_API_KEY) {
   console.warn('RESEND_API_KEY is not set. Email notifications will be disabled.');
@@ -101,29 +102,7 @@ export async function sendMessageNotification({
   }
 
   try {
-    let baseUrl = '';
-    
-    if (process.env.REPLIT_APP_URL) {
-      try {
-        const url = new URL(process.env.REPLIT_APP_URL);
-        baseUrl = url.origin;
-      } catch {
-        baseUrl = process.env.REPLIT_APP_URL.replace(/\/$/, '');
-      }
-    } else if (process.env.REPLIT_DEV_DOMAIN) {
-      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-    } else if (process.env.REPLIT_DOMAINS) {
-      const domain = process.env.REPLIT_DOMAINS.split(',')[0]?.trim();
-      baseUrl = domain ? `https://${domain}` : '';
-    } else if (!process.env.REPL_ID) {
-      baseUrl = 'http://localhost:5000';
-    }
-    
-    if (!baseUrl) {
-      console.error('No domain configured for email links - check REPLIT_APP_URL, REPLIT_DEV_DOMAIN, or REPLIT_DOMAINS environment variables');
-      return { success: false, error: 'Email service misconfigured - no domain available' };
-    }
-    
+    const baseUrl = getBaseUrl();
     const unlockUrl = `${baseUrl}/m/${slug}`;
     console.log(`Email unlock URL: ${unlockUrl}`);
     

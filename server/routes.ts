@@ -9,6 +9,7 @@ import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { sendMessageNotification, isValidEmail } from "./emailService";
 import { NOWPaymentsPayoutService } from "./nowpaymentsPayoutService";
+import { getBaseUrl } from "./url";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -633,6 +634,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message has expired" });
       }
 
+      const baseUrl = getBaseUrl({ req });
+      
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -649,8 +652,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         ],
         mode: 'payment',
-        success_url: `${req.protocol}://${req.get('host')}/m/${message.slug}/unlocked?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${req.protocol}://${req.get('host')}/m/${message.slug}`,
+        success_url: `${baseUrl}/m/${message.slug}/unlocked?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/m/${message.slug}`,
         metadata: {
           messageId: message.id,
           slug: message.slug,
@@ -686,14 +689,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message has expired" });
       }
 
+      const baseUrl = getBaseUrl({ req });
+      
       const invoiceData = {
         price_amount: parseFloat(message.price),
         price_currency: 'usd',
         order_id: `msg_${message.id}_${Date.now()}`,
         order_description: `Unlock message: ${message.title}`,
-        ipn_callback_url: `${req.protocol}://${req.get('host')}/api/webhook/nowpayments`,
-        success_url: `${req.protocol}://${req.get('host')}/m/${message.slug}/unlocked`,
-        cancel_url: `${req.protocol}://${req.get('host')}/m/${message.slug}`,
+        ipn_callback_url: `${baseUrl}/api/webhook/nowpayments`,
+        success_url: `${baseUrl}/m/${message.slug}/unlocked`,
+        cancel_url: `${baseUrl}/m/${message.slug}`,
       };
 
       console.log('Creating NOWPayments invoice with data:', JSON.stringify(invoiceData, null, 2));
