@@ -442,8 +442,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No Stripe account found" });
       }
 
-      const returnUrl = `${req.protocol}://${req.get('host')}/dashboard?stripe_onboarding=complete`;
-      const refreshUrl = `${req.protocol}://${req.get('host')}/dashboard?stripe_onboarding=refresh`;
+      const baseUrl = getBaseUrl({ req });
+      const returnUrl = `${baseUrl}/dashboard?stripe_onboarding=complete`;
+      const refreshUrl = `${baseUrl}/dashboard?stripe_onboarding=refresh`;
 
       console.log("Creating account link for:", {
         accountId: user.stripeAccountId,
