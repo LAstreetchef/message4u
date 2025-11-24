@@ -90,7 +90,7 @@
 - All buttons have rounded-full or rounded-xl styling
 
 ### Footer
-- Simple footer note: "Secret Message – pay-to-open messages with cute cartoon flavor"
+- Simple footer note: "Secret Message – pay-to-open messages"
 - Centered text, muted gray color on dark background
 
 ## Images & Illustrations

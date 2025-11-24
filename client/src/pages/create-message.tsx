@@ -407,7 +407,7 @@ export default function CreateMessage() {
       <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t mt-20">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-sm text-muted-foreground">
-            Secret Message – pay-to-open messages with cute cartoon flavor
+            Secret Message – pay-to-open messages
           </p>
         </div>
       </footer>

@@ -221,7 +221,7 @@ export default function SmsConsent() {
       <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t mt-20">
         <div className="max-w-6xl mx-auto text-center space-y-2">
           <p className="text-sm text-muted-foreground">
-            Secret Message – pay-to-open messages with cute cartoon flavor
+            Secret Message – pay-to-open messages
           </p>
           <div className="flex justify-center gap-4 text-sm">
             <Link href="/privacy">

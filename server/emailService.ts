@@ -64,7 +64,7 @@ function createEmailTemplate(messageTitle: string, price: string, unlockUrl: str
     </div>
     
     <div style="text-align: center; color: #6b6b6b; font-size: 14px; margin-top: 40px; padding-top: 24px; border-top: 1px solid #303030;">
-      <p style="margin: 0 0 8px 0;">Sent via Secret Message – pay-to-open messages with cute cartoon flavor</p>
+      <p style="margin: 0 0 8px 0;">Sent via Secret Message – pay-to-open messages</p>
       <p style="margin: 0;">
         This email was sent because someone created a paywalled message for you.
       </p>
