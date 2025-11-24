@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check, FileIcon, FileText, Wallet } from "lucide-react";
+import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check, FileIcon, FileText, Wallet, Mail } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Message, Payment, User } from "@shared/schema";
@@ -123,6 +123,27 @@ export default function Dashboard() {
     },
   });
 
+  const resendNotificationMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      const response = await apiRequest("POST", `/api/messages/${messageId}/resend`, {});
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+      toast({
+        title: "Notification Sent",
+        description: "Email notification has been resent to the recipient",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to resend notification",
+        variant: "destructive",
+      });
+    },
+  });
+
   const connectStripeAccount = async () => {
     try {
       setStripeConnectLoading(true);
@@ -167,6 +188,11 @@ export default function Dashboard() {
       description: "Share this link with your recipient",
     });
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   if (authLoading || messagesLoading) {
@@ -505,6 +531,18 @@ export default function Dashboard() {
                       </>
                     )}
                   </Button>
+                  {!message.unlocked && isValidEmail(message.recipientIdentifier) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => resendNotificationMutation.mutate(message.id)}
+                      disabled={resendNotificationMutation.isPending}
+                      data-testid={`button-resend-${message.id}`}
+                      className="rounded-full"
+                    >
+                      <Mail className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button
                     variant={message.active ? "outline" : "default"}
                     size="sm"

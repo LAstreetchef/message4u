@@ -573,6 +573,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/messages/:id/resend', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      
+      const message = await storage.getMessageById(id);
+      
+      if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+      
+      if (message.userId !== userId) {
+        return res.status(403).json({ message: "Not authorized to resend this message" });
+      }
+      
+      if (message.unlocked) {
+        return res.json({ message: "Message already unlocked, notification not sent" });
+      }
+      
+      if (!isValidEmail(message.recipientIdentifier)) {
+        return res.status(400).json({ message: "Message recipient is not an email address" });
+      }
+      
+      await sendMessageNotification({
+        recipientEmail: message.recipientIdentifier,
+        messageTitle: message.title,
+        price: message.price,
+        slug: message.slug,
+      });
+      
+      console.log(`Resent email notification to ${message.recipientIdentifier} for message ${message.id}`);
+      
+      res.json({ message: "Notification sent successfully" });
+    } catch (error: any) {
+      console.error("Error resending notification:", error);
+      res.status(500).json({ message: error.message || "Failed to resend notification" });
+    }
+  });
+
   // Stripe payment routes
   app.post("/api/create-payment-intent", async (req, res) => {
     try {
