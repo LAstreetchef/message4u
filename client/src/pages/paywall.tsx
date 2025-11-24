@@ -7,8 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Heart, Lock, DollarSign, Sparkles, Bitcoin, CreditCard } from "lucide-react";
+import { Heart, Lock, DollarSign, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Message } from "@shared/schema";
@@ -19,7 +18,6 @@ export default function Paywall() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [smsConsent, setSmsConsent] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"stripe" | "coinbase">("stripe");
 
   const { data: message, isLoading, error } = useQuery<Message>({
     queryKey: ["/api/messages", params?.slug],
@@ -51,38 +49,9 @@ export default function Paywall() {
     },
   });
 
-  const cryptoPaymentMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/create-crypto-payment", {
-        messageId: message!.slug,
-      });
-      const data = await response.json();
-      return data as { invoiceId: string; hostedUrl: string };
-    },
-    onSuccess: async (data) => {
-      if (!data.hostedUrl) {
-        throw new Error("No checkout URL received from server");
-      }
-      
-      window.location.href = data.hostedUrl;
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to initiate crypto payment",
-        variant: "destructive",
-      });
-      setIsProcessing(false);
-    },
-  });
-
   const handlePayment = () => {
     setIsProcessing(true);
-    if (paymentMethod === "stripe") {
-      stripePaymentMutation.mutate();
-    } else {
-      cryptoPaymentMutation.mutate();
-    }
+    stripePaymentMutation.mutate();
   };
 
   // Check if message is already unlocked and redirect
@@ -218,35 +187,6 @@ export default function Paywall() {
             </div>
 
             <div className="border-t pt-6 space-y-4">
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Payment Method</Label>
-                <RadioGroup
-                  value={paymentMethod}
-                  onValueChange={(value) => setPaymentMethod(value as "stripe" | "coinbase")}
-                  data-testid="radio-payment-method"
-                >
-                  <div className="flex items-center space-x-3 p-3 rounded-md border hover-elevate">
-                    <RadioGroupItem value="stripe" id="payment-stripe" data-testid="radio-stripe" />
-                    <Label htmlFor="payment-stripe" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <CreditCard className="w-4 h-4 text-primary" />
-                      <span>Credit Card</span>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-3 p-3 rounded-md border hover-elevate">
-                    <RadioGroupItem value="coinbase" id="payment-coinbase" data-testid="radio-coinbase" />
-                    <Label htmlFor="payment-coinbase" className="flex items-center gap-2 cursor-pointer flex-1">
-                      <Bitcoin className="w-4 h-4 text-primary" />
-                      <span>Cryptocurrency</span>
-                    </Label>
-                  </div>
-                </RadioGroup>
-                <p className="text-xs text-muted-foreground">
-                  {paymentMethod === "stripe" 
-                    ? "Pay securely with your credit or debit card"
-                    : "Pay with Bitcoin, Ethereum, Litecoin, or other cryptocurrencies"}
-                </p>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="recipient-phone" className="text-sm font-medium">
                   Get notified via SMS (optional)
@@ -323,9 +263,7 @@ export default function Paywall() {
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              {paymentMethod === "stripe" 
-                ? "Secure payment powered by Stripe"
-                : "Secure crypto payment powered by Coinbase Commerce"}
+              Secure payment powered by Stripe
             </p>
           </CardContent>
         </Card>
