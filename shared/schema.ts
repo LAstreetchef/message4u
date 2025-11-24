@@ -26,6 +26,7 @@ export const users = pgTable("users", {
   stripeAccountId: varchar("stripe_account_id"),
   stripeOnboardingComplete: boolean("stripe_onboarding_complete").notNull().default(false),
   isAdmin: boolean("is_admin").notNull().default(false),
+  disclaimerAgreedAt: timestamp("disclaimer_agreed_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

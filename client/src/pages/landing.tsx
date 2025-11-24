@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Heart, Lock, DollarSign, Send } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -10,30 +11,49 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 
-const authSchema = z.object({
+const signupSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+  disclaimerAgreed: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the legal disclaimer to create an account",
+  }),
+});
+
+const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters long"),
 });
 
-type AuthFormData = z.infer<typeof authSchema>;
+type SignupFormData = z.infer<typeof signupSchema>;
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Landing() {
   const [isSignUp, setIsSignUp] = useState(true);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const form = useForm<AuthFormData>({
-    resolver: zodResolver(authSchema),
+  const form = useForm<SignupFormData>({
+    resolver: zodResolver(isSignUp ? signupSchema : loginSchema),
     defaultValues: {
       email: "",
       password: "",
+      disclaimerAgreed: false,
     },
   });
 
+  // Reset form when switching between signup and login
+  useEffect(() => {
+    form.reset({
+      email: "",
+      password: "",
+      disclaimerAgreed: false,
+    });
+  }, [isSignUp]);
+
   const signupMutation = useMutation({
-    mutationFn: async (data: AuthFormData) => {
+    mutationFn: async (data: SignupFormData) => {
       return await apiRequest("POST", "/api/auth/signup", data);
     },
     onSuccess: async () => {
@@ -54,7 +74,7 @@ export default function Landing() {
   });
 
   const loginMutation = useMutation({
-    mutationFn: async (data: AuthFormData) => {
+    mutationFn: async (data: LoginFormData) => {
       return await apiRequest("POST", "/api/auth/login", data);
     },
     onSuccess: async () => {
@@ -74,11 +94,11 @@ export default function Landing() {
     },
   });
 
-  const handleSubmit = (data: AuthFormData) => {
+  const handleSubmit = (data: SignupFormData | LoginFormData) => {
     if (isSignUp) {
-      signupMutation.mutate(data);
+      signupMutation.mutate(data as SignupFormData);
     } else {
-      loginMutation.mutate(data);
+      loginMutation.mutate(data as LoginFormData);
     }
   };
 
@@ -174,6 +194,32 @@ export default function Landing() {
                           </FormItem>
                         )}
                       />
+                      {isSignUp && (
+                        <FormField
+                          control={form.control}
+                          name="disclaimerAgreed"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  data-testid="checkbox-disclaimer"
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <label className="text-sm font-normal">
+                                  I agree to the{" "}
+                                  <a href="/legal-disclaimer" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer" data-testid="link-disclaimer">
+                                    Legal Disclaimer
+                                  </a>
+                                </label>
+                                <FormMessage />
+                              </div>
+                            </FormItem>
+                          )}
+                        />
+                      )}
                       <Button
                         type="submit"
                         size="lg"
@@ -269,10 +315,22 @@ export default function Landing() {
       </main>
 
       <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t mt-20">
-        <div className="max-w-6xl mx-auto text-center">
+        <div className="max-w-6xl mx-auto text-center space-y-2">
           <p className="text-sm text-muted-foreground">
             Secret Message – pay-to-open messages
           </p>
+          <div className="flex justify-center gap-4 text-sm">
+            <Link href="/privacy">
+              <a className="text-muted-foreground hover:text-foreground" data-testid="link-footer-privacy">
+                Privacy Policy
+              </a>
+            </Link>
+            <Link href="/legal-disclaimer">
+              <a className="text-muted-foreground hover:text-foreground" data-testid="link-footer-legal">
+                Legal Disclaimer
+              </a>
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

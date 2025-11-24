@@ -41,7 +41,7 @@ export async function setupAuth(app: Express) {
   app.use(getSession());
 
   app.post("/api/auth/signup", async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, disclaimerAgreed } = req.body;
 
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return res.status(400).json({ error: "Valid email address is required" });
@@ -49,6 +49,10 @@ export async function setupAuth(app: Express) {
 
     if (!password || typeof password !== "string" || password.length < 8) {
       return res.status(400).json({ error: "Password must be at least 8 characters long" });
+    }
+
+    if (disclaimerAgreed !== true) {
+      return res.status(400).json({ error: "You must agree to the legal disclaimer to create an account" });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -66,7 +70,11 @@ export async function setupAuth(app: Express) {
 
       const [newUser] = await db
         .insert(users)
-        .values({ email: normalizedEmail, passwordHash })
+        .values({ 
+          email: normalizedEmail, 
+          passwordHash,
+          disclaimerAgreedAt: new Date(),
+        })
         .returning();
 
       (req.session as any).userId = newUser.id;

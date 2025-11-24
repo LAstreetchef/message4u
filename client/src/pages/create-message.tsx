@@ -405,10 +405,22 @@ export default function CreateMessage() {
       </main>
 
       <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t mt-20">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto text-center space-y-2">
           <p className="text-sm text-muted-foreground">
             Secret Message – pay-to-open messages
           </p>
+          <div className="flex justify-center gap-4 text-sm">
+            <Link href="/privacy">
+              <a className="text-muted-foreground hover:text-foreground" data-testid="link-footer-privacy">
+                Privacy Policy
+              </a>
+            </Link>
+            <Link href="/legal-disclaimer">
+              <a className="text-muted-foreground hover:text-foreground" data-testid="link-footer-legal">
+                Legal Disclaimer
+              </a>
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

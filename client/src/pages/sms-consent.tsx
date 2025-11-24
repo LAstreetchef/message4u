@@ -229,6 +229,11 @@ export default function SmsConsent() {
                 Privacy Policy
               </a>
             </Link>
+            <Link href="/legal-disclaimer">
+              <a className="text-muted-foreground hover:text-foreground" data-testid="link-footer-legal">
+                Legal Disclaimer
+              </a>
+            </Link>
           </div>
         </div>
       </footer>
