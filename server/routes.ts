@@ -465,8 +465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: error.type,
         code: error.code,
         message: error.message,
-        statusCode: error.statusCode,
-        accountId: user?.stripeAccountId
+        statusCode: error.statusCode
       });
       res.status(500).json({ 
         message: "Failed to create account link",
@@ -507,8 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: error.type,
         code: error.code,
         message: error.message,
-        statusCode: error.statusCode,
-        accountId: user?.stripeAccountId
+        statusCode: error.statusCode
       });
       res.status(500).json({ 
         message: "Failed to check connect status",
