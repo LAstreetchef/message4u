@@ -16,15 +16,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check, FileIcon, FileText, Wallet, Mail } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -35,17 +26,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [messageToToggle, setMessageToToggle] = useState<Message | null>(null);
-  const [cryptoWalletType, setCryptoWalletType] = useState<string>("");
-  const [cryptoWalletAddress, setCryptoWalletAddress] = useState<string>("");
   const [stripeConnectLoading, setStripeConnectLoading] = useState(false);
-
-  // Update crypto wallet fields when user data loads
-  useEffect(() => {
-    if (user) {
-      setCryptoWalletType(user.cryptoWalletType || "");
-      setCryptoWalletAddress(user.cryptoWalletAddress || "");
-    }
-  }, [user]);
 
   // Fetch Stripe Connect status
   const { data: stripeConnectStatus } = useQuery({
@@ -97,29 +78,6 @@ export default function Dashboard() {
         variant: "destructive",
       });
       setMessageToToggle(null);
-    },
-  });
-
-  const updateCryptoWalletMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("PATCH", "/api/auth/crypto-wallet", {
-        cryptoWalletType,
-        cryptoWalletAddress,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Crypto Wallet Updated",
-        description: "Your crypto wallet information has been saved successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update crypto wallet information",
-        variant: "destructive",
-      });
     },
   });
 
@@ -272,7 +230,7 @@ export default function Dashboard() {
               <h2 className="text-xl font-heading font-semibold">Payout Information</h2>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              Connect your bank account for automated payouts or set up a crypto wallet for manual transfers.
+              Connect your bank account for automated payouts or use Venmo/CashApp for manual transfers.
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -321,49 +279,6 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-heading font-semibold mb-4">Crypto Wallet (Alternative)</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Prefer cryptocurrency? Set up your wallet address for manual crypto payouts.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="crypto-wallet-type">Cryptocurrency</Label>
-                  <Select
-                    value={cryptoWalletType}
-                    onValueChange={setCryptoWalletType}
-                  >
-                    <SelectTrigger id="crypto-wallet-type" data-testid="select-crypto-type">
-                      <SelectValue placeholder="Select cryptocurrency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bitcoin">Bitcoin (BTC)</SelectItem>
-                      <SelectItem value="ethereum">Ethereum (ETH)</SelectItem>
-                      <SelectItem value="litecoin">Litecoin (LTC)</SelectItem>
-                      <SelectItem value="usdc">USD Coin (USDC)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="crypto-wallet-address">Wallet Address</Label>
-                  <Input
-                    id="crypto-wallet-address"
-                    data-testid="input-crypto-wallet-address"
-                    placeholder="Enter your wallet address"
-                    value={cryptoWalletAddress}
-                    onChange={(e) => setCryptoWalletAddress(e.target.value)}
-                  />
-                </div>
-              </div>
-              <Button
-                onClick={() => updateCryptoWalletMutation.mutate()}
-                disabled={!cryptoWalletType || !cryptoWalletAddress || updateCryptoWalletMutation.isPending}
-                data-testid="button-save-crypto-wallet"
-                className="rounded-full mt-4"
-              >
-                {updateCryptoWalletMutation.isPending ? "Saving..." : "Save Crypto Wallet"}
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
