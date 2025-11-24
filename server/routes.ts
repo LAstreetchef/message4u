@@ -416,9 +416,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateUserStripeAccount(userId, account.id, false);
 
       res.json({ accountId: account.id, onboardingComplete: false });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating Stripe Connect account:", error);
-      res.status(500).json({ message: "Failed to create Connect account" });
+      console.error("Stripe error details:", {
+        type: error.type,
+        code: error.code,
+        message: error.message,
+        statusCode: error.statusCode,
+        raw: error.raw
+      });
+      res.status(500).json({ 
+        message: "Failed to create Connect account",
+        error: error.message,
+        code: error.code
+      });
     }
   });
 
@@ -434,6 +445,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const returnUrl = `${req.protocol}://${req.get('host')}/dashboard?stripe_onboarding=complete`;
       const refreshUrl = `${req.protocol}://${req.get('host')}/dashboard?stripe_onboarding=refresh`;
 
+      console.log("Creating account link for:", {
+        accountId: user.stripeAccountId,
+        returnUrl,
+        refreshUrl
+      });
+
       const accountLink = await stripe.accountLinks.create({
         account: user.stripeAccountId,
         refresh_url: refreshUrl,
@@ -442,9 +459,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       res.json({ url: accountLink.url });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating account link:", error);
-      res.status(500).json({ message: "Failed to create account link" });
+      console.error("Stripe error details:", {
+        type: error.type,
+        code: error.code,
+        message: error.message,
+        statusCode: error.statusCode,
+        accountId: user?.stripeAccountId
+      });
+      res.status(500).json({ 
+        message: "Failed to create account link",
+        error: error.message,
+        code: error.code
+      });
     }
   });
 
@@ -473,9 +501,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         payoutsEnabled: account.payouts_enabled,
         chargesEnabled: account.charges_enabled,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error checking connect status:", error);
-      res.status(500).json({ message: "Failed to check connect status" });
+      console.error("Stripe error details:", {
+        type: error.type,
+        code: error.code,
+        message: error.message,
+        statusCode: error.statusCode,
+        accountId: user?.stripeAccountId
+      });
+      res.status(500).json({ 
+        message: "Failed to check connect status",
+        error: error.message,
+        code: error.code
+      });
     }
   });
 
