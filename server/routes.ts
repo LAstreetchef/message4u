@@ -393,18 +393,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
+      
+      // Debug: Log the API key prefix to verify we're using live keys
+      const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 12) || 'undefined';
+      console.log(`[Stripe Debug] API Key prefix: ${keyPrefix}...`);
+      console.log(`[Stripe Debug] User ${user?.email} - Current stripeAccountId: ${user?.stripeAccountId || 'NULL'}`);
 
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
       if (user.stripeAccountId) {
+        console.log(`[Stripe Debug] Returning existing account: ${user.stripeAccountId}`);
         return res.json({ 
           accountId: user.stripeAccountId,
           onboardingComplete: user.stripeOnboardingComplete 
         });
       }
 
+      console.log(`[Stripe Debug] Creating NEW Stripe Connect account for ${user.email}...`);
       const account = await stripe.accounts.create({
         type: 'express',
         email: user.email,
@@ -412,8 +419,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           transfers: { requested: true },
         },
       });
+      
+      console.log(`[Stripe Debug] NEW account created: ${account.id}`);
 
       await storage.updateUserStripeAccount(userId, account.id, false);
+      console.log(`[Stripe Debug] Saved account ${account.id} to database for user ${userId}`);
 
       res.json({ accountId: account.id, onboardingComplete: false });
     } catch (error: any) {
@@ -437,8 +447,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       const user = await storage.getUser(userId);
+      
+      // Debug: Log the API key prefix
+      const keyPrefix = process.env.STRIPE_SECRET_KEY?.substring(0, 12) || 'undefined';
+      console.log(`[Stripe Debug] create-account-link - API Key prefix: ${keyPrefix}...`);
+      console.log(`[Stripe Debug] create-account-link - User stripeAccountId: ${user?.stripeAccountId || 'NULL'}`);
 
       if (!user || !user.stripeAccountId) {
+        console.log(`[Stripe Debug] No Stripe account found for user`);
         return res.status(400).json({ message: "No Stripe account found" });
       }
 
@@ -446,8 +462,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const returnUrl = `${baseUrl}/dashboard?stripe_onboarding=complete`;
       const refreshUrl = `${baseUrl}/dashboard?stripe_onboarding=refresh`;
 
-      console.log("Creating account link for:", {
+      console.log("[Stripe Debug] Creating account link for:", {
         accountId: user.stripeAccountId,
+        baseUrl,
         returnUrl,
         refreshUrl
       });
@@ -459,10 +476,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: 'account_onboarding',
       });
 
+      console.log(`[Stripe Debug] Account link created successfully: ${accountLink.url?.substring(0, 50)}...`);
       res.json({ url: accountLink.url });
     } catch (error: any) {
-      console.error("Error creating account link:", error);
-      console.error("Stripe error details:", {
+      console.error("[Stripe Debug] Error creating account link:", error);
+      console.error("[Stripe Debug] Stripe error details:", {
         type: error.type,
         code: error.code,
         message: error.message,
