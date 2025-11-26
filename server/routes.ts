@@ -164,6 +164,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: `Failed to process Stripe transfer: ${stripeError.message}` 
           });
         }
+      } else if (user.payoutMethod && user.payoutAddress) {
+        // Manual payout method (PayPal, Venmo, Cash App, Zelle)
+        actualPayoutMethod = user.payoutMethod;
+        actualPayoutAddress = user.payoutAddress;
+        payoutStatus = 'completed';
+        console.log(`Manual payout marked for ${user.email}: ${actualPayoutMethod} - ${actualPayoutAddress}`);
       } else if (user.cryptoWalletType && user.cryptoWalletAddress) {
         // Crypto wallet payout - use stored wallet info
         actualPayoutMethod = user.cryptoWalletType;
@@ -173,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // No payout method configured
         return res.status(400).json({ 
-          message: "User doesn't have Stripe Connect or crypto wallet configured." 
+          message: "User doesn't have a payout method configured. Please ask them to set up PayPal, Venmo, Cash App, or Zelle in their dashboard." 
         });
       }
 

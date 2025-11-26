@@ -44,10 +44,19 @@ interface PendingPayout {
   stripeOnboardingComplete: boolean;
   cryptoWalletType: string | null;
   cryptoWalletAddress: string | null;
+  payoutMethod: string | null;
+  payoutAddress: string | null;
   totalEarnings: number;
   totalPaidOut: number;
   pendingAmount: number;
 }
+
+const PAYOUT_METHOD_LABELS: Record<string, string> = {
+  paypal: 'PayPal',
+  venmo: 'Venmo',
+  cashapp: 'Cash App',
+  zelle: 'Zelle',
+};
 
 interface Analytics {
   totalRevenue: number;
@@ -304,8 +313,8 @@ export default function AdminDashboard() {
                       <TableHead>Total Earnings</TableHead>
                       <TableHead>Paid Out</TableHead>
                       <TableHead>Pending</TableHead>
-                      <TableHead>Stripe Connect</TableHead>
-                      <TableHead>Crypto Wallet</TableHead>
+                      <TableHead>Payout Method</TableHead>
+                      <TableHead>Account Info</TableHead>
                       <TableHead>Action</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -321,27 +330,31 @@ export default function AdminDashboard() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          {payout.stripeOnboardingComplete ? (
+                          {payout.payoutMethod ? (
                             <Badge variant="secondary" className="flex items-center gap-1 w-fit">
                               <CheckCircle className="h-3 w-3" />
-                              Connected
+                              {PAYOUT_METHOD_LABELS[payout.payoutMethod] || payout.payoutMethod}
                             </Badge>
-                          ) : payout.stripeAccountId ? (
-                            <Badge variant="outline">Pending Setup</Badge>
-                          ) : (
-                            <Badge variant="outline">Not Connected</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {payout.cryptoWalletType ? (
-                            <div className="flex flex-col gap-1">
-                              <Badge variant="secondary">{payout.cryptoWalletType}</Badge>
-                              <span className="text-xs text-muted-foreground truncate max-w-[150px]">
-                                {payout.cryptoWalletAddress}
-                              </span>
-                            </div>
+                          ) : payout.stripeOnboardingComplete ? (
+                            <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                              <CheckCircle className="h-3 w-3" />
+                              Stripe Connect
+                            </Badge>
+                          ) : payout.cryptoWalletType ? (
+                            <Badge variant="secondary">{payout.cryptoWalletType}</Badge>
                           ) : (
                             <Badge variant="outline">Not Set</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="max-w-[200px]">
+                          {payout.payoutAddress ? (
+                            <span className="text-sm truncate block">{payout.payoutAddress}</span>
+                          ) : payout.stripeOnboardingComplete ? (
+                            <span className="text-sm text-muted-foreground">Bank (automated)</span>
+                          ) : payout.cryptoWalletAddress ? (
+                            <span className="text-xs text-muted-foreground truncate block">{payout.cryptoWalletAddress}</span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
                         <TableCell>
@@ -354,7 +367,7 @@ export default function AdminDashboard() {
                             }}
                             disabled={
                               payout.pendingAmount <= 0 ||
-                              (!payout.stripeOnboardingComplete && (!payout.cryptoWalletType || !payout.cryptoWalletAddress))
+                              (!(payout.payoutMethod && payout.payoutAddress) && !payout.stripeOnboardingComplete && !(payout.cryptoWalletType && payout.cryptoWalletAddress))
                             }
                             data-testid={`button-complete-payout-${payout.userId}`}
                           >
@@ -405,9 +418,13 @@ export default function AdminDashboard() {
                         <TableCell>{allUsers?.find(u => u.id === payout.userId)?.email}</TableCell>
                         <TableCell className="font-semibold">${parseFloat(payout.amount).toFixed(2)}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary">{payout.payoutMethod}</Badge>
+                          {payout.payoutMethod ? (
+                            <Badge variant="secondary">{PAYOUT_METHOD_LABELS[payout.payoutMethod] || payout.payoutMethod}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate">{payout.payoutAddress}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{payout.payoutAddress || "—"}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{payout.adminNotes || "—"}</TableCell>
                       </TableRow>
                     ))}
@@ -531,7 +548,12 @@ export default function AdminDashboard() {
             <div className="space-y-2">
               <Label>Payout Method</Label>
               <div className="text-sm">
-                {selectedPayout?.stripeOnboardingComplete ? (
+                {selectedPayout?.payoutMethod ? (
+                  <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                    <Wallet className="h-3 w-3" />
+                    {PAYOUT_METHOD_LABELS[selectedPayout.payoutMethod] || selectedPayout.payoutMethod} (Manual)
+                  </Badge>
+                ) : selectedPayout?.stripeOnboardingComplete ? (
                   <Badge variant="secondary" className="flex items-center gap-1 w-fit">
                     <CheckCircle className="h-3 w-3" />
                     Stripe Connect (Automated)
@@ -546,6 +568,20 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
+            {selectedPayout?.payoutMethod && (
+              <div className="bg-primary/10 border border-primary/20 p-4 rounded-md">
+                <p className="text-sm font-medium mb-2">Manual Payout Required</p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Send ${payoutAmount} via {PAYOUT_METHOD_LABELS[selectedPayout.payoutMethod] || selectedPayout.payoutMethod} to:
+                </p>
+                <div className="bg-muted p-3 rounded-md font-mono text-sm break-all">
+                  {selectedPayout.payoutAddress}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  After sending the payment, click "Complete Payout" to record this transaction.
+                </p>
+              </div>
+            )}
             {selectedPayout?.stripeOnboardingComplete && (
               <div className="bg-muted p-3 rounded-md text-sm">
                 <p className="text-muted-foreground">
