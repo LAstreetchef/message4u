@@ -6,6 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,23 +25,44 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check, FileIcon, FileText, Wallet, Mail } from "lucide-react";
+import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check, FileIcon, FileText, Wallet, Mail, Save } from "lucide-react";
+import { SiPaypal, SiVenmo, SiCashapp } from "react-icons/si";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Message, Payment, User } from "@shared/schema";
+
+const PAYOUT_METHODS = [
+  { value: 'paypal', label: 'PayPal', icon: SiPaypal, placeholder: 'PayPal email address' },
+  { value: 'venmo', label: 'Venmo', icon: SiVenmo, placeholder: 'Venmo username (e.g., @username)' },
+  { value: 'cashapp', label: 'Cash App', icon: SiCashapp, placeholder: 'Cash App $cashtag (e.g., $username)' },
+  { value: 'zelle', label: 'Zelle', icon: Mail, placeholder: 'Zelle email or phone number' },
+];
 
 export default function Dashboard() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [messageToToggle, setMessageToToggle] = useState<Message | null>(null);
-  const [stripeConnectLoading, setStripeConnectLoading] = useState(false);
+  const [selectedPayoutMethod, setSelectedPayoutMethod] = useState<string>('');
+  const [payoutAddress, setPayoutAddress] = useState<string>('');
 
-  // Fetch Stripe Connect status
-  const { data: stripeConnectStatus } = useQuery({
-    queryKey: ["/api/stripe/connect-status"],
+  // Fetch current payout method
+  const { data: payoutMethodData } = useQuery<{ payoutMethod: string | null; payoutAddress: string | null }>({
+    queryKey: ["/api/auth/payout-method"],
     enabled: isAuthenticated,
   });
+
+  // Set form values when data loads
+  useEffect(() => {
+    if (payoutMethodData) {
+      if (payoutMethodData.payoutMethod) {
+        setSelectedPayoutMethod(payoutMethodData.payoutMethod);
+      }
+      if (payoutMethodData.payoutAddress) {
+        setPayoutAddress(payoutMethodData.payoutAddress);
+      }
+    }
+  }, [payoutMethodData]);
 
   const { data: messages, isLoading: messagesLoading } = useQuery<Message[]>({
     queryKey: ["/api/messages"],
@@ -102,26 +132,39 @@ export default function Dashboard() {
     },
   });
 
-  const connectStripeAccount = async () => {
-    try {
-      setStripeConnectLoading(true);
-      
-      await apiRequest("POST", "/api/stripe/create-connect-account", {});
-      
-      const linkResponse = await apiRequest("POST", "/api/stripe/create-account-link", {});
-      const linkData: { url: string } = await linkResponse.json();
-      
-      window.location.href = linkData.url;
-    } catch (error: any) {
-      console.error('Stripe Connect error:', error);
+  const savePayoutMethodMutation = useMutation({
+    mutationFn: async ({ payoutMethod, payoutAddress }: { payoutMethod: string; payoutAddress: string }) => {
+      return await apiRequest("PATCH", "/api/auth/payout-method", { payoutMethod, payoutAddress });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/payout-method"] });
+      toast({
+        title: "Payout Method Saved",
+        description: "Your payout information has been updated successfully",
+      });
+    },
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to connect Stripe account",
+        description: error.message || "Failed to save payout method",
         variant: "destructive",
       });
-      setStripeConnectLoading(false);
+    },
+  });
+
+  const handleSavePayoutMethod = () => {
+    if (!selectedPayoutMethod || !payoutAddress.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a payout method and enter your account info",
+        variant: "destructive",
+      });
+      return;
     }
+    savePayoutMethodMutation.mutate({ payoutMethod: selectedPayoutMethod, payoutAddress: payoutAddress.trim() });
   };
+
+  const selectedMethodInfo = PAYOUT_METHODS.find(m => m.value === selectedPayoutMethod);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -230,55 +273,87 @@ export default function Dashboard() {
               <h2 className="text-xl font-heading font-semibold">Payout Information</h2>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              Connect your bank account for automated payouts or use Venmo/CashApp for manual transfers.
+              Set up how you'd like to receive your earnings. We support PayPal, Venmo, Cash App, and Zelle.
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div>
-              <h3 className="text-lg font-heading font-semibold mb-4 flex items-center gap-2">
-                <Wallet className="w-5 h-5" />
-                Automated Bank Payouts (Recommended)
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Connect your bank account via Stripe for instant automated payouts. Fast, secure, and no manual coordination needed!
-              </p>
-              
-              {(stripeConnectStatus as any)?.connected && (stripeConnectStatus as any)?.onboardingComplete ? (
-                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Check className="w-5 h-5 text-green-500" />
-                    <p className="font-semibold text-green-500">Bank Account Connected</p>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    You'll automatically receive payouts to your bank account when the admin processes them. 
-                  </p>
+            {payoutMethodData?.payoutMethod && payoutMethodData?.payoutAddress ? (
+              <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Check className="w-5 h-5 text-green-500" />
+                  <p className="font-semibold text-green-500">Payout Method Configured</p>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                    <p className="text-sm font-medium mb-2">Benefits of Automated Payouts:</p>
-                    <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
-                      <li>Instant transfers to your bank account</li>
-                      <li>No manual coordination with admin required</li>
-                      <li>Secure processing through Stripe</li>
-                      <li>Track all payout history automatically</li>
-                    </ul>
-                  </div>
-                  <Button
-                    onClick={connectStripeAccount}
-                    disabled={stripeConnectLoading}
-                    data-testid="button-connect-stripe"
-                    className="rounded-full w-full"
-                  >
-                    {stripeConnectLoading ? "Connecting..." : "Connect Bank Account with Stripe"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    You'll be redirected to Stripe's secure platform to connect your bank account
-                  </p>
+                <p className="text-sm text-muted-foreground">
+                  You'll receive payouts via <span className="font-medium">{PAYOUT_METHODS.find(m => m.value === payoutMethodData.payoutMethod)?.label}</span> to <span className="font-medium">{payoutMethodData.payoutAddress}</span>
+                </p>
+              </div>
+            ) : (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-4">
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  Please set up your payout method to receive earnings from your messages.
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="payout-method">Payout Method</Label>
+                <Select value={selectedPayoutMethod} onValueChange={setSelectedPayoutMethod}>
+                  <SelectTrigger id="payout-method" data-testid="select-payout-method">
+                    <SelectValue placeholder="Select how you'd like to be paid" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYOUT_METHODS.map((method) => (
+                      <SelectItem key={method.value} value={method.value} data-testid={`option-${method.value}`}>
+                        <div className="flex items-center gap-2">
+                          <method.icon className="w-4 h-4" />
+                          <span>{method.label}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {selectedPayoutMethod && (
+                <div className="space-y-2">
+                  <Label htmlFor="payout-address">
+                    {selectedMethodInfo?.label} Account
+                  </Label>
+                  <Input
+                    id="payout-address"
+                    type="text"
+                    placeholder={selectedMethodInfo?.placeholder}
+                    value={payoutAddress}
+                    onChange={(e) => setPayoutAddress(e.target.value)}
+                    data-testid="input-payout-address"
+                  />
                 </div>
               )}
+
+              <Button
+                onClick={handleSavePayoutMethod}
+                disabled={savePayoutMethodMutation.isPending || !selectedPayoutMethod || !payoutAddress.trim()}
+                data-testid="button-save-payout"
+                className="rounded-full w-full"
+              >
+                {savePayoutMethodMutation.isPending ? (
+                  "Saving..."
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Payout Method
+                  </>
+                )}
+              </Button>
             </div>
 
+            <div className="bg-muted/50 rounded-lg p-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                When you earn money from unlocked messages, the admin will send your payout directly to your selected payment method. 
+                Payouts are typically processed within 1-3 business days.
+              </p>
+            </div>
           </CardContent>
         </Card>
 
