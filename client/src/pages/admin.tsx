@@ -589,7 +589,7 @@ export default function AdminDashboard() {
                 </p>
               </div>
             )}
-            {!selectedPayout?.stripeOnboardingComplete && selectedPayout?.cryptoWalletType && (
+            {!selectedPayout?.payoutMethod && !selectedPayout?.stripeOnboardingComplete && selectedPayout?.cryptoWalletType && (
               <>
                 <div className="space-y-2">
                   <Label>Crypto Wallet</Label>
@@ -670,7 +670,7 @@ export default function AdminDashboard() {
             >
               Cancel
             </Button>
-            {!selectedPayout?.stripeOnboardingComplete && selectedPayout?.cryptoWalletType ? (
+            {!selectedPayout?.payoutMethod && !selectedPayout?.stripeOnboardingComplete && selectedPayout?.cryptoWalletType ? (
               cryptoPayoutId ? (
                 <Button
                   onClick={() => verifyCryptoPayoutMutation.mutate()}
@@ -694,7 +694,8 @@ export default function AdminDashboard() {
                 disabled={completePayoutMutation.isPending || !payoutAmount}
                 data-testid="button-confirm-payout"
               >
-                {completePayoutMutation.isPending ? "Processing..." : "Complete Payout"}
+                {completePayoutMutation.isPending ? "Processing..." : 
+                  selectedPayout?.payoutMethod ? "Record Manual Payout" : "Complete Payout"}
               </Button>
             )}
           </DialogFooter>
