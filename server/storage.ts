@@ -26,6 +26,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   updateUserCryptoWallet(userId: string, cryptoWalletAddress: string, cryptoWalletType: string): Promise<void>;
   updateUserStripeAccount(userId: string, stripeAccountId: string, onboardingComplete: boolean): Promise<void>;
+  updateUserPayoutMethod(userId: string, payoutMethod: string, payoutAddress: string): Promise<void>;
 
   // Message operations
   createMessage(userId: string, message: InsertMessage): Promise<Message>;
@@ -62,6 +63,8 @@ export interface IStorage {
     stripeOnboardingComplete: boolean;
     cryptoWalletType: string | null;
     cryptoWalletAddress: string | null;
+    payoutMethod: string | null;
+    payoutAddress: string | null;
     totalEarnings: number;
     totalPaidOut: number;
     pendingAmount: number;
@@ -120,6 +123,17 @@ export class DatabaseStorage implements IStorage {
       .set({
         stripeAccountId,
         stripeOnboardingComplete: onboardingComplete,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserPayoutMethod(userId: string, payoutMethod: string, payoutAddress: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        payoutMethod,
+        payoutAddress,
         updatedAt: new Date(),
       })
       .where(eq(users.id, userId));
@@ -281,6 +295,8 @@ export class DatabaseStorage implements IStorage {
     stripeOnboardingComplete: boolean;
     cryptoWalletType: string | null;
     cryptoWalletAddress: string | null;
+    payoutMethod: string | null;
+    payoutAddress: string | null;
     totalEarnings: number;
     totalPaidOut: number;
     pendingAmount: number;
@@ -318,6 +334,8 @@ export class DatabaseStorage implements IStorage {
           stripeOnboardingComplete: user.stripeOnboardingComplete || false,
           cryptoWalletType: user.cryptoWalletType,
           cryptoWalletAddress: user.cryptoWalletAddress,
+          payoutMethod: user.payoutMethod,
+          payoutAddress: user.payoutAddress,
           totalEarnings,
           totalPaidOut,
           pendingAmount,

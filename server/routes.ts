@@ -388,6 +388,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User payout method routes
+  app.patch('/api/auth/payout-method', isAuthenticated, async (req: any, res) => {
+    try {
+      const { payoutMethod, payoutAddress } = req.body;
+      const userId = req.user.id;
+
+      if (!payoutMethod || !payoutAddress) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const validMethods = ['paypal', 'venmo', 'cashapp', 'zelle'];
+      if (!validMethods.includes(payoutMethod)) {
+        return res.status(400).json({ message: "Invalid payout method" });
+      }
+
+      await storage.updateUserPayoutMethod(userId, payoutMethod, payoutAddress);
+      res.json({ message: "Payout method updated successfully" });
+    } catch (error) {
+      console.error("Error updating payout method:", error);
+      res.status(500).json({ message: "Failed to update payout method" });
+    }
+  });
+
+  app.get('/api/auth/payout-method', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ 
+        payoutMethod: user.payoutMethod || null, 
+        payoutAddress: user.payoutAddress || null 
+      });
+    } catch (error) {
+      console.error("Error fetching payout method:", error);
+      res.status(500).json({ message: "Failed to fetch payout method" });
+    }
+  });
+
   // Stripe Connect routes
   app.post('/api/stripe/create-connect-account', isAuthenticated, async (req: any, res) => {
     try {
