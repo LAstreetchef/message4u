@@ -920,10 +920,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Stripe webhook for payment confirmation
+  // Security: Return 400 for invalid signatures (blocks spoofed events)
+  // Return 200 for all verified events (prevents retry storms for events we've processed or don't need)
   app.post('/api/webhook/stripe', async (req, res) => {
     const sig = req.headers['stripe-signature'];
 
     if (!sig) {
+      console.error('[Stripe Webhook] No signature header present - rejecting');
       return res.status(400).send('No signature');
     }
 
@@ -936,19 +939,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         process.env.STRIPE_WEBHOOK_SECRET || ''
       );
     } catch (err: any) {
-      console.error('Webhook signature verification failed:', err.message);
+      console.error('[Stripe Webhook] Signature verification failed:', err.message);
+      // Return 400 for security - reject potentially spoofed events
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
+    console.log(`[Stripe Webhook] Received event: ${event.type} (ID: ${event.id})`);
+
+    // Handle checkout.session.completed
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       
       try {
         const messageId = session.metadata?.messageId;
         if (!messageId) {
-          console.error('No messageId in session metadata');
-          return res.status(400).send('No messageId in metadata');
+          console.error('[Stripe Webhook] checkout.session.completed - No messageId in session metadata, session ID:', session.id);
+          // Return 200 - this might be a checkout not related to our messages
+          return res.status(200).json({ received: true, skipped: 'No messageId in metadata' });
         }
+
+        console.log(`[Stripe Webhook] Processing checkout.session.completed for message ${messageId}`);
 
         // Create payment record with platform fee calculation
         const amount = session.amount_total! / 100;
@@ -965,16 +975,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Mark message as unlocked
         await storage.markMessageUnlocked(messageId);
+        console.log(`[Stripe Webhook] Successfully processed payment for message ${messageId}`);
       } catch (error) {
-        console.error('Error processing webhook:', error);
-        return res.status(500).send('Error processing payment');
+        console.error('[Stripe Webhook] Error processing checkout.session.completed:', error);
+        // Still return 200 to prevent retry - we logged the error for debugging
       }
     }
     
+    // Handle account.updated (Stripe Connect)
     if (event.type === 'account.updated') {
       const account = event.data.object as Stripe.Account;
       
       try {
+        console.log(`[Stripe Webhook] Processing account.updated for account ${account.id}`);
         const user = await storage.getUserByStripeAccountId(account.id);
         
         if (user) {
@@ -982,20 +995,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (onboardingComplete !== user.stripeOnboardingComplete) {
             await storage.updateUserStripeAccount(user.id, account.id, onboardingComplete);
-            console.log(`Stripe Connect account ${account.id} onboarding status changed to ${onboardingComplete} for user ${user.id}`);
+            console.log(`[Stripe Webhook] Connect account ${account.id} onboarding status changed to ${onboardingComplete} for user ${user.id}`);
+          } else {
+            console.log(`[Stripe Webhook] Connect account ${account.id} status unchanged for user ${user.id}`);
           }
+        } else {
+          console.log(`[Stripe Webhook] No user found for Connect account ${account.id} - this may be expected for new accounts`);
         }
       } catch (error) {
-        console.error('Error updating Connect account status:', error);
+        console.error('[Stripe Webhook] Error updating Connect account status:', error);
+        // Still return 200 to prevent retry
       }
     }
     
+    // Handle transfer events
     if (event.type === 'transfer.created' || event.type === 'transfer.paid') {
       const transfer = event.data.object as Stripe.Transfer;
-      console.log(`Stripe transfer ${event.type}: ${transfer.id} for $${transfer.amount / 100}`);
+      console.log(`[Stripe Webhook] Transfer ${event.type}: ${transfer.id} for $${transfer.amount / 100}`);
     }
 
-    res.json({ received: true });
+    // Always return 200 to acknowledge receipt
+    res.status(200).json({ received: true });
   });
 
   // Toggle message active status
