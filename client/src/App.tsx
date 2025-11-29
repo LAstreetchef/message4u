@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
+import Promo from "@/pages/promo";
 import Dashboard from "@/pages/dashboard";
 import AdminDashboard from "@/pages/admin";
 import CreateMessage from "@/pages/create-message";
@@ -21,6 +22,7 @@ function Router() {
   return (
     <Switch>
       {/* Public routes accessible to everyone */}
+      <Route path="/promo" component={Promo} />
       <Route path="/sms-consent" component={SmsConsent} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/legal-disclaimer" component={LegalDisclaimer} />

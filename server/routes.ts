@@ -1009,7 +1009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     // Handle transfer events
-    if (event.type === 'transfer.created' || event.type === 'transfer.paid') {
+    if (event.type.startsWith('transfer.')) {
       const transfer = event.data.object as Stripe.Transfer;
       console.log(`[Stripe Webhook] Transfer ${event.type}: ${transfer.id} for $${transfer.amount / 100}`);
     }
