@@ -4,11 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowRight, Lock, DollarSign, Send, Sun, Moon } from "lucide-react";
+import { Heart, Lock, DollarSign, Send } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useTheme } from "@/hooks/useTheme";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -30,19 +29,10 @@ const loginSchema = z.object({
 type SignupFormData = z.infer<typeof signupSchema>;
 type LoginFormData = z.infer<typeof loginSchema>;
 
-// Lifestyle images from Unsplash
-const heroImages = [
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=500&fit=crop",
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop",
-  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=500&fit=crop",
-  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=500&fit=crop",
-];
-
 export default function Landing() {
   const [isSignUp, setIsSignUp] = useState(true);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { isDark, toggleTheme } = useTheme();
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(isSignUp ? signupSchema : loginSchema),
@@ -53,6 +43,7 @@ export default function Landing() {
     },
   });
 
+  // Reset form when switching between signup and login
   useEffect(() => {
     form.reset({
       email: "",
@@ -114,59 +105,57 @@ export default function Landing() {
   const isPending = signupMutation.isPending || loginMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-background text-foreground transition-colors">
-      {/* Minimal Nav */}
-      <nav className="border-b border-border">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <span className="text-xl font-semibold tracking-tight">Secret Message</span>
-            <button 
-              onClick={toggleTheme}
-              className="p-2 hover:bg-muted rounded-full transition-colors"
-              aria-label="Toggle theme"
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center">
+                <Heart className="w-5 h-5 text-primary-foreground" fill="currentColor" />
+              </div>
+              <span className="text-xl font-heading font-bold text-foreground">Secret Message</span>
+            </div>
           </div>
         </div>
       </nav>
 
       <main>
-        {/* Hero Section */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8 border-b border-border">
+        <section className="py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              {/* Left - Text & Form */}
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <p className="text-sm uppercase tracking-widest text-muted-foreground">Pay-to-unlock messages</p>
-                  <h1 className="text-5xl sm:text-6xl font-light tracking-tight leading-tight">
-                    Send secrets.<br />
-                    <span className="font-semibold">Get paid.</span>
-                  </h1>
-                  <p className="text-lg text-muted-foreground max-w-md">
-                    Create paywalled messages, photos, and files. Share the link. Earn when they unlock.
-                  </p>
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div className="space-y-6">
+                <div className="inline-block">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                    <Heart className="w-4 h-4" fill="currentColor" />
+                    Playful Pay-to-Open Messages
+                  </span>
                 </div>
-
-                {/* Auth Card */}
-                <div className="border border-border p-6 space-y-4 max-w-sm bg-card">
+                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-heading font-bold text-foreground leading-tight">
+                  Welcome to <br />
+                  <span className="bg-gradient-to-r from-primary via-chart-2 to-accent bg-clip-text text-transparent">
+                    Secret Message
+                  </span>
+                </h1>
+                <p className="text-xl text-muted-foreground max-w-lg">
+                  Send pictures, files, and messages that unlock with a payment. Set your price, share the link, get paid!
+                </p>
+                <Card className="p-6 space-y-4 max-w-md">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-medium">
+                    <h3 className="font-heading font-semibold text-lg">
                       {isSignUp ? "Create Account" : "Sign In"}
                     </h3>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => {
                         setIsSignUp(!isSignUp);
                         form.reset();
                       }}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                       data-testid="button-toggle-auth"
                     >
-                      {isSignUp ? "Have an account?" : "Need an account?"}
-                    </button>
+                      {isSignUp ? "Already have an account?" : "Need an account?"}
+                    </Button>
                   </div>
-                  
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                       <FormField
@@ -174,11 +163,11 @@ export default function Landing() {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
+                            <FormLabel>Email</FormLabel>
                             <FormControl>
                               <Input
                                 type="email"
-                                placeholder="Email"
-                                className="border-border focus:border-foreground rounded-none"
+                                placeholder="your@email.com"
                                 data-testid="input-email"
                                 {...field}
                               />
@@ -192,11 +181,11 @@ export default function Landing() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
+                            <FormLabel>Password</FormLabel>
                             <FormControl>
                               <Input
                                 type="password"
-                                placeholder="Password"
-                                className="border-border focus:border-foreground rounded-none"
+                                placeholder={isSignUp ? "At least 8 characters" : "Your password"}
                                 data-testid="input-password"
                                 {...field}
                               />
@@ -215,14 +204,13 @@ export default function Landing() {
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
-                                  className="rounded-none border-border"
                                   data-testid="checkbox-disclaimer"
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <label className="text-sm text-muted-foreground">
+                                <label className="text-sm font-normal">
                                   I agree to the{" "}
-                                  <a href="/legal-disclaimer" className="underline hover:text-foreground transition-colors" target="_blank" rel="noopener noreferrer" data-testid="link-disclaimer">
+                                  <a href="/legal-disclaimer" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer" data-testid="link-disclaimer">
                                     Legal Disclaimer
                                   </a>
                                 </label>
@@ -234,100 +222,113 @@ export default function Landing() {
                       )}
                       <Button
                         type="submit"
-                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-none h-12"
+                        size="lg"
+                        className="w-full rounded-full bg-gradient-to-r from-primary to-chart-2 hover:opacity-90"
                         data-testid="button-submit"
                         disabled={isPending}
                       >
-                        {isPending ? "Please wait..." : (isSignUp ? "Get Started" : "Sign In")}
-                        <ArrowRight className="ml-2 w-4 h-4" />
+                        {isPending ? "Please wait..." : (isSignUp ? "Sign Up" : "Sign In")}
                       </Button>
                     </form>
                   </Form>
-                </div>
+                </Card>
               </div>
 
-              {/* Right - Image Grid */}
-              <div className="hidden lg:grid grid-cols-2 gap-4">
-                {heroImages.map((src, i) => (
-                  <div 
-                    key={i} 
-                    className={`aspect-[4/5] overflow-hidden border border-border ${i % 2 === 1 ? 'mt-8' : ''}`}
-                  >
-                    <img 
-                      src={src} 
-                      alt="" 
-                      className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
-                    />
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-chart-2/20 rounded-3xl blur-3xl" />
+                <Card className="relative p-8 space-y-6 border-2">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Send className="w-6 h-6 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-heading font-semibold text-lg">Create Your Message</h3>
+                        <p className="text-sm text-muted-foreground">Write something special and set your price</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-chart-2/10 flex items-center justify-center flex-shrink-0">
+                        <Lock className="w-6 h-6 text-chart-2" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-heading font-semibold text-lg">Share the Link</h3>
+                        <p className="text-sm text-muted-foreground">Send your paywalled message to anyone</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                        <DollarSign className="w-6 h-6 text-accent-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-heading font-semibold text-lg">Get Paid to Unlock</h3>
+                        <p className="text-sm text-muted-foreground">They pay, message reveals as an image</p>
+                      </div>
+                    </div>
                   </div>
-                ))}
+                </Card>
               </div>
             </div>
           </div>
         </section>
 
-        {/* How It Works */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <p className="text-sm uppercase tracking-widest text-muted-foreground mb-8">How it works</p>
-            
-            <div className="grid md:grid-cols-3 gap-12">
-              <div className="space-y-4">
-                <div className="w-12 h-12 border border-border flex items-center justify-center">
-                  <Send className="w-5 h-5" />
+        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-secondary/30">
+          <div className="max-w-4xl mx-auto text-center space-y-6">
+            <h2 className="text-3xl sm:text-4xl font-heading font-bold">
+              How It Works
+            </h2>
+            <div className="grid md:grid-cols-3 gap-8 mt-12">
+              <Card className="p-6 space-y-4 text-center hover-elevate">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                  <span className="text-3xl">📱</span>
                 </div>
-                <h3 className="font-medium text-lg">1. Create</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Write a message, upload a photo or file. Set your price.
+                <h3 className="font-heading font-semibold text-lg">1. Create</h3>
+                <p className="text-sm text-muted-foreground">
+                  Write your message and set how much it costs to unlock
                 </p>
-              </div>
+              </Card>
               
-              <div className="space-y-4">
-                <div className="w-12 h-12 border border-border flex items-center justify-center">
-                  <Lock className="w-5 h-5" />
+              <Card className="p-6 space-y-4 text-center hover-elevate">
+                <div className="w-16 h-16 rounded-full bg-chart-2/10 flex items-center justify-center mx-auto">
+                  <span className="text-3xl">🔒</span>
                 </div>
-                <h3 className="font-medium text-lg">2. Share</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  Get a unique link. Send it to anyone you want.
+                <h3 className="font-heading font-semibold text-lg">2. Share</h3>
+                <p className="text-sm text-muted-foreground">
+                  Get a unique link to send to your special someone
                 </p>
-              </div>
+              </Card>
               
-              <div className="space-y-4">
-                <div className="w-12 h-12 border border-border flex items-center justify-center">
-                  <DollarSign className="w-5 h-5" />
+              <Card className="p-6 space-y-4 text-center hover-elevate">
+                <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto">
+                  <span className="text-3xl">💖</span>
                 </div>
-                <h3 className="font-medium text-lg">3. Earn</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  They pay to unlock. You get paid instantly.
+                <h3 className="font-heading font-semibold text-lg">3. Unlock</h3>
+                <p className="text-sm text-muted-foreground">
+                  They pay to unlock and see your message as a beautiful image
                 </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Feature Strip */}
-        <section className="border-y border-border py-8">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-wrap justify-center gap-8 text-sm text-muted-foreground">
-              <span>✓ Stripe & Crypto payments</span>
-              <span>✓ Disappearing messages</span>
-              <span>✓ Files up to 10MB</span>
-              <span>✓ Instant payouts</span>
+              </Card>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t border-border">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+      <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t mt-20">
+        <div className="max-w-6xl mx-auto text-center space-y-2">
           <p className="text-sm text-muted-foreground">
-            © 2026 Secret Message
+            Secret Message – pay-to-open messages
           </p>
-          <div className="flex gap-6 text-sm text-muted-foreground">
+          <div className="flex justify-center gap-4 text-sm">
             <Link href="/privacy">
-              <a className="hover:text-foreground transition-colors" data-testid="link-footer-privacy">Privacy</a>
+              <a className="text-muted-foreground hover:text-foreground" data-testid="link-footer-privacy">
+                Privacy Policy
+              </a>
             </Link>
             <Link href="/legal-disclaimer">
-              <a className="hover:text-foreground transition-colors" data-testid="link-footer-legal">Legal</a>
+              <a className="text-muted-foreground hover:text-foreground" data-testid="link-footer-legal">
+                Legal Disclaimer
+              </a>
             </Link>
           </div>
         </div>
