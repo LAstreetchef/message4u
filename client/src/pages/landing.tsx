@@ -126,18 +126,18 @@ export default function Landing() {
               <div className="space-y-6">
                 <div className="inline-block">
                   <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                    <Heart className="w-4 h-4" fill="currentColor" />
-                    Playful Pay-to-Open Messages
+                    <Ghost className="w-4 h-4" />
+                    Anonymous Pay-to-Unlock Messages
                   </span>
                 </div>
                 <h1 className="text-5xl sm:text-6xl lg:text-7xl font-heading font-bold text-foreground leading-tight">
-                  Welcome to <br />
+                  Send secrets.<br />
                   <span className="bg-gradient-to-r from-primary via-chart-2 to-accent bg-clip-text text-transparent">
-                    Secret Message
+                    Stay anonymous.
                   </span>
                 </h1>
                 <p className="text-xl text-muted-foreground max-w-lg">
-                  Send pictures, files, and messages that unlock with a payment. Set your price, share the link, get paid!
+                  Create anonymous paywalled messages, photos, and files. No identity required. Share the link, get paid.
                 </p>
                 <Card className="p-6 space-y-4 max-w-md">
                   <div className="flex items-center justify-between">
