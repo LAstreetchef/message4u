@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Heart, Lock, DollarSign, Send } from "lucide-react";
+import { ArrowRight, Lock, DollarSign, Send } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +29,14 @@ const loginSchema = z.object({
 type SignupFormData = z.infer<typeof signupSchema>;
 type LoginFormData = z.infer<typeof loginSchema>;
 
+// Lifestyle images from Unsplash
+const heroImages = [
+  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=500&fit=crop",
+  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop",
+  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=500&fit=crop",
+  "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=500&fit=crop",
+];
+
 export default function Landing() {
   const [isSignUp, setIsSignUp] = useState(true);
   const { toast } = useToast();
@@ -43,7 +51,6 @@ export default function Landing() {
     },
   });
 
-  // Reset form when switching between signup and login
   useEffect(() => {
     form.reset({
       email: "",
@@ -105,57 +112,52 @@ export default function Landing() {
   const isPending = signupMutation.isPending || loginMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
-      <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="min-h-screen bg-white">
+      {/* Minimal Nav */}
+      <nav className="border-b border-black/10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center">
-                <Heart className="w-5 h-5 text-primary-foreground" fill="currentColor" />
-              </div>
-              <span className="text-xl font-heading font-bold text-foreground">Secret Message</span>
-            </div>
+            <span className="text-xl font-semibold tracking-tight">Secret Message</span>
           </div>
         </div>
       </nav>
 
       <main>
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
+        {/* Hero Section */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8 border-b border-black/10">
           <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="space-y-6">
-                <div className="inline-block">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                    <Heart className="w-4 h-4" fill="currentColor" />
-                    Playful Pay-to-Open Messages
-                  </span>
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              {/* Left - Text & Form */}
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <p className="text-sm uppercase tracking-widest text-black/50">Pay-to-unlock messages</p>
+                  <h1 className="text-5xl sm:text-6xl font-light tracking-tight leading-tight">
+                    Send secrets.<br />
+                    <span className="font-semibold">Get paid.</span>
+                  </h1>
+                  <p className="text-lg text-black/60 max-w-md">
+                    Create paywalled messages, photos, and files. Share the link. Earn when they unlock.
+                  </p>
                 </div>
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-heading font-bold text-foreground leading-tight">
-                  Welcome to <br />
-                  <span className="bg-gradient-to-r from-primary via-chart-2 to-accent bg-clip-text text-transparent">
-                    Secret Message
-                  </span>
-                </h1>
-                <p className="text-xl text-muted-foreground max-w-lg">
-                  Send pictures, files, and messages that unlock with a payment. Set your price, share the link, get paid!
-                </p>
-                <Card className="p-6 space-y-4 max-w-md">
+
+                {/* Auth Card */}
+                <div className="border border-black/10 p-6 space-y-4 max-w-sm">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-heading font-semibold text-lg">
+                    <h3 className="font-medium">
                       {isSignUp ? "Create Account" : "Sign In"}
                     </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
+                    <button
                       onClick={() => {
                         setIsSignUp(!isSignUp);
                         form.reset();
                       }}
+                      className="text-sm text-black/50 hover:text-black"
                       data-testid="button-toggle-auth"
                     >
-                      {isSignUp ? "Already have an account?" : "Need an account?"}
-                    </Button>
+                      {isSignUp ? "Have an account?" : "Need an account?"}
+                    </button>
                   </div>
+                  
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                       <FormField
@@ -163,11 +165,11 @@ export default function Landing() {
                         name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Email</FormLabel>
                             <FormControl>
                               <Input
                                 type="email"
-                                placeholder="your@email.com"
+                                placeholder="Email"
+                                className="border-black/20 focus:border-black rounded-none"
                                 data-testid="input-email"
                                 {...field}
                               />
@@ -181,11 +183,11 @@ export default function Landing() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
                             <FormControl>
                               <Input
                                 type="password"
-                                placeholder={isSignUp ? "At least 8 characters" : "Your password"}
+                                placeholder="Password"
+                                className="border-black/20 focus:border-black rounded-none"
                                 data-testid="input-password"
                                 {...field}
                               />
@@ -204,13 +206,14 @@ export default function Landing() {
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
+                                  className="rounded-none border-black/30"
                                   data-testid="checkbox-disclaimer"
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <label className="text-sm font-normal">
+                                <label className="text-sm text-black/60">
                                   I agree to the{" "}
-                                  <a href="/legal-disclaimer" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer" data-testid="link-disclaimer">
+                                  <a href="/legal-disclaimer" className="underline hover:text-black" target="_blank" rel="noopener noreferrer" data-testid="link-disclaimer">
                                     Legal Disclaimer
                                   </a>
                                 </label>
@@ -222,113 +225,100 @@ export default function Landing() {
                       )}
                       <Button
                         type="submit"
-                        size="lg"
-                        className="w-full rounded-full bg-gradient-to-r from-primary to-chart-2 hover:opacity-90"
+                        className="w-full bg-black text-white hover:bg-black/90 rounded-none h-12"
                         data-testid="button-submit"
                         disabled={isPending}
                       >
-                        {isPending ? "Please wait..." : (isSignUp ? "Sign Up" : "Sign In")}
+                        {isPending ? "Please wait..." : (isSignUp ? "Get Started" : "Sign In")}
+                        <ArrowRight className="ml-2 w-4 h-4" />
                       </Button>
                     </form>
                   </Form>
-                </Card>
+                </div>
               </div>
 
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-chart-2/20 rounded-3xl blur-3xl" />
-                <Card className="relative p-8 space-y-6 border-2">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Send className="w-6 h-6 text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-heading font-semibold text-lg">Create Your Message</h3>
-                        <p className="text-sm text-muted-foreground">Write something special and set your price</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-chart-2/10 flex items-center justify-center flex-shrink-0">
-                        <Lock className="w-6 h-6 text-chart-2" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-heading font-semibold text-lg">Share the Link</h3>
-                        <p className="text-sm text-muted-foreground">Send your paywalled message to anyone</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
-                        <DollarSign className="w-6 h-6 text-accent-foreground" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-heading font-semibold text-lg">Get Paid to Unlock</h3>
-                        <p className="text-sm text-muted-foreground">They pay, message reveals as an image</p>
-                      </div>
-                    </div>
+              {/* Right - Image Grid */}
+              <div className="hidden lg:grid grid-cols-2 gap-4">
+                {heroImages.map((src, i) => (
+                  <div 
+                    key={i} 
+                    className={`aspect-[4/5] overflow-hidden border border-black/10 ${i % 2 === 1 ? 'mt-8' : ''}`}
+                  >
+                    <img 
+                      src={src} 
+                      alt="" 
+                      className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500"
+                    />
                   </div>
-                </Card>
+                ))}
               </div>
             </div>
           </div>
         </section>
 
-        <section className="py-16 px-4 sm:px-6 lg:px-8 bg-secondary/30">
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            <h2 className="text-3xl sm:text-4xl font-heading font-bold">
-              How It Works
-            </h2>
-            <div className="grid md:grid-cols-3 gap-8 mt-12">
-              <Card className="p-6 space-y-4 text-center hover-elevate">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                  <span className="text-3xl">📱</span>
+        {/* How It Works */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <p className="text-sm uppercase tracking-widest text-black/50 mb-8">How it works</p>
+            
+            <div className="grid md:grid-cols-3 gap-12">
+              <div className="space-y-4">
+                <div className="w-12 h-12 border border-black/20 flex items-center justify-center">
+                  <Send className="w-5 h-5" />
                 </div>
-                <h3 className="font-heading font-semibold text-lg">1. Create</h3>
-                <p className="text-sm text-muted-foreground">
-                  Write your message and set how much it costs to unlock
+                <h3 className="font-medium text-lg">1. Create</h3>
+                <p className="text-black/60 text-sm leading-relaxed">
+                  Write a message, upload a photo or file. Set your price.
                 </p>
-              </Card>
+              </div>
               
-              <Card className="p-6 space-y-4 text-center hover-elevate">
-                <div className="w-16 h-16 rounded-full bg-chart-2/10 flex items-center justify-center mx-auto">
-                  <span className="text-3xl">🔒</span>
+              <div className="space-y-4">
+                <div className="w-12 h-12 border border-black/20 flex items-center justify-center">
+                  <Lock className="w-5 h-5" />
                 </div>
-                <h3 className="font-heading font-semibold text-lg">2. Share</h3>
-                <p className="text-sm text-muted-foreground">
-                  Get a unique link to send to your special someone
+                <h3 className="font-medium text-lg">2. Share</h3>
+                <p className="text-black/60 text-sm leading-relaxed">
+                  Get a unique link. Send it to anyone you want.
                 </p>
-              </Card>
+              </div>
               
-              <Card className="p-6 space-y-4 text-center hover-elevate">
-                <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto">
-                  <span className="text-3xl">💖</span>
+              <div className="space-y-4">
+                <div className="w-12 h-12 border border-black/20 flex items-center justify-center">
+                  <DollarSign className="w-5 h-5" />
                 </div>
-                <h3 className="font-heading font-semibold text-lg">3. Unlock</h3>
-                <p className="text-sm text-muted-foreground">
-                  They pay to unlock and see your message as a beautiful image
+                <h3 className="font-medium text-lg">3. Earn</h3>
+                <p className="text-black/60 text-sm leading-relaxed">
+                  They pay to unlock. You get paid instantly.
                 </p>
-              </Card>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Feature Strip */}
+        <section className="border-y border-black/10 py-8">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-wrap justify-center gap-8 text-sm text-black/50">
+              <span>✓ Stripe & Crypto payments</span>
+              <span>✓ Disappearing messages</span>
+              <span>✓ Files up to 10MB</span>
+              <span>✓ Instant payouts</span>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t mt-20">
-        <div className="max-w-6xl mx-auto text-center space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Secret Message – pay-to-open messages
+      <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t border-black/10">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-black/40">
+            © 2026 Secret Message
           </p>
-          <div className="flex justify-center gap-4 text-sm">
+          <div className="flex gap-6 text-sm text-black/40">
             <Link href="/privacy">
-              <a className="text-muted-foreground hover:text-foreground" data-testid="link-footer-privacy">
-                Privacy Policy
-              </a>
+              <a className="hover:text-black" data-testid="link-footer-privacy">Privacy</a>
             </Link>
             <Link href="/legal-disclaimer">
-              <a className="text-muted-foreground hover:text-foreground" data-testid="link-footer-legal">
-                Legal Disclaimer
-              </a>
+              <a className="hover:text-black" data-testid="link-footer-legal">Legal</a>
             </Link>
           </div>
         </div>
