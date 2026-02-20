@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Heart, Lock, DollarSign, Send, Ghost, Timer, Eye, Bomb } from "lucide-react";
+import { Heart, Lock, DollarSign, Send, Ghost, Timer, Eye, Clock } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -386,9 +386,9 @@ export default function Landing() {
 
               <Card className="p-6 space-y-4 border-2 border-accent/30 bg-background/50 backdrop-blur">
                 <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center">
-                  <Bomb className="w-7 h-7 text-accent-foreground" />
+                  <Clock className="w-7 h-7 text-accent-foreground" />
                 </div>
-                <h3 className="font-heading font-bold text-xl">💣 Bomb Mode</h3>
+                <h3 className="font-heading font-bold text-xl">Self-Destruct</h3>
                 <p className="text-muted-foreground">
                   Set an exact date & time. Message self-destructs at that moment — read or not.
                 </p>

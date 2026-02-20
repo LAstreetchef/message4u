@@ -497,7 +497,7 @@ export default function CreateMessage() {
                       name="deleteAt"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>💣 Bomb Mode - Delete At Exact Time</FormLabel>
+                          <FormLabel>Self-Destruct - Delete At Exact Time</FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -512,7 +512,7 @@ export default function CreateMessage() {
                                   {field.value ? (
                                     format(field.value, "PPP 'at' p")
                                   ) : (
-                                    <span>Set bomb timer</span>
+                                    <span>Set self-destruct time</span>
                                   )}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
