@@ -1,43 +1,34 @@
 import { useEffect } from 'react';
 
-// Crisp Chat Widget
-// Sign up free at https://crisp.chat and get your Website ID
-// Then set VITE_CRISP_WEBSITE_ID in your environment
-
-declare global {
-  interface Window {
-    $crisp: any[];
-    CRISP_WEBSITE_ID: string;
-  }
-}
+// ElevenLabs Conversational AI Widget
+const ELEVENLABS_AGENT_ID = 'agent_6901khxn2e6xepn9qdcrkrcmjh71';
 
 export function HelpWidget() {
   useEffect(() => {
-    const websiteId = import.meta.env.VITE_CRISP_WEBSITE_ID;
-    
-    if (!websiteId) {
-      console.log('Crisp: No VITE_CRISP_WEBSITE_ID set, chat widget disabled');
-      return;
-    }
+    // Create the custom element
+    const widget = document.createElement('elevenlabs-convai');
+    widget.setAttribute('agent-id', ELEVENLABS_AGENT_ID);
+    document.body.appendChild(widget);
 
-    // Initialize Crisp
-    window.$crisp = [];
-    window.CRISP_WEBSITE_ID = websiteId;
-
+    // Load the ElevenLabs script
     const script = document.createElement('script');
-    script.src = 'https://client.crisp.chat/l.js';
+    script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
     script.async = true;
+    script.type = 'text/javascript';
     document.head.appendChild(script);
 
     return () => {
       // Cleanup on unmount
+      if (widget.parentNode) {
+        widget.parentNode.removeChild(widget);
+      }
       if (script.parentNode) {
         script.parentNode.removeChild(script);
       }
     };
   }, []);
 
-  return null; // Crisp injects its own UI
+  return null; // ElevenLabs injects its own UI
 }
 
 export default HelpWidget;
