@@ -12,9 +12,9 @@ services:
         value: production
       - key: BASE_URL
         value: https://secretmessage4u.com
-      - key: SESSION_SECRET
+      - key: DATABASE_URL
         sync: false
-      - key: NEON_DATABASE_URL
+      - key: SESSION_SECRET
         sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
