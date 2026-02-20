@@ -137,7 +137,7 @@ export default function Landing() {
                   </span>
                 </h1>
                 <p className="text-xl text-muted-foreground max-w-lg">
-                  Create anonymous paywalled messages, photos, and files. No identity required. Share the link, get paid.
+                  Create anonymous paywalled messages, photos, and files. Share the link, get paid.
                 </p>
                 <Card className="p-6 space-y-4 max-w-md">
                   <div className="flex items-center justify-between">
