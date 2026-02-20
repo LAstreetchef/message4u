@@ -32,7 +32,3 @@ services:
         sync: false
       - key: NOWPAYMENTS_IPN_SECRET
         sync: false
-    disk:
-      name: uploads
-      mountPath: /var/data/uploads
-      sizeGB: 1

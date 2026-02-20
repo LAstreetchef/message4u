@@ -12,37 +12,19 @@ import {
 } from "./objectAcl";
 import { getBaseUrl } from "./url";
 
-// Configure upload directory
-// On Render, try /var/data/uploads (persistent disk), fallback to ./uploads
-// Locally, use ./uploads
-function getUploadDir(): string {
-  if (process.env.UPLOAD_DIR) {
-    return process.env.UPLOAD_DIR;
-  }
-  
-  if (process.env.RENDER) {
-    // Try persistent disk first
-    const persistentDir = "/var/data/uploads";
-    try {
-      if (!fs.existsSync(persistentDir)) {
-        fs.mkdirSync(persistentDir, { recursive: true });
-      }
-      return persistentDir;
-    } catch (err) {
-      console.warn(`Could not use persistent disk at ${persistentDir}, falling back to local uploads`);
-    }
-  }
-  
-  // Fallback to local uploads directory
-  const localDir = path.join(process.cwd(), "uploads");
-  if (!fs.existsSync(localDir)) {
-    fs.mkdirSync(localDir, { recursive: true });
-  }
-  return localDir;
-}
+// Configure upload directory - always use local ./uploads
+// (Render persistent disk removed due to permission issues)
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
 
-const UPLOAD_DIR = getUploadDir();
-console.log(`Using upload directory: ${UPLOAD_DIR}`);
+// Ensure upload directory exists
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  }
+  console.log(`Using upload directory: ${UPLOAD_DIR}`);
+} catch (err) {
+  console.error(`Failed to create upload directory: ${err}`);
+}
 
 export class ObjectNotFoundError extends Error {
   constructor() {
