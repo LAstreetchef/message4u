@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Heart, Lock, DollarSign, Send } from "lucide-react";
+import { Heart, Lock, DollarSign, Send, Ghost, Timer, Eye, Bomb } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -310,6 +310,60 @@ export default function Landing() {
                 </p>
               </Card>
             </div>
+          </div>
+        </section>
+
+        {/* Disappearing Messages Feature - Highlighted */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/20 via-chart-2/10 to-accent/20">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center space-y-4 mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 text-primary">
+                <Ghost className="w-5 h-5" />
+                <span className="font-semibold">NEW FEATURE</span>
+              </div>
+              <h2 className="text-4xl sm:text-5xl font-heading font-bold">
+                Disappearing Messages
+              </h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Make your secrets truly secret. Set messages to self-destruct after being viewed.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="p-6 space-y-4 border-2 border-primary/30 bg-background/50 backdrop-blur">
+                <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center">
+                  <Eye className="w-7 h-7 text-primary" />
+                </div>
+                <h3 className="font-heading font-bold text-xl">View Limits</h3>
+                <p className="text-muted-foreground">
+                  Set a maximum number of views. Message disappears after 1, 3, 5, or up to 100 views.
+                </p>
+              </Card>
+
+              <Card className="p-6 space-y-4 border-2 border-chart-2/30 bg-background/50 backdrop-blur">
+                <div className="w-14 h-14 rounded-full bg-chart-2/20 flex items-center justify-center">
+                  <Timer className="w-7 h-7 text-chart-2" />
+                </div>
+                <h3 className="font-heading font-bold text-xl">Timed Delete</h3>
+                <p className="text-muted-foreground">
+                  Start a countdown after first view. Delete after 1 minute, 1 hour, or up to 7 days.
+                </p>
+              </Card>
+
+              <Card className="p-6 space-y-4 border-2 border-accent/30 bg-background/50 backdrop-blur">
+                <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center">
+                  <Bomb className="w-7 h-7 text-accent-foreground" />
+                </div>
+                <h3 className="font-heading font-bold text-xl">💣 Bomb Mode</h3>
+                <p className="text-muted-foreground">
+                  Set an exact date & time. Message self-destructs at that moment — read or not.
+                </p>
+              </Card>
+            </div>
+
+            <p className="text-center mt-10 text-muted-foreground">
+              Perfect for exclusive content, limited offers, or anything you want to keep truly private.
+            </p>
           </div>
         </section>
       </main>
