@@ -23,6 +23,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Switch } from "@/components/ui/switch";
 
 const formSchema = insertMessageSchema.extend({
   price: z.string().min(1, "Price is required").refine(
@@ -30,6 +31,7 @@ const formSchema = insertMessageSchema.extend({
     "Price must be greater than 0"
   ),
   expiresAt: z.date().optional(),
+  isAdultContent: z.boolean().optional().default(false),
   maxViews: z.string().optional(),
   deleteAfterMinutes: z.string().optional(),
   deleteAt: z.date().optional(),
@@ -56,6 +58,7 @@ export default function CreateMessage() {
       expiresAt: undefined,
       fileUrl: undefined,
       fileType: undefined,
+      isAdultContent: false,
       maxViews: undefined,
       deleteAfterMinutes: undefined,
       deleteAt: undefined,
@@ -96,6 +99,7 @@ export default function CreateMessage() {
           fileType: uploadedFile.type,
           price: data.price,
           expiresAt: data.expiresAt ? data.expiresAt.toISOString() : undefined,
+          isAdultContent: data.isAdultContent || false,
           maxViews: maxViews || null,
           deleteAfterMinutes: deleteAfterMinutes || null,
           deleteAt: deleteAt || null,
@@ -110,6 +114,7 @@ export default function CreateMessage() {
           fileType: undefined,
           price: data.price,
           expiresAt: data.expiresAt ? data.expiresAt.toISOString() : undefined,
+          isAdultContent: data.isAdultContent || false,
           maxViews: maxViews || null,
           deleteAfterMinutes: deleteAfterMinutes || null,
           deleteAt: deleteAt || null,
@@ -405,6 +410,28 @@ export default function CreateMessage() {
                         Leave blank for no expiration
                       </FormDescription>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="isAdultContent"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Adult Content (18+)</FormLabel>
+                        <FormDescription>
+                          Mark this message as adult content
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="switch-adult-content"
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />

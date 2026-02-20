@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Heart, Lock, DollarSign, Sparkles } from "lucide-react";
+import { Heart, Lock, DollarSign, Sparkles, AlertTriangle } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Message } from "@shared/schema";
@@ -18,6 +18,7 @@ export default function Paywall() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [smsConsent, setSmsConsent] = useState(false);
+  const [ageVerified, setAgeVerified] = useState(false);
 
   const { data: message, isLoading, error } = useQuery<Message>({
     queryKey: ["/api/messages", params?.slug],
@@ -90,6 +91,43 @@ export default function Paywall() {
           <p className="text-muted-foreground mb-6">
             This message expired on {new Date(message.expiresAt).toLocaleDateString()} and can no longer be unlocked.
           </p>
+        </Card>
+      </div>
+    );
+  }
+
+  // Age verification gate for adult content
+  if (message && message.isAdultContent && !ageVerified) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center p-8" data-testid="card-age-gate">
+          <div className="w-20 h-20 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="w-10 h-10 text-destructive" />
+          </div>
+          <h2 className="text-2xl font-heading font-bold mb-2">Adult Content Warning</h2>
+          <p className="text-muted-foreground mb-6">
+            This message has been marked as containing adult content (18+). 
+            By proceeding, you confirm that you are at least 18 years old.
+          </p>
+          <div className="space-y-3">
+            <Button
+              size="lg"
+              className="w-full rounded-full bg-gradient-instagram hover:opacity-90"
+              onClick={() => setAgeVerified(true)}
+              data-testid="button-confirm-age"
+            >
+              I am 18 or older — Continue
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full rounded-full"
+              onClick={() => window.history.back()}
+              data-testid="button-exit-age-gate"
+            >
+              Exit
+            </Button>
+          </div>
         </Card>
       </div>
     );
