@@ -24,7 +24,7 @@ export default function LegalDisclaimer() {
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <h1 className="text-4xl font-heading font-bold mb-2">Legal Disclaimer</h1>
-            <p className="text-muted-foreground">Last Updated: November 24, 2025</p>
+            <p className="text-muted-foreground">Last Updated: February 20, 2026</p>
           </div>
 
           <div className="space-y-6">
@@ -32,7 +32,7 @@ export default function LegalDisclaimer() {
               <div className="prose prose-invert max-w-none space-y-6">
                 <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
                   <p className="font-semibold text-sm">
-                    PLEASE READ THIS DISCLAIMER CAREFULLY. BY ACCESSING OR USING THIS WEBSITE (THE "SITE"), YOU ACKNOWLEDGE THAT YOU HAVE READ, UNDERSTOOD, AND AGREE TO BE BOUND BY THE FOLLOWING TERMS. IF YOU DO NOT AGREE, YOU MUST IMMEDIATELY CEASE USE OF THE SITE.
+                    PLEASE READ THIS DISCLAIMER CAREFULLY. BY ACCESSING OR USING THIS WEBSITE (THE "SITE"), YOU ACKNOWLEDGE THAT YOU ARE ABOVE THE AGE OF 21, HAVE READ, UNDERSTOOD, AND AGREE TO BE BOUND BY THE FOLLOWING TERMS. IF YOU DO NOT AGREE OR ARE UNDER 21, YOU MUST IMMEDIATELY CEASE USE OF THE SITE.
                   </p>
                 </div>
 
