@@ -5,21 +5,28 @@ const ELEVENLABS_AGENT_ID = 'agent_6901khxn2e6xepn9qdcrkrcmjh71';
 
 export function HelpWidget() {
   useEffect(() => {
-    // Create the custom element
-    const widget = document.createElement('elevenlabs-convai');
-    widget.setAttribute('agent-id', ELEVENLABS_AGENT_ID);
-    document.body.appendChild(widget);
+    // Check if already loaded
+    if (document.querySelector('elevenlabs-convai')) return;
 
-    // Load the ElevenLabs script
+    // Load the ElevenLabs script first
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
     script.async = true;
     script.type = 'text/javascript';
+    
+    // After script loads, add the widget element
+    script.onload = () => {
+      const widget = document.createElement('elevenlabs-convai');
+      widget.setAttribute('agent-id', ELEVENLABS_AGENT_ID);
+      document.body.appendChild(widget);
+    };
+    
     document.head.appendChild(script);
 
     return () => {
       // Cleanup on unmount
-      if (widget.parentNode) {
+      const widget = document.querySelector('elevenlabs-convai');
+      if (widget?.parentNode) {
         widget.parentNode.removeChild(widget);
       }
       if (script.parentNode) {
