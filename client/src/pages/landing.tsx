@@ -313,6 +313,40 @@ export default function Landing() {
           </div>
         </section>
 
+        {/* Use Cases Section */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-2xl sm:text-3xl font-heading font-bold text-center mb-12">
+              Who's using Secret Message?
+            </h2>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="p-5 border-2 hover:border-primary/50 transition-colors">
+                <span className="text-2xl mb-2 block">🎨</span>
+                <h3 className="font-semibold mb-1">Creators</h3>
+                <p className="text-sm text-muted-foreground">Sell exclusive content, previews, or behind-the-scenes access</p>
+              </Card>
+              
+              <Card className="p-5 border-2 hover:border-primary/50 transition-colors">
+                <span className="text-2xl mb-2 block">💝</span>
+                <h3 className="font-semibold mb-1">Partners</h3>
+                <p className="text-sm text-muted-foreground">Send spicy surprises or private photos to your special someone</p>
+              </Card>
+              
+              <Card className="p-5 border-2 hover:border-primary/50 transition-colors">
+                <span className="text-2xl mb-2 block">🎁</span>
+                <h3 className="font-semibold mb-1">Gift Reveals</h3>
+                <p className="text-sm text-muted-foreground">Make them pay to see what you got them. Build the suspense!</p>
+              </Card>
+              
+              <Card className="p-5 border-2 hover:border-primary/50 transition-colors">
+                <span className="text-2xl mb-2 block">💡</span>
+                <h3 className="font-semibold mb-1">Experts</h3>
+                <p className="text-sm text-muted-foreground">Charge for advice, predictions, tips, or insider knowledge</p>
+              </Card>
+            </div>
+          </div>
+        </section>
+
         {/* Disappearing Messages Feature - Highlighted */}
         <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/20 via-chart-2/10 to-accent/20">
           <div className="max-w-5xl mx-auto">
