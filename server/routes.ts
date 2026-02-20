@@ -72,6 +72,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Health check for Render/monitoring
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
   // Admin routes
   app.get('/api/admin/users', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
@@ -1162,7 +1167,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Object storage routes for file uploads
-  // Reference: blueprint:javascript_object_storage
   app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
     try {
       const objectStorageService = new ObjectStorageService();
@@ -1171,6 +1175,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting upload URL:", error);
       res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
+  // Handle actual file upload (for local storage)
+  app.put("/api/upload/:objectId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { objectId } = req.params;
+      const contentType = req.get('content-type') || 'application/octet-stream';
+      
+      // Get raw body as buffer
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+      
+      if (buffer.length === 0) {
+        return res.status(400).json({ error: "No file data received" });
+      }
+      
+      // Determine file extension from content type
+      const extMap: Record<string, string> = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp',
+        'video/mp4': '.mp4',
+        'audio/mpeg': '.mp3',
+        'application/pdf': '.pdf',
+      };
+      const ext = extMap[contentType] || '';
+      
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.saveUploadedFile(
+        objectId, 
+        buffer, 
+        `file${ext}`
+      );
+      
+      res.json({ objectPath, success: true });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      res.status(500).json({ error: "Failed to upload file" });
     }
   });
 

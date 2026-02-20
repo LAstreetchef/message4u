@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: secretmessage4u
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BASE_URL
+        value: https://secretmessage4u.com
+      - key: SESSION_SECRET
+        sync: false
+      - key: NEON_DATABASE_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: VITE_STRIPE_PUBLIC_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: COINBASE_COMMERCE_API_KEY
+        sync: false
+      - key: COINBASE_COMMERCE_WEBHOOK_SECRET
+        sync: false
+      - key: NOWPAYMENTS_API_KEY
+        sync: false
+      - key: NOWPAYMENTS_IPN_SECRET
+        sync: false
+    disk:
+      name: uploads
+      mountPath: /var/data/uploads
+      sizeGB: 1

@@ -1,7 +1,6 @@
-// Reference: blueprint:javascript_object_storage
-import { File } from "@google-cloud/storage";
-
-const ACL_POLICY_METADATA_KEY = "custom:aclPolicy";
+// Local filesystem ACL - simplified for non-Replit hosting
+import * as fs from 'fs';
+import * as path from 'path';
 
 export enum ObjectAccessGroupType {}
 
@@ -26,73 +25,59 @@ export interface ObjectAclPolicy {
   aclRules?: Array<ObjectAclRule>;
 }
 
-function isPermissionAllowed(
-  requested: ObjectPermission,
-  granted: ObjectPermission,
-): boolean {
-  if (requested === ObjectPermission.READ) {
-    return [ObjectPermission.READ, ObjectPermission.WRITE].includes(granted);
+// Store ACL policies in a JSON file alongside uploads
+const ACL_STORE_PATH = process.env.UPLOAD_DIR 
+  ? path.join(process.env.UPLOAD_DIR, '.acl-policies.json')
+  : path.join(process.cwd(), 'uploads', '.acl-policies.json');
+
+function loadAclStore(): Record<string, ObjectAclPolicy> {
+  try {
+    if (fs.existsSync(ACL_STORE_PATH)) {
+      return JSON.parse(fs.readFileSync(ACL_STORE_PATH, 'utf-8'));
+    }
+  } catch (e) {
+    console.warn('Failed to load ACL store:', e);
   }
-  return granted === ObjectPermission.WRITE;
+  return {};
 }
 
-abstract class BaseObjectAccessGroup implements ObjectAccessGroup {
-  constructor(
-    public readonly type: ObjectAccessGroupType,
-    public readonly id: string,
-  ) {}
-
-  public abstract hasMember(userId: string): Promise<boolean>;
-}
-
-function createObjectAccessGroup(
-  group: ObjectAccessGroup,
-): BaseObjectAccessGroup {
-  switch (group.type) {
-    default:
-      throw new Error(`Unknown access group type: ${group.type}`);
+function saveAclStore(store: Record<string, ObjectAclPolicy>): void {
+  const dir = path.dirname(ACL_STORE_PATH);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
+  fs.writeFileSync(ACL_STORE_PATH, JSON.stringify(store, null, 2));
 }
 
 export async function setObjectAclPolicy(
-  objectFile: File,
+  filePath: string,
   aclPolicy: ObjectAclPolicy,
 ): Promise<void> {
-  const [exists] = await objectFile.exists();
-  if (!exists) {
-    throw new Error(`Object not found: ${objectFile.name}`);
-  }
-
-  await objectFile.setMetadata({
-    metadata: {
-      [ACL_POLICY_METADATA_KEY]: JSON.stringify(aclPolicy),
-    },
-  });
+  const store = loadAclStore();
+  store[filePath] = aclPolicy;
+  saveAclStore(store);
 }
 
 export async function getObjectAclPolicy(
-  objectFile: File,
+  filePath: string,
 ): Promise<ObjectAclPolicy | null> {
-  const [metadata] = await objectFile.getMetadata();
-  const aclPolicy = metadata?.metadata?.[ACL_POLICY_METADATA_KEY];
-  if (!aclPolicy) {
-    return null;
-  }
-  return JSON.parse(aclPolicy as string);
+  const store = loadAclStore();
+  return store[filePath] || null;
 }
 
 export async function canAccessObject({
   userId,
-  objectFile,
+  filePath,
   requestedPermission,
 }: {
   userId?: string;
-  objectFile: File;
+  filePath: string;
   requestedPermission: ObjectPermission;
 }): Promise<boolean> {
-  const aclPolicy = await getObjectAclPolicy(objectFile);
+  const aclPolicy = await getObjectAclPolicy(filePath);
   if (!aclPolicy) {
-    return false;
+    // Default: allow read for files without explicit ACL
+    return requestedPermission === ObjectPermission.READ;
   }
 
   if (
@@ -111,11 +96,7 @@ export async function canAccessObject({
   }
 
   for (const rule of aclPolicy.aclRules || []) {
-    const accessGroup = createObjectAccessGroup(rule.group);
-    if (
-      (await accessGroup.hasMember(userId)) &&
-      isPermissionAllowed(requestedPermission, rule.permission)
-    ) {
+    if (rule.permission === requestedPermission || rule.permission === ObjectPermission.WRITE) {
       return true;
     }
   }
