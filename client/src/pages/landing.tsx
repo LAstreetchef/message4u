@@ -4,10 +4,11 @@ import { Card } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowRight, Lock, DollarSign, Send } from "lucide-react";
+import { ArrowRight, Lock, DollarSign, Send, Sun, Moon } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/hooks/useTheme";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -41,6 +42,7 @@ export default function Landing() {
   const [isSignUp, setIsSignUp] = useState(true);
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const { isDark, toggleTheme } = useTheme();
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(isSignUp ? signupSchema : loginSchema),
@@ -112,36 +114,43 @@ export default function Landing() {
   const isPending = signupMutation.isPending || loginMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background text-foreground transition-colors">
       {/* Minimal Nav */}
-      <nav className="border-b border-black/10">
+      <nav className="border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <span className="text-xl font-semibold tracking-tight">Secret Message</span>
+            <button 
+              onClick={toggleTheme}
+              className="p-2 hover:bg-muted rounded-full transition-colors"
+              aria-label="Toggle theme"
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
           </div>
         </div>
       </nav>
 
       <main>
         {/* Hero Section */}
-        <section className="py-16 px-4 sm:px-6 lg:px-8 border-b border-black/10">
+        <section className="py-16 px-4 sm:px-6 lg:px-8 border-b border-border">
           <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               {/* Left - Text & Form */}
               <div className="space-y-8">
                 <div className="space-y-4">
-                  <p className="text-sm uppercase tracking-widest text-black/50">Pay-to-unlock messages</p>
+                  <p className="text-sm uppercase tracking-widest text-muted-foreground">Pay-to-unlock messages</p>
                   <h1 className="text-5xl sm:text-6xl font-light tracking-tight leading-tight">
                     Send secrets.<br />
                     <span className="font-semibold">Get paid.</span>
                   </h1>
-                  <p className="text-lg text-black/60 max-w-md">
+                  <p className="text-lg text-muted-foreground max-w-md">
                     Create paywalled messages, photos, and files. Share the link. Earn when they unlock.
                   </p>
                 </div>
 
                 {/* Auth Card */}
-                <div className="border border-black/10 p-6 space-y-4 max-w-sm">
+                <div className="border border-border p-6 space-y-4 max-w-sm bg-card">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium">
                       {isSignUp ? "Create Account" : "Sign In"}
@@ -151,7 +160,7 @@ export default function Landing() {
                         setIsSignUp(!isSignUp);
                         form.reset();
                       }}
-                      className="text-sm text-black/50 hover:text-black"
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                       data-testid="button-toggle-auth"
                     >
                       {isSignUp ? "Have an account?" : "Need an account?"}
@@ -169,7 +178,7 @@ export default function Landing() {
                               <Input
                                 type="email"
                                 placeholder="Email"
-                                className="border-black/20 focus:border-black rounded-none"
+                                className="border-border focus:border-foreground rounded-none"
                                 data-testid="input-email"
                                 {...field}
                               />
@@ -187,7 +196,7 @@ export default function Landing() {
                               <Input
                                 type="password"
                                 placeholder="Password"
-                                className="border-black/20 focus:border-black rounded-none"
+                                className="border-border focus:border-foreground rounded-none"
                                 data-testid="input-password"
                                 {...field}
                               />
@@ -206,14 +215,14 @@ export default function Landing() {
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
-                                  className="rounded-none border-black/30"
+                                  className="rounded-none border-border"
                                   data-testid="checkbox-disclaimer"
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <label className="text-sm text-black/60">
+                                <label className="text-sm text-muted-foreground">
                                   I agree to the{" "}
-                                  <a href="/legal-disclaimer" className="underline hover:text-black" target="_blank" rel="noopener noreferrer" data-testid="link-disclaimer">
+                                  <a href="/legal-disclaimer" className="underline hover:text-foreground transition-colors" target="_blank" rel="noopener noreferrer" data-testid="link-disclaimer">
                                     Legal Disclaimer
                                   </a>
                                 </label>
@@ -225,7 +234,7 @@ export default function Landing() {
                       )}
                       <Button
                         type="submit"
-                        className="w-full bg-black text-white hover:bg-black/90 rounded-none h-12"
+                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-none h-12"
                         data-testid="button-submit"
                         disabled={isPending}
                       >
@@ -242,7 +251,7 @@ export default function Landing() {
                 {heroImages.map((src, i) => (
                   <div 
                     key={i} 
-                    className={`aspect-[4/5] overflow-hidden border border-black/10 ${i % 2 === 1 ? 'mt-8' : ''}`}
+                    className={`aspect-[4/5] overflow-hidden border border-border ${i % 2 === 1 ? 'mt-8' : ''}`}
                   >
                     <img 
                       src={src} 
@@ -259,35 +268,35 @@ export default function Landing() {
         {/* How It Works */}
         <section className="py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
-            <p className="text-sm uppercase tracking-widest text-black/50 mb-8">How it works</p>
+            <p className="text-sm uppercase tracking-widest text-muted-foreground mb-8">How it works</p>
             
             <div className="grid md:grid-cols-3 gap-12">
               <div className="space-y-4">
-                <div className="w-12 h-12 border border-black/20 flex items-center justify-center">
+                <div className="w-12 h-12 border border-border flex items-center justify-center">
                   <Send className="w-5 h-5" />
                 </div>
                 <h3 className="font-medium text-lg">1. Create</h3>
-                <p className="text-black/60 text-sm leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   Write a message, upload a photo or file. Set your price.
                 </p>
               </div>
               
               <div className="space-y-4">
-                <div className="w-12 h-12 border border-black/20 flex items-center justify-center">
+                <div className="w-12 h-12 border border-border flex items-center justify-center">
                   <Lock className="w-5 h-5" />
                 </div>
                 <h3 className="font-medium text-lg">2. Share</h3>
-                <p className="text-black/60 text-sm leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   Get a unique link. Send it to anyone you want.
                 </p>
               </div>
               
               <div className="space-y-4">
-                <div className="w-12 h-12 border border-black/20 flex items-center justify-center">
+                <div className="w-12 h-12 border border-border flex items-center justify-center">
                   <DollarSign className="w-5 h-5" />
                 </div>
                 <h3 className="font-medium text-lg">3. Earn</h3>
-                <p className="text-black/60 text-sm leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   They pay to unlock. You get paid instantly.
                 </p>
               </div>
@@ -296,9 +305,9 @@ export default function Landing() {
         </section>
 
         {/* Feature Strip */}
-        <section className="border-y border-black/10 py-8">
+        <section className="border-y border-border py-8">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-wrap justify-center gap-8 text-sm text-black/50">
+            <div className="flex flex-wrap justify-center gap-8 text-sm text-muted-foreground">
               <span>✓ Stripe & Crypto payments</span>
               <span>✓ Disappearing messages</span>
               <span>✓ Files up to 10MB</span>
@@ -308,17 +317,17 @@ export default function Landing() {
         </section>
       </main>
 
-      <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t border-black/10">
+      <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t border-border">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-black/40">
+          <p className="text-sm text-muted-foreground">
             © 2026 Secret Message
           </p>
-          <div className="flex gap-6 text-sm text-black/40">
+          <div className="flex gap-6 text-sm text-muted-foreground">
             <Link href="/privacy">
-              <a className="hover:text-black" data-testid="link-footer-privacy">Privacy</a>
+              <a className="hover:text-foreground transition-colors" data-testid="link-footer-privacy">Privacy</a>
             </Link>
             <Link href="/legal-disclaimer">
-              <a className="hover:text-black" data-testid="link-footer-legal">Legal</a>
+              <a className="hover:text-foreground transition-colors" data-testid="link-footer-legal">Legal</a>
             </Link>
           </div>
         </div>
