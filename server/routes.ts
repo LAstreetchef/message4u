@@ -660,23 +660,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/messages/:slug', async (req, res) => {
     try {
       const { slug } = req.params;
-      const message = await storage.getMessageBySlug(slug);
+      let message = await storage.getMessageBySlug(slug);
       
       if (!message) {
         return res.status(404).json({ message: "Message not found" });
+      }
+      
+      // Check if message has disappeared
+      const hasDisappeared = await storage.checkAndMarkDisappeared(message);
+      if (hasDisappeared) {
+        return res.status(410).json({ 
+          message: "This message has disappeared",
+          disappeared: true 
+        });
+      }
+      
+      // If message is unlocked, increment view count (but only if not yet viewed by counting actual views)
+      if (message.unlocked) {
+        message = await storage.incrementViewCount(message.id) || message;
+        
+        // Re-check disappearing conditions after incrementing view
+        const disappearedAfterView = await storage.checkAndMarkDisappeared(message);
+        if (disappearedAfterView) {
+          return res.status(410).json({ 
+            message: "This message has disappeared",
+            disappeared: true 
+          });
+        }
       }
       
       // Return message but don't expose messageBody to protect the content
       // Also only return imageUrl, fileUrl, fileType if message is unlocked
       const { messageBody, ...safeMessage } = message;
       
+      // Add disappearing metadata for frontend to display timer/views remaining
+      const disappearingInfo: Record<string, any> = {};
+      if (message.maxViews) {
+        disappearingInfo.viewsRemaining = message.maxViews - message.viewCount;
+        disappearingInfo.maxViews = message.maxViews;
+      }
+      if (message.deleteAfterMinutes && message.firstViewedAt) {
+        const deleteTime = new Date(message.firstViewedAt);
+        deleteTime.setMinutes(deleteTime.getMinutes() + message.deleteAfterMinutes);
+        disappearingInfo.deleteAt = deleteTime.toISOString();
+      }
+      if (message.deleteAt) {
+        disappearingInfo.bombDeleteAt = message.deleteAt;
+      }
+      
       // If not unlocked, also hide the imageUrl, fileUrl, and fileType
       if (!message.unlocked) {
         const { imageUrl, fileUrl, fileType, ...lockedMessage } = safeMessage;
-        return res.json(lockedMessage);
+        return res.json({ ...lockedMessage, disappearingInfo });
       }
       
-      res.json(safeMessage);
+      res.json({ ...safeMessage, disappearingInfo });
     } catch (error) {
       console.error("Error fetching message:", error);
       res.status(500).json({ message: "Failed to fetch message" });

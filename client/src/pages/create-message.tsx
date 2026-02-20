@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Heart, ArrowLeft, Calendar as CalendarIcon, FileText, Upload } from "lucide-react";
+import { Heart, ArrowLeft, Calendar as CalendarIcon, FileText, Upload, Ghost, ChevronDown } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const formSchema = insertMessageSchema.extend({
   price: z.string().min(1, "Price is required").refine(
@@ -28,6 +30,9 @@ const formSchema = insertMessageSchema.extend({
     "Price must be greater than 0"
   ),
   expiresAt: z.date().optional(),
+  maxViews: z.string().optional(),
+  deleteAfterMinutes: z.string().optional(),
+  deleteAt: z.date().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -39,6 +44,7 @@ export default function CreateMessage() {
   const [messageType, setMessageType] = useState<"text" | "file">("text");
   const [uploadedFile, setUploadedFile] = useState<{ url: string; type: string; name: string } | null>(null);
   const [newMessageId, setNewMessageId] = useState<string>("");
+  const [showDisappearing, setShowDisappearing] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -50,6 +56,9 @@ export default function CreateMessage() {
       expiresAt: undefined,
       fileUrl: undefined,
       fileType: undefined,
+      maxViews: undefined,
+      deleteAfterMinutes: undefined,
+      deleteAt: undefined,
     },
   });
 
@@ -71,6 +80,11 @@ export default function CreateMessage() {
     mutationFn: async (data: FormData) => {
       let messageData: InsertMessage;
 
+      // Parse disappearing options
+      const maxViews = data.maxViews ? parseInt(data.maxViews) : undefined;
+      const deleteAfterMinutes = data.deleteAfterMinutes ? parseInt(data.deleteAfterMinutes) : undefined;
+      const deleteAt = data.deleteAt ? data.deleteAt.toISOString() : undefined;
+
       if (messageType === "file") {
         if (!uploadedFile) {
           throw new Error("Please upload a file");
@@ -82,6 +96,9 @@ export default function CreateMessage() {
           fileType: uploadedFile.type,
           price: data.price,
           expiresAt: data.expiresAt ? data.expiresAt.toISOString() : undefined,
+          maxViews: maxViews || null,
+          deleteAfterMinutes: deleteAfterMinutes || null,
+          deleteAt: deleteAt || null,
         } as InsertMessage;
       } else {
         if (!data.messageBody || data.messageBody.trim() === "") {
@@ -93,6 +110,9 @@ export default function CreateMessage() {
           fileType: undefined,
           price: data.price,
           expiresAt: data.expiresAt ? data.expiresAt.toISOString() : undefined,
+          maxViews: maxViews || null,
+          deleteAfterMinutes: deleteAfterMinutes || null,
+          deleteAt: deleteAt || null,
         } as InsertMessage;
       }
 
@@ -388,6 +408,135 @@ export default function CreateMessage() {
                     </FormItem>
                   )}
                 />
+
+                {/* Disappearing Message Options */}
+                <Collapsible open={showDisappearing} onOpenChange={setShowDisappearing}>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full justify-between px-0 hover:bg-transparent"
+                      data-testid="button-disappearing-toggle"
+                    >
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <Ghost className="w-4 h-4" />
+                        Disappearing Message Options
+                      </span>
+                      <ChevronDown className={cn(
+                        "w-4 h-4 text-muted-foreground transition-transform",
+                        showDisappearing && "rotate-180"
+                      )} />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 pt-4">
+                    <FormField
+                      control={form.control}
+                      name="maxViews"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max Views</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-max-views">
+                                <SelectValue placeholder="Unlimited views" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="unlimited">Unlimited views</SelectItem>
+                              <SelectItem value="1">1 view (self-destruct)</SelectItem>
+                              <SelectItem value="3">3 views</SelectItem>
+                              <SelectItem value="5">5 views</SelectItem>
+                              <SelectItem value="10">10 views</SelectItem>
+                              <SelectItem value="25">25 views</SelectItem>
+                              <SelectItem value="50">50 views</SelectItem>
+                              <SelectItem value="100">100 views</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Message disappears after this many views
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="deleteAfterMinutes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Auto-Delete After First View</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-delete-after">
+                                <SelectValue placeholder="Never auto-delete" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="never">Never auto-delete</SelectItem>
+                              <SelectItem value="1">1 minute</SelectItem>
+                              <SelectItem value="5">5 minutes</SelectItem>
+                              <SelectItem value="15">15 minutes</SelectItem>
+                              <SelectItem value="30">30 minutes</SelectItem>
+                              <SelectItem value="60">1 hour</SelectItem>
+                              <SelectItem value="360">6 hours</SelectItem>
+                              <SelectItem value="1440">24 hours</SelectItem>
+                              <SelectItem value="10080">7 days</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Timer starts when recipient first views the message
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="deleteAt"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel>💣 Bomb Mode - Delete At Exact Time</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal rounded-lg",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                  data-testid="button-bomb-mode"
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP 'at' p")
+                                  ) : (
+                                    <span>Set bomb timer</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value || undefined}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < new Date()}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormDescription>
+                            Message self-destructs at this exact time, even if unread
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
 
                 <Button 
                   type="submit" 

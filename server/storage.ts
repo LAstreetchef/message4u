@@ -37,6 +37,9 @@ export interface IStorage {
   updateMessageFile(messageId: string, fileUrl: string, fileType: string): Promise<void>;
   markMessageUnlocked(messageId: string): Promise<void>;
   toggleMessageActive(messageId: string, active: boolean): Promise<void>;
+  incrementViewCount(messageId: string): Promise<Message | undefined>;
+  markMessageDisappeared(messageId: string): Promise<void>;
+  checkAndMarkDisappeared(message: Message): Promise<boolean>;
 
   // Payment operations
   createPayment(payment: InsertPayment): Promise<Payment>;
@@ -142,12 +145,24 @@ export class DatabaseStorage implements IStorage {
   // Message operations
   async createMessage(userId: string, messageData: InsertMessage): Promise<Message> {
     const slug = randomUUID();
+    
+    // Convert date strings to Date objects
+    const processedData = {
+      ...messageData,
+      expiresAt: messageData.expiresAt 
+        ? (typeof messageData.expiresAt === 'string' ? new Date(messageData.expiresAt) : messageData.expiresAt)
+        : undefined,
+      deleteAt: messageData.deleteAt
+        ? (typeof messageData.deleteAt === 'string' ? new Date(messageData.deleteAt) : messageData.deleteAt)
+        : undefined,
+    };
+    
     const [message] = await db
       .insert(messages)
       .values({
         userId,
         slug,
-        ...messageData,
+        ...processedData,
       })
       .returning();
     return message;
@@ -203,6 +218,67 @@ export class DatabaseStorage implements IStorage {
       .update(messages)
       .set({ active })
       .where(eq(messages.id, messageId));
+  }
+
+  async incrementViewCount(messageId: string): Promise<Message | undefined> {
+    // Get current message state
+    const message = await this.getMessageById(messageId);
+    if (!message) return undefined;
+
+    // Build update object
+    const updateData: Partial<Message> = {
+      viewCount: (message.viewCount || 0) + 1,
+    };
+
+    // Set firstViewedAt if this is the first view
+    if (!message.firstViewedAt) {
+      updateData.firstViewedAt = new Date();
+    }
+
+    await db
+      .update(messages)
+      .set(updateData)
+      .where(eq(messages.id, messageId));
+
+    return await this.getMessageById(messageId);
+  }
+
+  async markMessageDisappeared(messageId: string): Promise<void> {
+    await db
+      .update(messages)
+      .set({ disappeared: true })
+      .where(eq(messages.id, messageId));
+  }
+
+  async checkAndMarkDisappeared(message: Message): Promise<boolean> {
+    // Already disappeared
+    if (message.disappeared) return true;
+
+    const now = new Date();
+
+    // Check bomb mode - absolute deletion time
+    if (message.deleteAt && new Date(message.deleteAt) <= now) {
+      await this.markMessageDisappeared(message.id);
+      return true;
+    }
+
+    // Check max views
+    if (message.maxViews && message.viewCount >= message.maxViews) {
+      await this.markMessageDisappeared(message.id);
+      return true;
+    }
+
+    // Check delete after first view timer
+    if (message.deleteAfterMinutes && message.firstViewedAt) {
+      const deleteTime = new Date(message.firstViewedAt);
+      deleteTime.setMinutes(deleteTime.getMinutes() + message.deleteAfterMinutes);
+      if (now >= deleteTime) {
+        await this.markMessageDisappeared(message.id);
+        return true;
+      }
+    }
+
+    return false;
   }
 
   // Payment operations

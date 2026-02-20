@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, decimal, boolean, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, decimal, boolean, index, jsonb, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -50,6 +50,13 @@ export const messages = pgTable("messages", {
   unlocked: boolean("unlocked").notNull().default(false),
   active: boolean("active").notNull().default(true),
   expiresAt: timestamp("expires_at"),
+  // Disappearing message fields
+  viewCount: integer("view_count").notNull().default(0),
+  maxViews: integer("max_views"), // null = unlimited
+  firstViewedAt: timestamp("first_viewed_at"),
+  deleteAfterMinutes: integer("delete_after_minutes"), // delete X min after first view
+  deleteAt: timestamp("delete_at"), // absolute deletion time (bomb mode)
+  disappeared: boolean("disappeared").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -61,8 +68,14 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   expiresAt: true,
   fileUrl: true,
   fileType: true,
+  maxViews: true,
+  deleteAfterMinutes: true,
+  deleteAt: true,
 }).extend({
   expiresAt: z.union([z.string(), z.date()]).optional(),
+  maxViews: z.number().min(1).max(100).optional().nullable(),
+  deleteAfterMinutes: z.number().min(1).max(43200).optional().nullable(), // max 30 days
+  deleteAt: z.union([z.string(), z.date()]).optional().nullable(),
 });
 
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
