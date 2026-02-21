@@ -13,7 +13,7 @@ export function isValidEmail(email: string): boolean {
   return emailRegex.test(email);
 }
 
-// Instagram-styled email template with inline styles
+// Clean white email template with box logo
 function createEmailTemplate(messageTitle: string, price: string, unlockUrl: string): string {
   return `
 <!DOCTYPE html>
@@ -22,49 +22,55 @@ function createEmailTemplate(messageTitle: string, price: string, unlockUrl: str
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(to bottom, #000000, #1a1a1a); color: #ffffff;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f4f4f5;">
   <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-    <div style="text-align: center; margin-bottom: 40px;">
-      <div style="display: inline-block; margin-bottom: 20px;">
-        <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%); margin: 0 auto 8px;"></div>
-        <div style="font-size: 28px; font-weight: 700; color: #FD1D1D;">Secret Message</div>
+    
+    <!-- Header with Logo -->
+    <div style="text-align: center; margin-bottom: 32px;">
+      <div style="display: inline-block;">
+        <!-- Box Logo -->
+        <div style="width: 48px; height: 48px; background: #18181b; border-radius: 8px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;">
+          <div style="width: 24px; height: 24px; background: #fafafa; border-radius: 2px;"></div>
+        </div>
+        <div style="font-size: 24px; font-weight: 600; color: #18181b; letter-spacing: -0.5px;">Secret Message</div>
       </div>
     </div>
     
-    <div style="background: #1C1C1C; border: 1px solid #303030; border-radius: 16px; padding: 32px; margin-bottom: 24px;">
+    <!-- Main Card -->
+    <div style="background: #ffffff; border: 1px solid #e4e4e7; padding: 32px; margin-bottom: 24px;">
       <div style="text-align: center;">
-        <div style="width: 64px; height: 64px; border-radius: 50%; background: #303030; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: #FD1D1D;">
-          <svg width="32" height="40" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="4" y="14" width="16" height="12" rx="2" stroke="#FD1D1D" stroke-width="2" fill="none"/>
-            <path d="M8 14V10C8 6.68629 10.6863 4 14 4H14C15.3261 4 16 4.67392 16 6V14" stroke="#FD1D1D" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="12" cy="20" r="1.5" fill="#FD1D1D"/>
+        <!-- Lock Icon -->
+        <div style="width: 56px; height: 56px; background: #18181b; border-radius: 8px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="11" width="18" height="11" rx="2" stroke="#fafafa" stroke-width="2" fill="none"/>
+            <path d="M7 11V7C7 4.23858 9.23858 2 12 2C14.7614 2 17 4.23858 17 7V11" stroke="#fafafa" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="16" r="1.5" fill="#fafafa"/>
           </svg>
         </div>
-        <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 16px 0; color: #ffffff;">You have a new paywalled message!</h1>
+        <h1 style="font-size: 22px; font-weight: 600; margin: 0 0 8px 0; color: #18181b;">You have a new paywalled message!</h1>
       </div>
       
-      <p style="font-size: 20px; font-weight: 600; color: #ffffff; margin: 0 0 8px 0;">"${messageTitle}"</p>
+      <div style="background: #f4f4f5; border: 1px solid #e4e4e7; padding: 16px; margin: 24px 0;">
+        <p style="font-size: 18px; font-weight: 500; color: #18181b; margin: 0;">"${messageTitle}"</p>
+      </div>
       
-      <p style="color: #a8a8a8; line-height: 1.6; margin: 16px 0;">
-        Someone sent you a special paywalled message on Secret Message. Pay to unlock and see what's inside!
+      <p style="color: #71717a; line-height: 1.6; margin: 0 0 24px 0; text-align: center;">
+        Someone sent you a secret message. Pay to unlock and see what's inside.
       </p>
       
       <div style="text-align: center;">
-        <div style="font-size: 32px; font-weight: 700; color: #FD1D1D; margin: 16px 0;">$${price}</div>
-        <p style="color: #a8a8a8; line-height: 1.6; margin: 0 0 16px 0;">to unlock this message</p>
+        <div style="font-size: 36px; font-weight: 700; color: #18181b; margin: 0 0 4px 0;">$${price}</div>
+        <p style="color: #71717a; margin: 0 0 24px 0; font-size: 14px;">to unlock this message</p>
         
-        <a href="${unlockUrl}" style="display: inline-block; background: linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #F77737 100%); color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 9999px; font-weight: 600; font-size: 16px; margin: 16px 0; box-shadow: 0 8px 24px rgba(131, 58, 180, 0.3);">
-          Pay to Unlock
+        <a href="${unlockUrl}" style="display: inline-block; background: #18181b; color: #fafafa; text-decoration: none; padding: 14px 32px; font-weight: 600; font-size: 16px;">
+          Pay to Unlock →
         </a>
       </div>
-      
-      <p style="color: #a8a8a8; line-height: 1.6; margin: 24px 0 0 0; font-size: 12px;">
-        This message is protected and can only be viewed after payment. Click the button above to unlock it securely with Stripe.
-      </p>
     </div>
     
-    <div style="text-align: center; color: #6b6b6b; font-size: 14px; margin-top: 40px; padding-top: 24px; border-top: 1px solid #303030;">
-      <p style="margin: 0 0 8px 0;">Sent via Secret Message – pay-to-open messages</p>
+    <!-- Footer -->
+    <div style="text-align: center; color: #a1a1aa; font-size: 13px;">
+      <p style="margin: 0 0 8px 0;">Sent via Secret Message</p>
       <p style="margin: 0;">
         This email was sent because someone created a paywalled message for you.
       </p>
