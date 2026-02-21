@@ -119,7 +119,7 @@ export default function Landing() {
           <div className="flex justify-between items-center h-16">
             <span className="text-xl font-semibold tracking-tight">Secret Message</span>
             <Link href="/partners">
-              <a className="text-sm text-muted-foreground hover:text-foreground">Tell Your Own Secrets →</a>
+              <a className="text-sm text-muted-foreground hover:text-foreground">Secret Partners →</a>
             </Link>
           </div>
         </div>

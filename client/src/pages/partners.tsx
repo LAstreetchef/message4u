@@ -25,7 +25,7 @@ export default function Partners() {
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <p className="text-sm uppercase tracking-widest text-muted-foreground">Partner Program</p>
             <h1 className="text-5xl sm:text-6xl font-light tracking-tight">
-              Tell Your Own Secrets
+              Secret Partners
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Embed our widget. Set your price. Keep the markup. It's that simple.
