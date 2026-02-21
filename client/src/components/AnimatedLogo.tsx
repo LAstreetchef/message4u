@@ -46,10 +46,10 @@ export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: An
           className="animate-main-box"
         />
         
-        {/* Top box - bounces up */}
+        {/* Top box */}
         <rect
           x="42"
-          y="15"
+          y="42"
           width="16"
           height="16"
           rx="1"
@@ -57,10 +57,10 @@ export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: An
           className="animate-box-top"
         />
         
-        {/* Bottom box - bounces down */}
+        {/* Bottom box */}
         <rect
           x="42"
-          y="69"
+          y="42"
           width="16"
           height="16"
           rx="1"
@@ -68,9 +68,9 @@ export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: An
           className="animate-box-bottom"
         />
         
-        {/* Left box - bounces left */}
+        {/* Left box */}
         <rect
-          x="15"
+          x="42"
           y="42"
           width="16"
           height="16"
@@ -79,9 +79,9 @@ export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: An
           className="animate-box-left"
         />
         
-        {/* Right box - bounces right */}
+        {/* Right box */}
         <rect
-          x="69"
+          x="42"
           y="42"
           width="16"
           height="16"
@@ -90,10 +90,10 @@ export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: An
           className="animate-box-right"
         />
         
-        {/* Corner boxes - diagonal movement */}
+        {/* Corner boxes - start from center */}
         <rect
-          x="18"
-          y="18"
+          x="44"
+          y="44"
           width="12"
           height="12"
           rx="1"
@@ -102,8 +102,8 @@ export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: An
           className="animate-corner-tl"
         />
         <rect
-          x="70"
-          y="18"
+          x="44"
+          y="44"
           width="12"
           height="12"
           rx="1"
@@ -112,8 +112,8 @@ export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: An
           className="animate-corner-tr"
         />
         <rect
-          x="18"
-          y="70"
+          x="44"
+          y="44"
           width="12"
           height="12"
           rx="1"
@@ -122,8 +122,8 @@ export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: An
           className="animate-corner-bl"
         />
         <rect
-          x="70"
-          y="70"
+          x="44"
+          y="44"
           width="12"
           height="12"
           rx="1"
@@ -135,103 +135,171 @@ export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: An
       
       <style>{`
         @keyframes main-box {
-          0%, 100% {
+          0%, 5% {
             transform: rotate(0deg) scale(1);
           }
-          25% {
-            transform: rotate(90deg) scale(0.85);
+          20% {
+            transform: rotate(0deg) scale(0);
           }
-          50% {
+          25% {
+            transform: rotate(180deg) scale(0);
+          }
+          45%, 100% {
             transform: rotate(180deg) scale(1);
           }
-          75% {
-            transform: rotate(270deg) scale(0.85);
+        }
+        
+        @keyframes expand-top {
+          0%, 5% {
+            transform: translateY(-27px);
+          }
+          20%, 30% {
+            transform: translateY(0);
+          }
+          50%, 100% {
+            transform: translateY(-27px);
           }
         }
         
-        @keyframes bounce-top {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
+        @keyframes expand-bottom {
+          0%, 5% {
+            transform: translateY(27px);
+          }
+          20%, 30% {
+            transform: translateY(0);
+          }
+          50%, 100% {
+            transform: translateY(27px);
+          }
         }
         
-        @keyframes bounce-bottom {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(6px); }
+        @keyframes expand-left {
+          0%, 5% {
+            transform: translateX(-27px);
+          }
+          20%, 30% {
+            transform: translateX(0);
+          }
+          50%, 100% {
+            transform: translateX(-27px);
+          }
         }
         
-        @keyframes bounce-left {
-          0%, 100% { transform: translateX(0); }
-          50% { transform: translateX(-6px); }
+        @keyframes expand-right {
+          0%, 5% {
+            transform: translateX(27px);
+          }
+          20%, 30% {
+            transform: translateX(0);
+          }
+          50%, 100% {
+            transform: translateX(27px);
+          }
         }
         
-        @keyframes bounce-right {
-          0%, 100% { transform: translateX(0); }
-          50% { transform: translateX(6px); }
+        @keyframes corner-tl-expand {
+          0%, 5% {
+            transform: translate(-26px, -26px) scale(1);
+            opacity: 0.7;
+          }
+          20%, 30% {
+            transform: translate(0, 0) scale(0.5);
+            opacity: 0;
+          }
+          50%, 100% {
+            transform: translate(-26px, -26px) scale(1);
+            opacity: 0.7;
+          }
         }
         
-        @keyframes corner-tl {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.7; }
-          50% { transform: translate(-4px, -4px) scale(1.2); opacity: 1; }
+        @keyframes corner-tr-expand {
+          0%, 5% {
+            transform: translate(26px, -26px) scale(1);
+            opacity: 0.7;
+          }
+          20%, 30% {
+            transform: translate(0, 0) scale(0.5);
+            opacity: 0;
+          }
+          50%, 100% {
+            transform: translate(26px, -26px) scale(1);
+            opacity: 0.7;
+          }
         }
         
-        @keyframes corner-tr {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.7; }
-          50% { transform: translate(4px, -4px) scale(1.2); opacity: 1; }
+        @keyframes corner-bl-expand {
+          0%, 5% {
+            transform: translate(-26px, 26px) scale(1);
+            opacity: 0.7;
+          }
+          20%, 30% {
+            transform: translate(0, 0) scale(0.5);
+            opacity: 0;
+          }
+          50%, 100% {
+            transform: translate(-26px, 26px) scale(1);
+            opacity: 0.7;
+          }
         }
         
-        @keyframes corner-bl {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.7; }
-          50% { transform: translate(-4px, 4px) scale(1.2); opacity: 1; }
-        }
-        
-        @keyframes corner-br {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.7; }
-          50% { transform: translate(4px, 4px) scale(1.2); opacity: 1; }
+        @keyframes corner-br-expand {
+          0%, 5% {
+            transform: translate(26px, 26px) scale(1);
+            opacity: 0.7;
+          }
+          20%, 30% {
+            transform: translate(0, 0) scale(0.5);
+            opacity: 0;
+          }
+          50%, 100% {
+            transform: translate(26px, 26px) scale(1);
+            opacity: 0.7;
+          }
         }
         
         .animate-main-box {
-          animation: main-box 4s ease-in-out infinite;
+          animation: main-box 3s ease-in-out infinite;
           transform-origin: 50px 50px;
         }
         
         .animate-box-top {
-          animation: bounce-top 1.5s ease-in-out infinite;
-          transform-origin: 50px 23px;
+          animation: expand-top 3s ease-in-out infinite;
+          transform-origin: 50px 50px;
         }
         
         .animate-box-bottom {
-          animation: bounce-bottom 1.5s ease-in-out infinite 0.2s;
-          transform-origin: 50px 77px;
+          animation: expand-bottom 3s ease-in-out infinite;
+          transform-origin: 50px 50px;
         }
         
         .animate-box-left {
-          animation: bounce-left 1.5s ease-in-out infinite 0.4s;
-          transform-origin: 23px 50px;
+          animation: expand-left 3s ease-in-out infinite;
+          transform-origin: 50px 50px;
         }
         
         .animate-box-right {
-          animation: bounce-right 1.5s ease-in-out infinite 0.6s;
-          transform-origin: 77px 50px;
+          animation: expand-right 3s ease-in-out infinite;
+          transform-origin: 50px 50px;
         }
         
         .animate-corner-tl {
-          animation: corner-tl 2s ease-in-out infinite;
-          transform-origin: 24px 24px;
+          animation: corner-tl-expand 3s ease-in-out infinite;
+          transform-origin: 50px 50px;
         }
         
         .animate-corner-tr {
-          animation: corner-tr 2s ease-in-out infinite 0.25s;
-          transform-origin: 76px 24px;
+          animation: corner-tr-expand 3s ease-in-out infinite;
+          transform-origin: 50px 50px;
         }
         
         .animate-corner-bl {
-          animation: corner-bl 2s ease-in-out infinite 0.5s;
-          transform-origin: 24px 76px;
+          animation: corner-bl-expand 3s ease-in-out infinite;
+          transform-origin: 50px 50px;
         }
         
         .animate-corner-br {
-          animation: corner-br 2s ease-in-out infinite 0.75s;
-          transform-origin: 76px 76px;
+          animation: corner-br-expand 3s ease-in-out infinite;
+          transform-origin: 50px 50px;
         }
       `}</style>
     </div>
@@ -246,76 +314,84 @@ export function AnimatedLogoIcon({ size = 40, color = "#18181b", className = "" 
         {/* Center */}
         <rect x="35" y="35" width="30" height="30" rx="2" fill={color} className="animate-main-box" />
         
-        {/* Cardinals */}
-        <rect x="42" y="10" width="16" height="16" rx="1" fill={color} className="animate-box-top" />
-        <rect x="42" y="74" width="16" height="16" rx="1" fill={color} className="animate-box-bottom" />
-        <rect x="10" y="42" width="16" height="16" rx="1" fill={color} className="animate-box-left" />
-        <rect x="74" y="42" width="16" height="16" rx="1" fill={color} className="animate-box-right" />
+        {/* Cardinals - start from center */}
+        <rect x="42" y="42" width="16" height="16" rx="1" fill={color} className="animate-box-top" />
+        <rect x="42" y="42" width="16" height="16" rx="1" fill={color} className="animate-box-bottom" />
+        <rect x="42" y="42" width="16" height="16" rx="1" fill={color} className="animate-box-left" />
+        <rect x="42" y="42" width="16" height="16" rx="1" fill={color} className="animate-box-right" />
         
-        {/* Corners */}
-        <rect x="15" y="15" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-tl" />
-        <rect x="73" y="15" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-tr" />
-        <rect x="15" y="73" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-bl" />
-        <rect x="73" y="73" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-br" />
+        {/* Corners - start from center */}
+        <rect x="44" y="44" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-tl" />
+        <rect x="44" y="44" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-tr" />
+        <rect x="44" y="44" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-bl" />
+        <rect x="44" y="44" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-br" />
       </svg>
       
       <style>{`
         @keyframes main-box {
-          0%, 100% { transform: rotate(0deg) scale(1); }
-          25% { transform: rotate(90deg) scale(0.85); }
-          50% { transform: rotate(180deg) scale(1); }
-          75% { transform: rotate(270deg) scale(0.85); }
+          0%, 5% { transform: rotate(0deg) scale(1); }
+          20% { transform: rotate(0deg) scale(0); }
+          25% { transform: rotate(180deg) scale(0); }
+          45%, 100% { transform: rotate(180deg) scale(1); }
         }
         
-        @keyframes bounce-top {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-8px); }
+        @keyframes expand-top {
+          0%, 5% { transform: translateY(-32px); }
+          20%, 30% { transform: translateY(0); }
+          50%, 100% { transform: translateY(-32px); }
         }
         
-        @keyframes bounce-bottom {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(8px); }
+        @keyframes expand-bottom {
+          0%, 5% { transform: translateY(32px); }
+          20%, 30% { transform: translateY(0); }
+          50%, 100% { transform: translateY(32px); }
         }
         
-        @keyframes bounce-left {
-          0%, 100% { transform: translateX(0); }
-          50% { transform: translateX(-8px); }
+        @keyframes expand-left {
+          0%, 5% { transform: translateX(-32px); }
+          20%, 30% { transform: translateX(0); }
+          50%, 100% { transform: translateX(-32px); }
         }
         
-        @keyframes bounce-right {
-          0%, 100% { transform: translateX(0); }
-          50% { transform: translateX(8px); }
+        @keyframes expand-right {
+          0%, 5% { transform: translateX(32px); }
+          20%, 30% { transform: translateX(0); }
+          50%, 100% { transform: translateX(32px); }
         }
         
-        @keyframes corner-tl {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
-          50% { transform: translate(-5px, -5px) scale(1.3); opacity: 1; }
+        @keyframes corner-tl-expand {
+          0%, 5% { transform: translate(-29px, -29px) scale(1); opacity: 0.6; }
+          20%, 30% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+          50%, 100% { transform: translate(-29px, -29px) scale(1); opacity: 0.6; }
         }
         
-        @keyframes corner-tr {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
-          50% { transform: translate(5px, -5px) scale(1.3); opacity: 1; }
+        @keyframes corner-tr-expand {
+          0%, 5% { transform: translate(29px, -29px) scale(1); opacity: 0.6; }
+          20%, 30% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+          50%, 100% { transform: translate(29px, -29px) scale(1); opacity: 0.6; }
         }
         
-        @keyframes corner-bl {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
-          50% { transform: translate(-5px, 5px) scale(1.3); opacity: 1; }
+        @keyframes corner-bl-expand {
+          0%, 5% { transform: translate(-29px, 29px) scale(1); opacity: 0.6; }
+          20%, 30% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+          50%, 100% { transform: translate(-29px, 29px) scale(1); opacity: 0.6; }
         }
         
-        @keyframes corner-br {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
-          50% { transform: translate(5px, 5px) scale(1.3); opacity: 1; }
+        @keyframes corner-br-expand {
+          0%, 5% { transform: translate(29px, 29px) scale(1); opacity: 0.6; }
+          20%, 30% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+          50%, 100% { transform: translate(29px, 29px) scale(1); opacity: 0.6; }
         }
         
-        .animate-main-box { animation: main-box 4s ease-in-out infinite; transform-origin: 50px 50px; }
-        .animate-box-top { animation: bounce-top 1.5s ease-in-out infinite; transform-origin: 50px 18px; }
-        .animate-box-bottom { animation: bounce-bottom 1.5s ease-in-out infinite 0.2s; transform-origin: 50px 82px; }
-        .animate-box-left { animation: bounce-left 1.5s ease-in-out infinite 0.4s; transform-origin: 18px 50px; }
-        .animate-box-right { animation: bounce-right 1.5s ease-in-out infinite 0.6s; transform-origin: 82px 50px; }
-        .animate-corner-tl { animation: corner-tl 2s ease-in-out infinite; transform-origin: 21px 21px; }
-        .animate-corner-tr { animation: corner-tr 2s ease-in-out infinite 0.25s; transform-origin: 79px 21px; }
-        .animate-corner-bl { animation: corner-bl 2s ease-in-out infinite 0.5s; transform-origin: 21px 79px; }
-        .animate-corner-br { animation: corner-br 2s ease-in-out infinite 0.75s; transform-origin: 79px 79px; }
+        .animate-main-box { animation: main-box 3s ease-in-out infinite; transform-origin: 50px 50px; }
+        .animate-box-top { animation: expand-top 3s ease-in-out infinite; transform-origin: 50px 50px; }
+        .animate-box-bottom { animation: expand-bottom 3s ease-in-out infinite; transform-origin: 50px 50px; }
+        .animate-box-left { animation: expand-left 3s ease-in-out infinite; transform-origin: 50px 50px; }
+        .animate-box-right { animation: expand-right 3s ease-in-out infinite; transform-origin: 50px 50px; }
+        .animate-corner-tl { animation: corner-tl-expand 3s ease-in-out infinite; transform-origin: 50px 50px; }
+        .animate-corner-tr { animation: corner-tr-expand 3s ease-in-out infinite; transform-origin: 50px 50px; }
+        .animate-corner-bl { animation: corner-bl-expand 3s ease-in-out infinite; transform-origin: 50px 50px; }
+        .animate-corner-br { animation: corner-br-expand 3s ease-in-out infinite; transform-origin: 50px 50px; }
       `}</style>
     </div>
   );
