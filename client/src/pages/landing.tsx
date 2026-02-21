@@ -118,6 +118,9 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <span className="text-xl font-semibold tracking-tight">Secret Message</span>
+            <Link href="/partners">
+              <a className="text-sm text-muted-foreground hover:text-foreground">Tell Your Own Secrets →</a>
+            </Link>
           </div>
         </div>
       </nav>
@@ -407,6 +410,9 @@ export default function Landing() {
             © 2026 Secret Message
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
+            <Link href="/partners">
+              <a className="hover:text-foreground">Partners</a>
+            </Link>
             <Link href="/privacy">
               <a className="hover:text-foreground" data-testid="link-footer-privacy">Privacy</a>
             </Link>

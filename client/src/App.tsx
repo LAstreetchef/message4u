@@ -16,6 +16,7 @@ import Unlocked from "@/pages/unlocked";
 import SmsConsent from "@/pages/sms-consent";
 import Privacy from "@/pages/privacy";
 import LegalDisclaimer from "@/pages/legal-disclaimer";
+import Partners from "@/pages/partners";
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/sms-consent" component={SmsConsent} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/legal-disclaimer" component={LegalDisclaimer} />
+      <Route path="/partners" component={Partners} />
       <Route path="/m/:slug" component={Paywall} />
       <Route path="/m/:slug/unlocked" component={Unlocked} />
       
