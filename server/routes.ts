@@ -10,6 +10,15 @@ import { ObjectPermission } from "./objectAcl";
 import { sendMessageNotification, isValidEmail } from "./emailService";
 import { NOWPaymentsPayoutService } from "./nowpaymentsPayoutService";
 import { getBaseUrl } from "./url";
+import { palClient } from "./palClient";
+
+// PAL (Payment Abstraction Layer) configuration
+const USE_PAL = process.env.USE_PAL === 'true';
+if (USE_PAL && palClient.isConfigured()) {
+  console.log('✅ PAL integration enabled - routing payments through PAL');
+} else if (USE_PAL) {
+  console.warn('⚠️ USE_PAL=true but PAL_API_KEY not set - falling back to direct payments');
+}
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -889,6 +898,203 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // ==========================================================================
+  // PAL (Payment Abstraction Layer) Routes
+  // These routes use the centralized PAL service for payment processing
+  // ==========================================================================
+
+  // Create a PAL transaction for a message
+  app.post("/api/pal/create-transaction", async (req, res) => {
+    try {
+      if (!USE_PAL || !palClient.isConfigured()) {
+        return res.status(400).json({ message: "PAL not configured" });
+      }
+
+      const { messageId } = req.body;
+      
+      const message = await storage.getMessageBySlug(messageId);
+      if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+
+      if (message.unlocked) {
+        return res.status(400).json({ message: "Message already unlocked" });
+      }
+
+      if (message.expiresAt && new Date(message.expiresAt) < new Date()) {
+        return res.status(400).json({ message: "Message has expired" });
+      }
+
+      // Calculate fees using existing logic
+      const amount = parseFloat(message.price);
+      const { platformFee, senderEarnings } = calculatePlatformFee(amount);
+
+      // Create transaction in PAL
+      // Partner ID is the message sender's user ID
+      const transaction = await palClient.createTransaction({
+        messageId: message.id,
+        partnerId: message.userId,
+        baseCost: platformFee, // Platform takes this as base
+        partnerPrice: amount,  // Total price paid by recipient
+        contentFlag: 'standard',
+        currency: 'USD',
+      });
+
+      res.json({
+        txnId: transaction.txn_id,
+        messageId: message.id,
+        slug: message.slug,
+        amount: amount,
+        availableMethods: transaction.available_methods,
+      });
+    } catch (error: any) {
+      console.error("Error creating PAL transaction:", error);
+      res.status(500).json({ message: "Error creating transaction: " + error.message });
+    }
+  });
+
+  // Get available payment methods for a message (via PAL)
+  app.get("/api/pal/methods/:slug", async (req, res) => {
+    try {
+      if (!USE_PAL || !palClient.isConfigured()) {
+        // Fallback: return default methods
+        return res.json({
+          methods: ['card', 'crypto'],
+          usePal: false,
+        });
+      }
+
+      const { slug } = req.params;
+      const message = await storage.getMessageBySlug(slug);
+      
+      if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+      }
+
+      // For now, return standard methods
+      // In future, could check content flag and return appropriate methods
+      res.json({
+        methods: ['card', 'apple_pay', 'google_pay', 'crypto', 'paypal', 'venmo', 'cashapp'],
+        usePal: true,
+      });
+    } catch (error: any) {
+      console.error("Error getting payment methods:", error);
+      res.status(500).json({ message: "Error getting payment methods: " + error.message });
+    }
+  });
+
+  // Submit payment through PAL
+  app.post("/api/pal/pay", async (req, res) => {
+    try {
+      if (!USE_PAL || !palClient.isConfigured()) {
+        return res.status(400).json({ message: "PAL not configured" });
+      }
+
+      const { txnId, paymentMethod, paymentDetails } = req.body;
+
+      if (!txnId || !paymentMethod) {
+        return res.status(400).json({ message: "Missing txnId or paymentMethod" });
+      }
+
+      const result = await palClient.submitPayment({
+        txnId,
+        paymentMethod,
+        paymentDetails,
+      });
+
+      // Handle different result types
+      if (result.status === 'completed') {
+        // Payment completed immediately - unlock the message
+        const txn = await palClient.getTransaction(txnId);
+        const message = await storage.getMessageById(txn.message_id);
+        
+        if (message) {
+          const amount = txn.amounts.transaction_total;
+          const { platformFee, senderEarnings } = calculatePlatformFee(amount);
+          
+          await storage.createPayment({
+            messageId: message.id,
+            paymentProvider: 'pal',
+            palTransactionId: txnId,
+            amount: amount.toString(),
+            platformFee: platformFee.toString(),
+            senderEarnings: senderEarnings.toString(),
+          });
+
+          await storage.markMessageUnlocked(message.id);
+        }
+
+        res.json({
+          status: 'completed',
+          redirectUrl: `/m/${message?.slug}/unlocked`,
+        });
+      } else if (result.status === 'redirect_required') {
+        // Payment requires redirect (PayPal, crypto, etc.)
+        res.json({
+          status: 'redirect',
+          redirectUrl: result.approve_url || result.invoice_url || result.payment_url,
+          address: result.address,
+          amountCrypto: result.amount_crypto,
+          coin: result.coin,
+        });
+      } else if (result.status === 'blocked') {
+        res.status(400).json({
+          status: 'blocked',
+          message: result.reason,
+          availableMethods: result.available_methods,
+        });
+      } else {
+        res.json({
+          status: result.status,
+          message: result.error,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error processing PAL payment:", error);
+      res.status(500).json({ message: "Error processing payment: " + error.message });
+    }
+  });
+
+  // Get PAL transaction status
+  app.get("/api/pal/status/:txnId", async (req, res) => {
+    try {
+      if (!USE_PAL || !palClient.isConfigured()) {
+        return res.status(400).json({ message: "PAL not configured" });
+      }
+
+      const { txnId } = req.params;
+      const transaction = await palClient.getTransaction(txnId);
+
+      res.json({
+        status: transaction.status,
+        paymentMethod: transaction.payment_method,
+        processor: transaction.processor,
+        amounts: transaction.amounts,
+      });
+    } catch (error: any) {
+      console.error("Error getting PAL transaction status:", error);
+      res.status(500).json({ message: "Error getting status: " + error.message });
+    }
+  });
+
+  // PAL health check
+  app.get("/api/pal/health", async (req, res) => {
+    try {
+      if (!palClient.isConfigured()) {
+        return res.json({ status: 'not_configured', usePal: false });
+      }
+
+      const health = await palClient.healthCheck();
+      res.json({ ...health, usePal: USE_PAL });
+    } catch (error: any) {
+      res.json({ status: 'error', error: error.message, usePal: USE_PAL });
+    }
+  });
+
+  // ==========================================================================
+  // End PAL Routes
+  // ==========================================================================
 
   // NOWPayments IPN webhook for payment confirmation
   app.post('/api/webhook/nowpayments', async (req: any, res) => {
