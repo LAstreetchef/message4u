@@ -136,8 +136,19 @@ export default function Landing() {
                     <span className="font-semibold">Get paid.</span>
                   </h1>
                   <p className="text-lg text-muted-foreground max-w-md">
-                    Create anonymous paywalled messages, photos, and files. Share the link, get paid.
+                    Create anonymous paywalled messages, photos, and files. Set them to self-destruct after viewing. Share the link, get paid.
                   </p>
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs border border-border text-muted-foreground">
+                      <Ghost className="w-3 h-3" /> Disappearing messages
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs border border-border text-muted-foreground">
+                      <Eye className="w-3 h-3" /> View limits
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs border border-border text-muted-foreground">
+                      <Timer className="w-3 h-3" /> Auto-delete
+                    </span>
+                  </div>
                 </div>
 
                 {/* Auth Card */}
@@ -268,7 +279,7 @@ export default function Landing() {
                 </div>
                 <h3 className="font-medium text-lg">1. Create</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Write a message, upload a photo or file. Set your price.
+                  Write a message, upload a photo or file. Set your price and optional self-destruct settings.
                 </p>
               </div>
               
