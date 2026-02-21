@@ -265,17 +265,35 @@ export function registerWidgetRoutes(app: Express) {
     }
   });
   
+  // Serve widget static files
+  const widgetDir = process.env.NODE_ENV === 'production' 
+    ? './dist/public/widget/v1'
+    : './public/widget/v1';
+  
   // Serve the widget JavaScript
   app.get('/widget/v1/sm-widget.js', (req: Request, res: Response) => {
     res.setHeader('Content-Type', 'application/javascript');
-    res.setHeader('Cache-Control', 'public, max-age=3600'); // 1 hour cache
-    res.sendFile('sm-widget.js', { root: './public/widget/v1' });
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.sendFile('sm-widget.js', { root: widgetDir });
   });
   
   // Serve minified widget
   app.get('/widget/v1/sm-widget.min.js', (req: Request, res: Response) => {
     res.setHeader('Content-Type', 'application/javascript');
-    res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hour cache
-    res.sendFile('sm-widget.min.js', { root: './public/widget/v1' });
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.sendFile('sm-widget.min.js', { root: widgetDir });
+  });
+  
+  // Serve test page
+  app.get('/widget/v1/test.html', (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.sendFile('test.html', { root: widgetDir });
+  });
+  
+  // Redirect /widget/v1/ to test page
+  app.get('/widget/v1/', (req: Request, res: Response) => {
+    res.redirect('/widget/v1/test.html');
   });
 }
