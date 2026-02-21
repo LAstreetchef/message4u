@@ -12,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation, Link } from "wouter";
+import { AnimatedLogo } from "@/components/AnimatedLogo";
 
 const signupSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -117,7 +118,10 @@ export default function Landing() {
       <nav className="border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <span className="text-xl font-semibold tracking-tight">Secret Message</span>
+            <span className="flex items-center gap-2">
+              <AnimatedLogo size={32} variant="dark" />
+              <span className="text-xl font-semibold tracking-tight">Secret Message</span>
+            </span>
             <Link href="/partners">
               <a className="text-sm text-muted-foreground hover:text-foreground">Secret Partners →</a>
             </Link>
