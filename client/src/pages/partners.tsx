@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 // Sample Widget Component
 function WidgetPreview({ 
@@ -281,7 +288,7 @@ export default function Partners() {
           </div>
         </section>
 
-        {/* Widget Showcase */}
+        {/* Widget Showcase Carousel */}
         <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-border">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
@@ -295,69 +302,105 @@ export default function Partners() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8 mb-12">
-              {/* Light Theme */}
-              <div>
-                <p className="text-sm text-muted-foreground mb-3 text-center">Light Theme</p>
-                <WidgetPreview 
-                  theme="light"
-                  accent="#18181b"
-                  title="Send a Secret"
-                  buttonText="Create Message"
-                  price="4.99"
-                />
-              </div>
-              
-              {/* Dark Theme */}
-              <div>
-                <p className="text-sm text-muted-foreground mb-3 text-center">Dark Theme</p>
-                <WidgetPreview 
-                  theme="dark"
-                  accent="#fafafa"
-                  title="Send a Secret"
-                  buttonText="Create Message"
-                  price="4.99"
-                />
-              </div>
-              
-              {/* Custom Brand */}
-              <div>
-                <p className="text-sm text-muted-foreground mb-3 text-center">Custom Brand</p>
-                <WidgetPreview 
-                  theme="light"
-                  accent="#e11d48"
-                  title="💋 Spicy Secret"
-                  buttonText="Send It"
-                  price="9.99"
-                />
-              </div>
-            </div>
+            <Carousel
+              opts={{
+                align: "center",
+                loop: true,
+              }}
+              className="w-full max-w-4xl mx-auto"
+            >
+              <CarouselContent className="-ml-4">
+                {/* Light Theme */}
+                <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
+                  <div className="p-2">
+                    <p className="text-sm text-muted-foreground mb-3 text-center">Light Theme</p>
+                    <WidgetPreview 
+                      theme="light"
+                      accent="#18181b"
+                      title="Send a Secret"
+                      buttonText="Create Message"
+                      price="4.99"
+                    />
+                  </div>
+                </CarouselItem>
+                
+                {/* Dark Theme */}
+                <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
+                  <div className="p-2">
+                    <p className="text-sm text-muted-foreground mb-3 text-center">Dark Theme</p>
+                    <WidgetPreview 
+                      theme="dark"
+                      accent="#fafafa"
+                      title="Send a Secret"
+                      buttonText="Create Message"
+                      price="4.99"
+                    />
+                  </div>
+                </CarouselItem>
+                
+                {/* Custom Brand - Pink */}
+                <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
+                  <div className="p-2">
+                    <p className="text-sm text-muted-foreground mb-3 text-center">Custom Brand</p>
+                    <WidgetPreview 
+                      theme="light"
+                      accent="#e11d48"
+                      title="💋 Spicy Secret"
+                      buttonText="Send It"
+                      price="9.99"
+                    />
+                  </div>
+                </CarouselItem>
+                
+                {/* Creator - Purple */}
+                <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
+                  <div className="p-2">
+                    <p className="text-sm text-muted-foreground mb-3 text-center">For Creators</p>
+                    <WidgetPreview 
+                      theme="dark"
+                      accent="#8b5cf6"
+                      title="✨ Exclusive Content"
+                      buttonText="Unlock Now"
+                      price="14.99"
+                    />
+                  </div>
+                </CarouselItem>
+                
+                {/* Business - Blue */}
+                <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
+                  <div className="p-2">
+                    <p className="text-sm text-muted-foreground mb-3 text-center">For Business</p>
+                    <WidgetPreview 
+                      theme="light"
+                      accent="#0ea5e9"
+                      title="🔒 Confidential Tip"
+                      buttonText="Submit Securely"
+                      price="1.99"
+                    />
+                  </div>
+                </CarouselItem>
 
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Creator Example */}
-              <div>
-                <p className="text-sm text-muted-foreground mb-3 text-center">For Creators</p>
-                <WidgetPreview 
-                  theme="dark"
-                  accent="#8b5cf6"
-                  title="✨ Exclusive Content"
-                  buttonText="Unlock Now"
-                  price="14.99"
-                />
-              </div>
-              
-              {/* Business Example */}
-              <div>
-                <p className="text-sm text-muted-foreground mb-3 text-center">For Business</p>
-                <WidgetPreview 
-                  theme="light"
-                  accent="#0ea5e9"
-                  title="🔒 Confidential Tip"
-                  buttonText="Submit Securely"
-                  price="1.99"
-                />
-              </div>
-            </div>
+                {/* Premium - Gold */}
+                <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
+                  <div className="p-2">
+                    <p className="text-sm text-muted-foreground mb-3 text-center">Premium</p>
+                    <WidgetPreview 
+                      theme="dark"
+                      accent="#f59e0b"
+                      title="🏆 VIP Access"
+                      buttonText="Get Access"
+                      price="49.99"
+                    />
+                  </div>
+                </CarouselItem>
+              </CarouselContent>
+              <CarouselPrevious className="hidden md:flex" />
+              <CarouselNext className="hidden md:flex" />
+            </Carousel>
+
+            <p className="text-center text-sm text-muted-foreground mt-8">
+              ← Swipe to see more examples →
+            </p>
           </div>
         </section>
 
