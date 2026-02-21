@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 interface AnimatedLogoProps {
   size?: number;
   variant?: "light" | "dark";
@@ -7,17 +5,13 @@ interface AnimatedLogoProps {
 }
 
 export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: AnimatedLogoProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  
   const bgColor = variant === "dark" ? "#18181b" : "#fafafa";
   const boxColor = variant === "dark" ? "#fafafa" : "#18181b";
   
   return (
     <div 
-      className={`relative cursor-pointer ${className}`}
+      className={`relative ${className}`}
       style={{ width: size, height: size }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <svg
         viewBox="0 0 100 100"
@@ -35,270 +29,56 @@ export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: An
           fill={bgColor}
         />
         
-        {/* Center box - rotates and pulses */}
+        {/* Single white box - animated */}
         <rect
-          x="35"
-          y="35"
-          width="30"
-          height="30"
+          x="30"
+          y="30"
+          width="40"
+          height="40"
           rx="2"
           fill={boxColor}
-          className="animate-main-box"
-        />
-        
-        {/* Top box */}
-        <rect
-          x="42"
-          y="42"
-          width="16"
-          height="16"
-          rx="1"
-          fill={boxColor}
-          className="animate-box-top"
-        />
-        
-        {/* Bottom box */}
-        <rect
-          x="42"
-          y="42"
-          width="16"
-          height="16"
-          rx="1"
-          fill={boxColor}
-          className="animate-box-bottom"
-        />
-        
-        {/* Left box */}
-        <rect
-          x="42"
-          y="42"
-          width="16"
-          height="16"
-          rx="1"
-          fill={boxColor}
-          className="animate-box-left"
-        />
-        
-        {/* Right box */}
-        <rect
-          x="42"
-          y="42"
-          width="16"
-          height="16"
-          rx="1"
-          fill={boxColor}
-          className="animate-box-right"
-        />
-        
-        {/* Corner boxes - start from center */}
-        <rect
-          x="44"
-          y="44"
-          width="12"
-          height="12"
-          rx="1"
-          fill={boxColor}
-          fillOpacity="0.7"
-          className="animate-corner-tl"
-        />
-        <rect
-          x="44"
-          y="44"
-          width="12"
-          height="12"
-          rx="1"
-          fill={boxColor}
-          fillOpacity="0.7"
-          className="animate-corner-tr"
-        />
-        <rect
-          x="44"
-          y="44"
-          width="12"
-          height="12"
-          rx="1"
-          fill={boxColor}
-          fillOpacity="0.7"
-          className="animate-corner-bl"
-        />
-        <rect
-          x="44"
-          y="44"
-          width="12"
-          height="12"
-          rx="1"
-          fill={boxColor}
-          fillOpacity="0.7"
-          className="animate-corner-br"
+          className="animate-box"
         />
       </svg>
       
       <style>{`
-        @keyframes main-box {
-          0%, 5% {
-            transform: rotate(0deg) scale(1);
+        @keyframes box-animate {
+          0% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
           }
-          20% {
-            transform: rotate(0deg) scale(0);
+          15% {
+            transform: scale(1.15) rotate(5deg);
+            opacity: 1;
           }
-          25% {
-            transform: rotate(180deg) scale(0);
+          30% {
+            transform: scale(0.9) rotate(-3deg);
+            opacity: 0.9;
           }
-          45%, 100% {
-            transform: rotate(180deg) scale(1);
-          }
-        }
-        
-        @keyframes expand-top {
-          0%, 5% {
-            transform: translateY(-27px);
-          }
-          20%, 30% {
-            transform: translateY(0);
-          }
-          50%, 100% {
-            transform: translateY(-27px);
-          }
-        }
-        
-        @keyframes expand-bottom {
-          0%, 5% {
-            transform: translateY(27px);
-          }
-          20%, 30% {
-            transform: translateY(0);
-          }
-          50%, 100% {
-            transform: translateY(27px);
-          }
-        }
-        
-        @keyframes expand-left {
-          0%, 5% {
-            transform: translateX(-27px);
-          }
-          20%, 30% {
-            transform: translateX(0);
-          }
-          50%, 100% {
-            transform: translateX(-27px);
-          }
-        }
-        
-        @keyframes expand-right {
-          0%, 5% {
-            transform: translateX(27px);
-          }
-          20%, 30% {
-            transform: translateX(0);
-          }
-          50%, 100% {
-            transform: translateX(27px);
-          }
-        }
-        
-        @keyframes corner-tl-expand {
-          0%, 5% {
-            transform: translate(-26px, -26px) scale(1);
-            opacity: 0.7;
-          }
-          20%, 30% {
-            transform: translate(0, 0) scale(0.5);
+          45% {
+            transform: scale(0) rotate(45deg);
             opacity: 0;
           }
-          50%, 100% {
-            transform: translate(-26px, -26px) scale(1);
-            opacity: 0.7;
-          }
-        }
-        
-        @keyframes corner-tr-expand {
-          0%, 5% {
-            transform: translate(26px, -26px) scale(1);
-            opacity: 0.7;
-          }
-          20%, 30% {
-            transform: translate(0, 0) scale(0.5);
+          50% {
+            transform: scale(0) rotate(-45deg);
             opacity: 0;
           }
-          50%, 100% {
-            transform: translate(26px, -26px) scale(1);
-            opacity: 0.7;
+          65% {
+            transform: scale(0.9) rotate(3deg);
+            opacity: 0.9;
+          }
+          80% {
+            transform: scale(1.1) rotate(-2deg);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
           }
         }
         
-        @keyframes corner-bl-expand {
-          0%, 5% {
-            transform: translate(-26px, 26px) scale(1);
-            opacity: 0.7;
-          }
-          20%, 30% {
-            transform: translate(0, 0) scale(0.5);
-            opacity: 0;
-          }
-          50%, 100% {
-            transform: translate(-26px, 26px) scale(1);
-            opacity: 0.7;
-          }
-        }
-        
-        @keyframes corner-br-expand {
-          0%, 5% {
-            transform: translate(26px, 26px) scale(1);
-            opacity: 0.7;
-          }
-          20%, 30% {
-            transform: translate(0, 0) scale(0.5);
-            opacity: 0;
-          }
-          50%, 100% {
-            transform: translate(26px, 26px) scale(1);
-            opacity: 0.7;
-          }
-        }
-        
-        .animate-main-box {
-          animation: main-box 3s ease-in-out infinite;
-          transform-origin: 50px 50px;
-        }
-        
-        .animate-box-top {
-          animation: expand-top 3s ease-in-out infinite;
-          transform-origin: 50px 50px;
-        }
-        
-        .animate-box-bottom {
-          animation: expand-bottom 3s ease-in-out infinite;
-          transform-origin: 50px 50px;
-        }
-        
-        .animate-box-left {
-          animation: expand-left 3s ease-in-out infinite;
-          transform-origin: 50px 50px;
-        }
-        
-        .animate-box-right {
-          animation: expand-right 3s ease-in-out infinite;
-          transform-origin: 50px 50px;
-        }
-        
-        .animate-corner-tl {
-          animation: corner-tl-expand 3s ease-in-out infinite;
-          transform-origin: 50px 50px;
-        }
-        
-        .animate-corner-tr {
-          animation: corner-tr-expand 3s ease-in-out infinite;
-          transform-origin: 50px 50px;
-        }
-        
-        .animate-corner-bl {
-          animation: corner-bl-expand 3s ease-in-out infinite;
-          transform-origin: 50px 50px;
-        }
-        
-        .animate-corner-br {
-          animation: corner-br-expand 3s ease-in-out infinite;
+        .animate-box {
+          animation: box-animate 3s ease-in-out infinite;
           transform-origin: 50px 50px;
         }
       `}</style>
@@ -306,92 +86,62 @@ export function AnimatedLogo({ size = 40, variant = "dark", className = "" }: An
   );
 }
 
-// Simpler version - just the icon without background
+// Icon version without background
 export function AnimatedLogoIcon({ size = 40, color = "#18181b", className = "" }: { size?: number; color?: string; className?: string }) {
   return (
     <div className={`relative ${className}`} style={{ width: size, height: size }}>
       <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-        {/* Center */}
-        <rect x="35" y="35" width="30" height="30" rx="2" fill={color} className="animate-main-box" />
-        
-        {/* Cardinals - start from center */}
-        <rect x="42" y="42" width="16" height="16" rx="1" fill={color} className="animate-box-top" />
-        <rect x="42" y="42" width="16" height="16" rx="1" fill={color} className="animate-box-bottom" />
-        <rect x="42" y="42" width="16" height="16" rx="1" fill={color} className="animate-box-left" />
-        <rect x="42" y="42" width="16" height="16" rx="1" fill={color} className="animate-box-right" />
-        
-        {/* Corners - start from center */}
-        <rect x="44" y="44" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-tl" />
-        <rect x="44" y="44" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-tr" />
-        <rect x="44" y="44" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-bl" />
-        <rect x="44" y="44" width="12" height="12" rx="1" fill={color} fillOpacity="0.6" className="animate-corner-br" />
+        <rect
+          x="20"
+          y="20"
+          width="60"
+          height="60"
+          rx="3"
+          fill={color}
+          className="animate-box"
+        />
       </svg>
       
       <style>{`
-        @keyframes main-box {
-          0%, 5% { transform: rotate(0deg) scale(1); }
-          20% { transform: rotate(0deg) scale(0); }
-          25% { transform: rotate(180deg) scale(0); }
-          45%, 100% { transform: rotate(180deg) scale(1); }
+        @keyframes box-animate {
+          0% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+          }
+          15% {
+            transform: scale(1.15) rotate(5deg);
+            opacity: 1;
+          }
+          30% {
+            transform: scale(0.9) rotate(-3deg);
+            opacity: 0.9;
+          }
+          45% {
+            transform: scale(0) rotate(45deg);
+            opacity: 0;
+          }
+          50% {
+            transform: scale(0) rotate(-45deg);
+            opacity: 0;
+          }
+          65% {
+            transform: scale(0.9) rotate(3deg);
+            opacity: 0.9;
+          }
+          80% {
+            transform: scale(1.1) rotate(-2deg);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+          }
         }
         
-        @keyframes expand-top {
-          0%, 5% { transform: translateY(-32px); }
-          20%, 30% { transform: translateY(0); }
-          50%, 100% { transform: translateY(-32px); }
+        .animate-box {
+          animation: box-animate 3s ease-in-out infinite;
+          transform-origin: 50px 50px;
         }
-        
-        @keyframes expand-bottom {
-          0%, 5% { transform: translateY(32px); }
-          20%, 30% { transform: translateY(0); }
-          50%, 100% { transform: translateY(32px); }
-        }
-        
-        @keyframes expand-left {
-          0%, 5% { transform: translateX(-32px); }
-          20%, 30% { transform: translateX(0); }
-          50%, 100% { transform: translateX(-32px); }
-        }
-        
-        @keyframes expand-right {
-          0%, 5% { transform: translateX(32px); }
-          20%, 30% { transform: translateX(0); }
-          50%, 100% { transform: translateX(32px); }
-        }
-        
-        @keyframes corner-tl-expand {
-          0%, 5% { transform: translate(-29px, -29px) scale(1); opacity: 0.6; }
-          20%, 30% { transform: translate(0, 0) scale(0.5); opacity: 0; }
-          50%, 100% { transform: translate(-29px, -29px) scale(1); opacity: 0.6; }
-        }
-        
-        @keyframes corner-tr-expand {
-          0%, 5% { transform: translate(29px, -29px) scale(1); opacity: 0.6; }
-          20%, 30% { transform: translate(0, 0) scale(0.5); opacity: 0; }
-          50%, 100% { transform: translate(29px, -29px) scale(1); opacity: 0.6; }
-        }
-        
-        @keyframes corner-bl-expand {
-          0%, 5% { transform: translate(-29px, 29px) scale(1); opacity: 0.6; }
-          20%, 30% { transform: translate(0, 0) scale(0.5); opacity: 0; }
-          50%, 100% { transform: translate(-29px, 29px) scale(1); opacity: 0.6; }
-        }
-        
-        @keyframes corner-br-expand {
-          0%, 5% { transform: translate(29px, 29px) scale(1); opacity: 0.6; }
-          20%, 30% { transform: translate(0, 0) scale(0.5); opacity: 0; }
-          50%, 100% { transform: translate(29px, 29px) scale(1); opacity: 0.6; }
-        }
-        
-        .animate-main-box { animation: main-box 3s ease-in-out infinite; transform-origin: 50px 50px; }
-        .animate-box-top { animation: expand-top 3s ease-in-out infinite; transform-origin: 50px 50px; }
-        .animate-box-bottom { animation: expand-bottom 3s ease-in-out infinite; transform-origin: 50px 50px; }
-        .animate-box-left { animation: expand-left 3s ease-in-out infinite; transform-origin: 50px 50px; }
-        .animate-box-right { animation: expand-right 3s ease-in-out infinite; transform-origin: 50px 50px; }
-        .animate-corner-tl { animation: corner-tl-expand 3s ease-in-out infinite; transform-origin: 50px 50px; }
-        .animate-corner-tr { animation: corner-tr-expand 3s ease-in-out infinite; transform-origin: 50px 50px; }
-        .animate-corner-bl { animation: corner-bl-expand 3s ease-in-out infinite; transform-origin: 50px 50px; }
-        .animate-corner-br { animation: corner-br-expand 3s ease-in-out infinite; transform-origin: 50px 50px; }
       `}</style>
     </div>
   );
