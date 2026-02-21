@@ -18,6 +18,7 @@ import Privacy from "@/pages/privacy";
 import LegalDisclaimer from "@/pages/legal-disclaimer";
 import Partners from "@/pages/partners";
 import PartnerLink from "@/pages/partner-link";
+import InstaLink from "@/pages/insta-link";
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/legal-disclaimer" component={LegalDisclaimer} />
       <Route path="/partners" component={Partners} />
       <Route path="/p/:partnerId" component={PartnerLink} />
+      <Route path="/i/:username" component={InstaLink} />
       <Route path="/m/:slug" component={Paywall} />
       <Route path="/m/:slug/unlocked" component={Unlocked} />
       
