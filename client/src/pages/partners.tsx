@@ -1,6 +1,78 @@
+import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Lock, Shield, DollarSign, Code, Zap, Eye } from "lucide-react";
+import { ArrowRight, Lock, Shield, DollarSign, Code, Zap, Eye, Send, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Sample Widget Component
+function WidgetPreview({ 
+  theme = "light",
+  accent = "#18181b",
+  title = "Send a Secret",
+  buttonText = "Create Message",
+  price = "4.99"
+}: {
+  theme?: "light" | "dark";
+  accent?: string;
+  title?: string;
+  buttonText?: string;
+  price?: string;
+}) {
+  const bgColor = theme === "dark" ? "#18181b" : "#ffffff";
+  const textColor = theme === "dark" ? "#fafafa" : "#18181b";
+  const mutedColor = theme === "dark" ? "#a1a1aa" : "#71717a";
+  const borderColor = theme === "dark" ? "#27272a" : "#e4e4e7";
+  
+  return (
+    <div 
+      className="p-6 rounded-lg border-2 transition-all hover:scale-[1.02]"
+      style={{ 
+        backgroundColor: bgColor, 
+        borderColor: borderColor,
+        color: textColor 
+      }}
+    >
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-8 h-8 rounded flex items-center justify-center"
+            style={{ backgroundColor: accent }}
+          >
+            <Lock className="w-4 h-4" style={{ color: theme === "dark" ? "#18181b" : "#ffffff" }} />
+          </div>
+          <span className="font-semibold">{title}</span>
+        </div>
+        
+        <div 
+          className="p-3 rounded border"
+          style={{ borderColor: borderColor }}
+        >
+          <p className="text-sm" style={{ color: mutedColor }}>
+            Your message (encrypted)
+          </p>
+          <div className="mt-2 h-20 rounded" style={{ backgroundColor: theme === "dark" ? "#27272a" : "#f4f4f5" }}></div>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span className="text-sm" style={{ color: mutedColor }}>
+            Unlock price: <strong style={{ color: textColor }}>${price}</strong>
+          </span>
+        </div>
+        
+        <button 
+          className="w-full py-3 rounded font-medium flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+          style={{ backgroundColor: accent, color: theme === "dark" ? "#18181b" : "#ffffff" }}
+        >
+          <Send className="w-4 h-4" />
+          {buttonText}
+        </button>
+        
+        <p className="text-xs text-center" style={{ color: mutedColor }}>
+          Powered by SecretMessage4U
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function Partners() {
   return (
@@ -82,8 +154,88 @@ export default function Partners() {
           </div>
         </section>
 
-        {/* Quick Start */}
+        {/* Widget Showcase */}
         <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-border">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 border border-border text-sm mb-4">
+                <Palette className="w-4 h-4" />
+                <span className="font-medium">WIDGET PREVIEW</span>
+              </div>
+              <h2 className="text-3xl font-light mb-4">See It In Action</h2>
+              <p className="text-muted-foreground max-w-xl mx-auto">
+                Customize colors, text, and pricing to match your brand. Here's how it looks:
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8 mb-12">
+              {/* Light Theme */}
+              <div>
+                <p className="text-sm text-muted-foreground mb-3 text-center">Light Theme</p>
+                <WidgetPreview 
+                  theme="light"
+                  accent="#18181b"
+                  title="Send a Secret"
+                  buttonText="Create Message"
+                  price="4.99"
+                />
+              </div>
+              
+              {/* Dark Theme */}
+              <div>
+                <p className="text-sm text-muted-foreground mb-3 text-center">Dark Theme</p>
+                <WidgetPreview 
+                  theme="dark"
+                  accent="#fafafa"
+                  title="Send a Secret"
+                  buttonText="Create Message"
+                  price="4.99"
+                />
+              </div>
+              
+              {/* Custom Brand */}
+              <div>
+                <p className="text-sm text-muted-foreground mb-3 text-center">Custom Brand</p>
+                <WidgetPreview 
+                  theme="light"
+                  accent="#e11d48"
+                  title="💋 Spicy Secret"
+                  buttonText="Send It"
+                  price="9.99"
+                />
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Creator Example */}
+              <div>
+                <p className="text-sm text-muted-foreground mb-3 text-center">For Creators</p>
+                <WidgetPreview 
+                  theme="dark"
+                  accent="#8b5cf6"
+                  title="✨ Exclusive Content"
+                  buttonText="Unlock Now"
+                  price="14.99"
+                />
+              </div>
+              
+              {/* Business Example */}
+              <div>
+                <p className="text-sm text-muted-foreground mb-3 text-center">For Business</p>
+                <WidgetPreview 
+                  theme="light"
+                  accent="#0ea5e9"
+                  title="🔒 Confidential Tip"
+                  buttonText="Submit Securely"
+                  price="1.99"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Quick Start */}
+        <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-border bg-secondary/30">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-2 mb-8">
               <Code className="w-5 h-5" />
@@ -125,7 +277,7 @@ export default function Partners() {
         </section>
 
         {/* Security Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-border bg-secondary/30">
+        <section className="py-20 px-4 sm:px-6 lg:px-8 border-b border-border">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-2 mb-8">
               <Shield className="w-5 h-5" />
