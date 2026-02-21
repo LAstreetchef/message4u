@@ -7,7 +7,7 @@ import { generateMessageImage } from "./imageGenerator";
 import Stripe from "stripe";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { sendMessageNotification, isValidEmail } from "./emailService";
+import { sendMessageNotification, sendPartnerInquiry, isValidEmail } from "./emailService";
 import { NOWPaymentsPayoutService } from "./nowpaymentsPayoutService";
 import { getBaseUrl } from "./url";
 import { palClient } from "./palClient";
@@ -84,6 +84,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Health check for Render/monitoring
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // Partner inquiry (public)
+  app.post('/api/partner-inquiry', async (req, res) => {
+    try {
+      const { name, email, website, message } = req.body;
+      
+      if (!name || !email) {
+        return res.status(400).json({ error: 'Name and email are required' });
+      }
+      
+      if (!isValidEmail(email)) {
+        return res.status(400).json({ error: 'Invalid email address' });
+      }
+      
+      const result = await sendPartnerInquiry({ name, email, website, message });
+      
+      if (!result.success) {
+        return res.status(500).json({ error: result.error || 'Failed to send inquiry' });
+      }
+      
+      res.json({ success: true, message: 'Your application has been submitted!' });
+    } catch (error) {
+      console.error('Error processing partner inquiry:', error);
+      res.status(500).json({ error: 'Failed to process inquiry' });
+    }
   });
 
   // Admin routes

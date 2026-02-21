@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Lock, Shield, DollarSign, Code, Zap, Eye, Send, Palette } from "lucide-react";
+import { ArrowRight, Lock, Shield, DollarSign, Code, Zap, Eye, Send, Palette, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 // Sample Widget Component
 function WidgetPreview({ 
@@ -71,6 +74,130 @@ function WidgetPreview({
         </p>
       </div>
     </div>
+  );
+}
+
+// Partner Application Form
+function PartnerApplicationForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    website: "",
+    message: ""
+  });
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/partner-inquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit");
+      }
+
+      setIsSubmitted(true);
+      toast({
+        title: "Application Submitted!",
+        description: "We'll be in touch soon with your Partner ID."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isSubmitted) {
+    return (
+      <div className="p-8 border border-border text-center space-y-4">
+        <CheckCircle className="w-12 h-12 mx-auto text-green-500" />
+        <h3 className="text-xl font-medium">Application Received!</h3>
+        <p className="text-muted-foreground">
+          Thanks for your interest. We'll review your application and send your Partner ID to <strong>{formData.email}</strong> within 24 hours.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="p-8 border border-border space-y-6">
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Name *</label>
+        <Input
+          required
+          placeholder="Your name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          className="rounded-none"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Email *</label>
+        <Input
+          required
+          type="email"
+          placeholder="you@example.com"
+          value={formData.email}
+          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+          className="rounded-none"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Website</label>
+        <Input
+          type="url"
+          placeholder="https://yoursite.com"
+          value={formData.website}
+          onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+          className="rounded-none"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Tell us about your use case</label>
+        <Textarea
+          placeholder="How do you plan to use the widget? What's your audience like?"
+          value={formData.message}
+          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+          className="rounded-none min-h-[100px]"
+        />
+      </div>
+
+      <Button 
+        type="submit" 
+        disabled={isSubmitting}
+        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded-none h-12"
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2 className="mr-2 w-4 h-4 animate-spin" />
+            Submitting...
+          </>
+        ) : (
+          <>
+            Get Your Partner ID
+            <ArrowRight className="ml-2 w-4 h-4" />
+          </>
+        )}
+      </Button>
+    </form>
   );
 }
 
@@ -371,17 +498,17 @@ export default function Partners() {
           </div>
         </section>
 
-        {/* CTA */}
+        {/* CTA / Application Form */}
         <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mx-auto text-center space-y-6">
-            <h2 className="text-3xl font-light">Ready to Earn?</h2>
-            <p className="text-muted-foreground">
-              Get your Partner ID and start monetizing your audience today.
-            </p>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-none h-12 px-8">
-              Get Your Partner ID
-              <ArrowRight className="ml-2 w-4 h-4" />
-            </Button>
+          <div className="max-w-xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-light">Ready to Earn?</h2>
+              <p className="text-muted-foreground mt-2">
+                Apply for a Partner ID and start monetizing your audience.
+              </p>
+            </div>
+            
+            <PartnerApplicationForm />
           </div>
         </section>
       </main>

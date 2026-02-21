@@ -84,6 +84,96 @@ interface SendMessageNotificationParams {
   senderName?: string;
 }
 
+// Partner inquiry email template
+function createPartnerInquiryTemplate(data: {
+  name: string;
+  email: string;
+  website?: string;
+  message?: string;
+}): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+</head>
+<body style="margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f4f5;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e4e4e7; padding: 32px;">
+    <h1 style="margin: 0 0 24px 0; font-size: 24px; color: #18181b;">New Partner Application</h1>
+    
+    <div style="margin-bottom: 16px;">
+      <strong style="color: #71717a;">Name:</strong>
+      <p style="margin: 4px 0 0 0; color: #18181b;">${data.name}</p>
+    </div>
+    
+    <div style="margin-bottom: 16px;">
+      <strong style="color: #71717a;">Email:</strong>
+      <p style="margin: 4px 0 0 0; color: #18181b;">${data.email}</p>
+    </div>
+    
+    ${data.website ? `
+    <div style="margin-bottom: 16px;">
+      <strong style="color: #71717a;">Website:</strong>
+      <p style="margin: 4px 0 0 0; color: #18181b;"><a href="${data.website}">${data.website}</a></p>
+    </div>
+    ` : ''}
+    
+    ${data.message ? `
+    <div style="margin-bottom: 16px;">
+      <strong style="color: #71717a;">Message:</strong>
+      <p style="margin: 4px 0 0 0; color: #18181b; white-space: pre-wrap;">${data.message}</p>
+    </div>
+    ` : ''}
+    
+    <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 24px 0;" />
+    
+    <p style="color: #71717a; font-size: 14px; margin: 0;">
+      Reply directly to this email to contact the applicant.
+    </p>
+  </div>
+</body>
+</html>
+  `;
+}
+
+interface SendPartnerInquiryParams {
+  name: string;
+  email: string;
+  website?: string;
+  message?: string;
+}
+
+export async function sendPartnerInquiry(data: SendPartnerInquiryParams): Promise<{ success: boolean; error?: string }> {
+  if (!resend) {
+    console.warn('Resend is not configured. Skipping partner inquiry email.');
+    return { success: false, error: 'Email service not configured' };
+  }
+
+  if (!isValidEmail(data.email)) {
+    return { success: false, error: 'Invalid email address' };
+  }
+
+  try {
+    const { error } = await resend.emails.send({
+      from: 'message4u@secretmessage4u.com',
+      to: 'message4u@secretmessage4u.com',
+      replyTo: data.email,
+      subject: `Partner Application: ${data.name}`,
+      html: createPartnerInquiryTemplate(data),
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error sending partner inquiry:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function sendMessageNotification({
   recipientEmail,
   messageTitle,
