@@ -168,7 +168,7 @@ export default function InstaLinkView() {
               Create Your Own{' '}
               <span style={{color: '#833AB4'}}>I</span>
               <span style={{color: '#C13584'}}>n</span>
-              <span style={{color: '#E1306C'}}>s</span>
+              <span style={{color: '#E1306C'}}>$</span>
               <span style={{color: '#F77737'}}>t</span>
               <span style={{color: '#FCAF45'}}>a</span>
               <span>Link</span>
@@ -414,7 +414,7 @@ export default function InstaLinkView() {
           Create your own{' '}
           <span style={{color: '#833AB4'}}>I</span>
           <span style={{color: '#C13584'}}>n</span>
-          <span style={{color: '#E1306C'}}>s</span>
+          <span style={{color: '#E1306C'}}>$</span>
           <span style={{color: '#F77737'}}>t</span>
           <span style={{color: '#FCAF45'}}>a</span>
           <span>Link</span>

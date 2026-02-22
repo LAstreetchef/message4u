@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
+import { AnimatedLogo } from "@/components/AnimatedLogo";
 
 export default function InstaLinkCreate() {
   const [, setLocation] = useLocation();
@@ -154,9 +155,7 @@ export default function InstaLinkCreate() {
           <div className="flex justify-between items-center h-16">
             <Link href="/">
               <a className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
-                  <div className="w-4 h-4 bg-black rounded-sm" />
-                </div>
+                <AnimatedLogo size={32} variant="light" />
                 <span className="text-xl font-semibold">Secret Message</span>
               </a>
             </Link>
@@ -179,7 +178,7 @@ export default function InstaLinkCreate() {
                   </span>
                   <span style={{color: '#833AB4'}}>I</span>
                   <span style={{color: '#C13584'}}>n</span>
-                  <span style={{color: '#E1306C'}}>s</span>
+                  <span style={{color: '#E1306C'}}>$</span>
                   <span style={{color: '#F77737'}}>t</span>
                   <span style={{color: '#FCAF45'}}>a</span>
                   <span className="text-white">Link</span>
