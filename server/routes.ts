@@ -306,7 +306,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/instalink/:slug/pay', async (req, res) => {
     try {
       const { slug } = req.params;
-      const { paymentMethod = 'paypal' } = req.body; // Default to PayPal
       const message = await storage.getMessageBySlug(slug);
       
       if (!message) {
@@ -323,23 +322,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const baseUrl = getBaseUrl();
       const price = parseFloat(message.price);
       
-      // Try PAL/PayPal first if configured
-      if (USE_PAL && palClient.isConfigured() && (paymentMethod === 'paypal' || paymentMethod === 'venmo')) {
+      // Route based on content type:
+      // - Adult content → PAL/PayPal (Stripe doesn't allow adult)
+      // - Standard content → Stripe (better UX, lower fees)
+      
+      if (message.isAdultContent && USE_PAL && palClient.isConfigured()) {
+        // Adult content: Use PAL/PayPal
         try {
-          // Create PAL transaction
           const transaction = await palClient.createTransaction({
             messageId: message.id,
-            partnerId: 'instalink', // InstaLink is its own "partner"
+            partnerId: 'instalink',
             baseCost: price,
             partnerPrice: price,
-            contentFlag: message.isAdultContent ? 'adult' : 'standard',
+            contentFlag: 'adult',
             currency: 'USD',
           });
           
-          // Submit PayPal payment
           const paymentResult = await palClient.submitPayment({
             txnId: transaction.txn_id,
-            paymentMethod: paymentMethod as 'paypal' | 'venmo',
+            paymentMethod: 'paypal',
           });
           
           if (paymentResult.status === 'redirect_required' && paymentResult.approve_url) {
@@ -350,14 +351,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
           
-          // If PayPal failed, fall through to Stripe
-          console.log('PAL/PayPal payment setup failed, falling back to Stripe');
+          // PayPal failed - return error (don't fall back to Stripe for adult)
+          return res.status(400).json({ 
+            error: 'Payment setup failed. Adult content requires PayPal.',
+            provider: 'paypal'
+          });
         } catch (palError: any) {
-          console.error('PAL error, falling back to Stripe:', palError.message);
+          console.error('PAL error for adult content:', palError.message);
+          return res.status(500).json({ 
+            error: 'Payment service unavailable for adult content',
+            details: palError.message
+          });
         }
       }
       
-      // Fallback to Stripe checkout
+      // Standard content: Use Stripe
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [{
