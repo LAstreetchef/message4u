@@ -40,7 +40,7 @@ export default function InstaLinkLanding() {
             </h1>
             
             <p className="text-xl text-zinc-400 max-w-xl mx-auto">
-              Sell photos, videos, and files directly from your Instagram bio. One link. Instant payments.
+              Put your exclusive content behind a paywall. Fans click, pay, and unlock your secrets.
             </p>
           </div>
         </section>
@@ -70,9 +70,9 @@ export default function InstaLinkLanding() {
                 <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
                   <Lock className="w-6 h-6" />
                 </div>
-                <h3 className="font-semibold text-lg">1. Upload Content</h3>
+                <h3 className="font-semibold text-lg">1. Create Your Secret</h3>
                 <p className="text-zinc-400 text-sm">
-                  Add your photo, video, or file and set your price
+                  Upload your exclusive content and set your unlock price
                 </p>
               </div>
               
@@ -80,9 +80,9 @@ export default function InstaLinkLanding() {
                 <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
                   <Instagram className="w-6 h-6" />
                 </div>
-                <h3 className="font-semibold text-lg">2. Share the Link</h3>
+                <h3 className="font-semibold text-lg">2. Drop the Link</h3>
                 <p className="text-zinc-400 text-sm">
-                  Drop the link in your bio — fans tap to view
+                  Put it in your bio — fans tap to see what's locked
                 </p>
               </div>
               
@@ -90,9 +90,9 @@ export default function InstaLinkLanding() {
                 <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
                   <DollarSign className="w-6 h-6" />
                 </div>
-                <h3 className="font-semibold text-lg">3. Get Paid Instantly</h3>
+                <h3 className="font-semibold text-lg">3. Fans Pay to Unlock</h3>
                 <p className="text-zinc-400 text-sm">
-                  Fans pay to unlock — money goes straight to you
+                  They pay, they see your secret — you get paid instantly
                 </p>
               </div>
             </div>
