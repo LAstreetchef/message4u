@@ -44,6 +44,22 @@ export default function InstaLinkLanding() {
             <p className="text-xl text-zinc-400 max-w-xl mx-auto">
               Put your exclusive content behind a paywall. Fans click, pay, and unlock your message.
             </p>
+            
+            {/* Disappearing Content Features */}
+            <div className="flex flex-wrap justify-center gap-6 mt-10 text-sm">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/80 border border-zinc-800">
+                <span className="text-xl">👁️</span>
+                <span className="text-zinc-300">View limits</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/80 border border-zinc-800">
+                <span className="text-xl">💣</span>
+                <span className="text-zinc-300">Self-destruct</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/80 border border-zinc-800">
+                <span className="text-xl">🔥</span>
+                <span className="text-zinc-300">Disappearing content</span>
+              </div>
+            </div>
           </div>
         </section>
 
