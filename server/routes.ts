@@ -86,6 +86,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // Public message creation (for link-in-bio / Instagram links)
+  app.post('/api/public/messages', async (req, res) => {
+    try {
+      const { recipientEmail, messageBody, title, price, partnerId } = req.body;
+      
+      if (!recipientEmail || !messageBody) {
+        return res.status(400).json({ error: 'Recipient email and message are required' });
+      }
+      
+      if (!isValidEmail(recipientEmail)) {
+        return res.status(400).json({ error: 'Invalid email address' });
+      }
+      
+      // Use a system user ID for anonymous messages (user ID 1 or create one)
+      const systemUserId = 1;
+      
+      // Create the message
+      const message = await storage.createMessage(systemUserId, {
+        title: title || 'Secret Message',
+        messageBody,
+        recipientIdentifier: recipientEmail,
+        price: price || '4.99',
+        isAnonymous: true,
+      });
+      
+      // Send email notification
+      try {
+        await sendMessageNotification({
+          recipientEmail,
+          messageTitle: title || 'Secret Message',
+          price: message.price,
+          slug: message.slug,
+        });
+        console.log(`Public message email sent to ${recipientEmail}`);
+      } catch (emailError) {
+        console.error('Error sending public message email:', emailError);
+      }
+      
+      res.json({ 
+        success: true, 
+        message: 'Secret message sent!',
+        slug: message.slug 
+      });
+    } catch (error: any) {
+      console.error('Error creating public message:', error);
+      res.status(500).json({ error: 'Failed to create message' });
+    }
+  });
+
   // Partner inquiry (public)
   app.post('/api/partner-inquiry', async (req, res) => {
     try {

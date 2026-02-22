@@ -51,11 +51,31 @@ export default function InstaLink() {
     if (!email.trim()) return;
     setIsSubmitting(true);
     
-    // Simulate - in production, create the message via API
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setStep("success");
-    setIsSubmitting(false);
+    try {
+      const response = await fetch('/api/public/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientEmail: email,
+          messageBody: message,
+          title: `Secret from ${config.handle}`,
+          price: config.price,
+          partnerId: username
+        })
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send');
+      }
+      
+      setStep("success");
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
