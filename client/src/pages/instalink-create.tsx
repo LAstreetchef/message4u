@@ -439,7 +439,7 @@ export default function InstaLinkCreate() {
                     </div>
                     <div>
                       <p className="font-medium">Get Paid</p>
-                      <p className="text-xs text-zinc-500">Create account to receive payments</p>
+                      <p className="text-xs text-zinc-500">New user? We'll create your account. Already registered? Enter your existing password.</p>
                     </div>
                   </div>
 
@@ -468,13 +468,13 @@ export default function InstaLinkCreate() {
                         type="password"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        placeholder="Create a password"
+                        placeholder="Enter or create password"
                         className="bg-zinc-900 border-zinc-700 text-white h-11 pl-10"
                         required
                         minLength={6}
                       />
                     </div>
-                    <p className="text-xs text-zinc-600">Min 6 characters. Used to access your dashboard.</p>
+                    <p className="text-xs text-zinc-600">Min 6 characters. New users: this becomes your login. Existing users: enter your password.</p>
                   </div>
 
                   {/* PayPal Email for Payouts */}

@@ -199,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Verify password (login)
           const isValid = await bcrypt.compare(password, existingUser.passwordHash);
           if (!isValid) {
-            return res.status(401).json({ error: 'Invalid password. If you have an account, use the correct password.' });
+            return res.status(401).json({ error: 'This email is already registered. Please enter your existing password, or use a different email to create a new account.' });
           }
           userId = existingUser.id;
           
