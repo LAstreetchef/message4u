@@ -29,6 +29,7 @@ export interface IStorage {
   updateUserCryptoWallet(userId: string, cryptoWalletAddress: string, cryptoWalletType: string): Promise<void>;
   updateUserStripeAccount(userId: string, stripeAccountId: string, onboardingComplete: boolean): Promise<void>;
   updateUserPayoutMethod(userId: string, payoutMethod: string, payoutAddress: string): Promise<void>;
+  updateUserPassword(userId: string, passwordHash: string): Promise<void>;
 
   // Message operations
   createMessage(userId: string, message: InsertMessage): Promise<Message>;
@@ -156,6 +157,16 @@ export class DatabaseStorage implements IStorage {
       .set({
         payoutMethod,
         payoutAddress,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async updateUserPassword(userId: string, passwordHash: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        passwordHash,
         updatedAt: new Date(),
       })
       .where(eq(users.id, userId));

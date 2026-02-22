@@ -643,6 +643,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Reset user password
+  app.post('/api/admin/users/reset-password', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { email, newPassword } = req.body;
+      
+      if (!email || !newPassword) {
+        return res.status(400).json({ message: "Email and newPassword are required" });
+      }
+      
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      
+      const bcrypt = await import('bcryptjs');
+      const user = await storage.getUserByEmail(email.toLowerCase().trim());
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      await storage.updateUserPassword(user.id, passwordHash);
+      
+      res.json({ success: true, message: `Password reset for ${email}` });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      res.status(500).json({ message: "Failed to reset password" });
+    }
+  });
+
   app.get('/api/admin/payouts/pending', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
       const pendingPayouts = await storage.getPendingPayouts();
