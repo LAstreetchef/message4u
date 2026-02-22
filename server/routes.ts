@@ -99,11 +99,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Invalid email address' });
       }
       
-      // Use a system user ID for anonymous messages (user ID 1 or create one)
-      const systemUserId = 1;
+      // Find or create a guest user for anonymous messages
+      let guestUser = await storage.getUserByEmail('guest@secretmessage4u.com');
+      if (!guestUser) {
+        guestUser = await storage.createUser({
+          email: 'guest@secretmessage4u.com',
+          password: 'not-used-' + Date.now(),
+          disclaimerAgreed: true,
+        });
+      }
       
       // Create the message
-      const message = await storage.createMessage(systemUserId, {
+      const message = await storage.createMessage(guestUser.id, {
         title: title || 'Secret Message',
         messageBody,
         recipientIdentifier: recipientEmail,
