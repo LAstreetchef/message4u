@@ -127,7 +127,7 @@ export default function Landing() {
                 <a className="text-sm font-medium hover:opacity-80">
                   <span style={{color: '#833AB4'}}>I</span>
                   <span style={{color: '#C13584'}}>n</span>
-                  <span style={{color: '#E1306C'}}>$</span>
+                  <span style={{color: '#E1306C', fontSize: '0.75em'}}>$</span>
                   <span style={{color: '#F77737'}}>t</span>
                   <span style={{color: '#FCAF45'}}>a</span>
                   <span className="text-foreground">Link</span>
@@ -430,7 +430,7 @@ export default function Landing() {
               <a className="hover:opacity-80">
                 <span style={{color: '#833AB4'}}>I</span>
                 <span style={{color: '#C13584'}}>n</span>
-                <span style={{color: '#E1306C'}}>$</span>
+                <span style={{color: '#E1306C', fontSize: '0.75em'}}>$</span>
                 <span style={{color: '#F77737'}}>t</span>
                 <span style={{color: '#FCAF45'}}>a</span>
                 <span className="text-foreground">Link</span>
