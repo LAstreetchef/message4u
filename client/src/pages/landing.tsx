@@ -124,7 +124,14 @@ export default function Landing() {
             </span>
             <div className="flex items-center gap-6">
               <Link href="/instalink">
-                <a className="text-sm text-muted-foreground hover:text-foreground">InstaLink</a>
+                <a className="text-sm font-medium hover:opacity-80">
+                  <span style={{color: '#833AB4'}}>I</span>
+                  <span style={{color: '#C13584'}}>n</span>
+                  <span style={{color: '#E1306C'}}>s</span>
+                  <span style={{color: '#F77737'}}>t</span>
+                  <span style={{color: '#FCAF45'}}>a</span>
+                  <span className="text-foreground">Link</span>
+                </a>
               </Link>
               <Link href="/partners">
                 <a className="text-sm text-muted-foreground hover:text-foreground">Partners</a>
@@ -420,7 +427,14 @@ export default function Landing() {
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
             <Link href="/instalink">
-              <a className="hover:text-foreground">InstaLink</a>
+              <a className="hover:opacity-80">
+                <span style={{color: '#833AB4'}}>I</span>
+                <span style={{color: '#C13584'}}>n</span>
+                <span style={{color: '#E1306C'}}>s</span>
+                <span style={{color: '#F77737'}}>t</span>
+                <span style={{color: '#FCAF45'}}>a</span>
+                <span className="text-foreground">Link</span>
+              </a>
             </Link>
             <Link href="/partners">
               <a className="hover:text-foreground">Partners</a>

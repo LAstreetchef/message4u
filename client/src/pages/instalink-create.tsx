@@ -169,8 +169,14 @@ export default function InstaLinkCreate() {
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-bold mb-2">
                   <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                    Create Your InstaLink
+                    Create Your{' '}
                   </span>
+                  <span style={{color: '#833AB4'}}>I</span>
+                  <span style={{color: '#C13584'}}>n</span>
+                  <span style={{color: '#E1306C'}}>s</span>
+                  <span style={{color: '#F77737'}}>t</span>
+                  <span style={{color: '#FCAF45'}}>a</span>
+                  <span className="text-white">Link</span>
                 </h1>
                 <p className="text-zinc-400">
                   Set up your paid content link in 60 seconds

@@ -161,7 +161,13 @@ export default function InstaLinkView() {
           <p className="text-sm text-zinc-500">This content was set to self-destruct and is no longer available.</p>
           <Link href="/instalink">
             <Button variant="outline" className="border-zinc-700 mt-4">
-              Create Your Own InstaLink
+              Create Your Own{' '}
+              <span style={{color: '#833AB4'}}>I</span>
+              <span style={{color: '#C13584'}}>n</span>
+              <span style={{color: '#E1306C'}}>s</span>
+              <span style={{color: '#F77737'}}>t</span>
+              <span style={{color: '#FCAF45'}}>a</span>
+              <span>Link</span>
             </Button>
           </Link>
         </div>
@@ -337,7 +343,14 @@ export default function InstaLinkView() {
           href="/instalink" 
           className="text-xs text-zinc-600 hover:text-zinc-400"
         >
-          Create your own InstaLink → secretmessage4u.com
+          Create your own{' '}
+          <span style={{color: '#833AB4'}}>I</span>
+          <span style={{color: '#C13584'}}>n</span>
+          <span style={{color: '#E1306C'}}>s</span>
+          <span style={{color: '#F77737'}}>t</span>
+          <span style={{color: '#FCAF45'}}>a</span>
+          <span>Link</span>
+          {' '}→ secretmessage4u.com
         </a>
       </footer>
     </div>

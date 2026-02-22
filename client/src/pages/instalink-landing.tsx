@@ -34,9 +34,12 @@ export default function InstaLinkLanding() {
             </div>
             
             <h1 className="text-5xl sm:text-6xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
-                InstaLink
-              </span>
+              <span style={{color: '#833AB4'}}>I</span>
+              <span style={{color: '#C13584'}}>n</span>
+              <span style={{color: '#E1306C'}}>s</span>
+              <span style={{color: '#F77737'}}>t</span>
+              <span style={{color: '#FCAF45'}}>a</span>
+              <span className="text-white">Link</span>
             </h1>
             
             <p className="text-xl text-zinc-400 max-w-xl mx-auto">
