@@ -122,9 +122,14 @@ export default function Landing() {
               <AnimatedLogo size={32} variant="dark" />
               <span className="text-xl font-semibold tracking-tight">Secret Message</span>
             </span>
-            <Link href="/partners">
-              <a className="text-sm text-muted-foreground hover:text-foreground">Secret Partners →</a>
-            </Link>
+            <div className="flex items-center gap-6">
+              <Link href="/instalink">
+                <a className="text-sm text-muted-foreground hover:text-foreground">InstaLink</a>
+              </Link>
+              <Link href="/partners">
+                <a className="text-sm text-muted-foreground hover:text-foreground">Partners</a>
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
@@ -414,6 +419,9 @@ export default function Landing() {
             © 2026 Secret Message
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
+            <Link href="/instalink">
+              <a className="hover:text-foreground">InstaLink</a>
+            </Link>
             <Link href="/partners">
               <a className="hover:text-foreground">Partners</a>
             </Link>
