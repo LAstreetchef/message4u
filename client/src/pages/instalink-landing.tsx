@@ -42,7 +42,7 @@ export default function InstaLinkLanding() {
             </h1>
             
             <p className="text-xl text-zinc-400 max-w-xl mx-auto">
-              Put your exclusive content behind a paywall. Fans click, pay, and unlock your secrets.
+              Put your exclusive content behind a paywall. Fans click, pay, and unlock your message.
             </p>
           </div>
         </section>
