@@ -18,6 +18,8 @@ export function HelpWidget() {
     script.onload = () => {
       const widget = document.createElement('elevenlabs-convai');
       widget.setAttribute('agent-id', ELEVENLABS_AGENT_ID);
+      widget.setAttribute('dismissible', 'true');
+      // Don't set variant="expanded" - keeps it collapsed by default
       document.body.appendChild(widget);
     };
     

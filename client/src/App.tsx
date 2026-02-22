@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -65,10 +65,18 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
-        <HelpWidget />
+        <ConditionalHelpWidget />
       </TooltipProvider>
     </QueryClientProvider>
   );
+}
+
+// Hide help widget on InstaLink creation page to avoid blocking the form
+function ConditionalHelpWidget() {
+  const [location] = useLocation();
+  // Hide on InstaLink creation page
+  if (location === '/instalink') return null;
+  return <HelpWidget />;
 }
 
 export default App;
