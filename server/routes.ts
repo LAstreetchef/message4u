@@ -181,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // InstaLink - Create a paywall link
   app.post('/api/instalink/create', async (req, res) => {
     try {
-      const { title, description, price, fileUrl } = req.body;
+      const { title, description, price, fileUrl, maxViews, deleteAfterMinutes } = req.body;
       
       if (!title || !price) {
         return res.status(400).json({ error: 'Title and price are required' });
@@ -201,6 +201,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: price.toString(),
         fileUrl: fileUrl || undefined,
         isAnonymous: false,
+        // Disappearing content options
+        maxViews: maxViews ? parseInt(maxViews) : null,
+        deleteAfterMinutes: deleteAfterMinutes ? parseInt(deleteAfterMinutes) : null,
       });
       
       res.json({ 
@@ -224,6 +227,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Link not found' });
       }
       
+      // Check if content has disappeared
+      const hasDisappeared = await storage.checkAndMarkDisappeared(message);
+      if (hasDisappeared) {
+        return res.status(410).json({ 
+          error: 'Content no longer available',
+          disappeared: true,
+          reason: message.maxViews ? 'View limit reached' : 'Timer expired'
+        });
+      }
+      
+      // Calculate remaining info for disappearing content
+      let disappearingInfo = null;
+      if (message.maxViews || message.deleteAfterMinutes) {
+        disappearingInfo = {
+          maxViews: message.maxViews,
+          viewCount: message.viewCount,
+          viewsRemaining: message.maxViews ? message.maxViews - message.viewCount : null,
+          deleteAfterMinutes: message.deleteAfterMinutes,
+          firstViewedAt: message.firstViewedAt,
+          expiresAt: message.deleteAfterMinutes && message.firstViewedAt 
+            ? new Date(new Date(message.firstViewedAt).getTime() + message.deleteAfterMinutes * 60000).toISOString()
+            : null,
+        };
+      }
+      
       // Return public info (don't expose fileUrl until paid)
       res.json({
         id: message.id,
@@ -231,12 +259,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: message.title,
         description: message.messageBody !== message.title ? message.messageBody : undefined,
         price: message.price,
-        unlocked: message.isUnlocked,
-        fileUrl: message.isUnlocked ? message.fileUrl : undefined,
+        unlocked: message.unlocked,
+        fileUrl: message.unlocked ? message.fileUrl : undefined,
+        disappearing: disappearingInfo,
       });
     } catch (error: any) {
       console.error('Error fetching InstaLink:', error);
       res.status(500).json({ error: 'Failed to fetch link' });
+    }
+  });
+
+  // InstaLink - Track view (call when content is actually viewed)
+  app.post('/api/instalink/:slug/view', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const message = await storage.getMessageBySlug(slug);
+      
+      if (!message) {
+        return res.status(404).json({ error: 'Link not found' });
+      }
+      
+      if (!message.unlocked) {
+        return res.status(403).json({ error: 'Content not unlocked' });
+      }
+      
+      // Increment view count
+      const updatedMessage = await storage.incrementViewCount(message.id);
+      
+      // Check if should disappear after this view
+      const hasDisappeared = await storage.checkAndMarkDisappeared(updatedMessage!);
+      
+      res.json({
+        viewCount: updatedMessage?.viewCount,
+        disappeared: hasDisappeared,
+        viewsRemaining: updatedMessage?.maxViews ? updatedMessage.maxViews - (updatedMessage.viewCount || 0) : null,
+      });
+    } catch (error: any) {
+      console.error('Error tracking view:', error);
+      res.status(500).json({ error: 'Failed to track view' });
     }
   });
 

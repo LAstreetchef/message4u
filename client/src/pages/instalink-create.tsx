@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowRight, Upload, DollarSign, Link as LinkIcon, Copy, Check, Image, FileText, Video, X, Loader2 } from "lucide-react";
+import { ArrowRight, Upload, DollarSign, Link as LinkIcon, Copy, Check, Image, FileText, Video, X, Loader2, Eye, Clock, Bomb, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 
 export default function InstaLinkCreate() {
   const [, setLocation] = useLocation();
@@ -20,7 +21,12 @@ export default function InstaLinkCreate() {
     description: "",
     price: "4.99",
     fileUrl: "",
+    // Disappearing options
+    maxViews: null as number | null,
+    deleteAfterMinutes: null as number | null,
   });
+  const [showDisappearingOptions, setShowDisappearingOptions] = useState(false);
+  const [disappearingMode, setDisappearingMode] = useState<"none" | "views" | "timer">("none");
   const [uploadedFile, setUploadedFile] = useState<{ name: string; url: string } | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -294,6 +300,107 @@ export default function InstaLinkCreate() {
                     <FileText className="w-6 h-6 mx-auto text-zinc-600 mb-1" />
                     <span className="text-xs text-zinc-600">Files</span>
                   </div>
+                </div>
+
+                {/* Disappearing Content Options */}
+                <div className="border border-zinc-800 rounded-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowDisappearingOptions(!showDisappearingOptions)}
+                    className="w-full flex items-center justify-between p-4 hover:bg-zinc-900/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                        <Bomb className="w-5 h-5 text-pink-400" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium">Disappearing Content</p>
+                        <p className="text-xs text-zinc-500">Auto-delete after views or time</p>
+                      </div>
+                    </div>
+                    <ChevronDown className={`w-5 h-5 text-zinc-500 transition-transform ${showDisappearingOptions ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showDisappearingOptions && (
+                    <div className="border-t border-zinc-800 p-4 space-y-4">
+                      {/* View Limit */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Eye className="w-5 h-5 text-zinc-500" />
+                          <div>
+                            <p className="text-sm font-medium">View Limit</p>
+                            <p className="text-xs text-zinc-500">Delete after X views</p>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={disappearingMode === "views"}
+                          onCheckedChange={(checked) => {
+                            setDisappearingMode(checked ? "views" : "none");
+                            if (!checked) setFormData(prev => ({ ...prev, maxViews: null }));
+                          }}
+                        />
+                      </div>
+                      
+                      {disappearingMode === "views" && (
+                        <div className="pl-8">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={formData.maxViews || ""}
+                              onChange={(e) => setFormData({ ...formData, maxViews: parseInt(e.target.value) || null })}
+                              placeholder="1"
+                              className="bg-zinc-900 border-zinc-700 text-white h-10 w-24"
+                            />
+                            <span className="text-sm text-zinc-400">views max</span>
+                          </div>
+                          <p className="text-xs text-zinc-500 mt-2">Content disappears after this many views</p>
+                        </div>
+                      )}
+
+                      {/* Timer */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Clock className="w-5 h-5 text-zinc-500" />
+                          <div>
+                            <p className="text-sm font-medium">Self-Destruct Timer</p>
+                            <p className="text-xs text-zinc-500">Delete after first view</p>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={disappearingMode === "timer"}
+                          onCheckedChange={(checked) => {
+                            setDisappearingMode(checked ? "timer" : "none");
+                            if (!checked) setFormData(prev => ({ ...prev, deleteAfterMinutes: null }));
+                          }}
+                        />
+                      </div>
+                      
+                      {disappearingMode === "timer" && (
+                        <div className="pl-8">
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={formData.deleteAfterMinutes || ""}
+                              onChange={(e) => setFormData({ ...formData, deleteAfterMinutes: parseInt(e.target.value) || null })}
+                              className="bg-zinc-900 border border-zinc-700 text-white h-10 px-3 rounded-md"
+                            >
+                              <option value="">Select time</option>
+                              <option value="1">1 minute</option>
+                              <option value="5">5 minutes</option>
+                              <option value="15">15 minutes</option>
+                              <option value="30">30 minutes</option>
+                              <option value="60">1 hour</option>
+                              <option value="1440">24 hours</option>
+                              <option value="10080">7 days</option>
+                            </select>
+                            <span className="text-sm text-zinc-400">after first view</span>
+                          </div>
+                          <p className="text-xs text-zinc-500 mt-2">Timer starts when content is first opened</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <Button 
