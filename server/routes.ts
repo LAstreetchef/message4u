@@ -138,6 +138,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // InstaLink - Get upload URL for public uploads
+  app.post('/api/instalink/upload', async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error: any) {
+      console.error('Error creating upload URL:', error);
+      res.status(500).json({ error: 'Failed to create upload URL' });
+    }
+  });
+
+  // Public file upload endpoint (for InstaLink)
+  app.put("/api/upload/:objectId", async (req: any, res) => {
+    // Allow unauthenticated uploads for InstaLink
+    // The main /api/objects/upload endpoint still requires auth
+    try {
+      const { objectId } = req.params;
+      const contentType = req.get('content-type') || 'application/octet-stream';
+      
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+      
+      const objectStorageService = new ObjectStorageService();
+      const filePath = await objectStorageService.saveUploadedFile(objectId, buffer);
+      
+      const baseUrl = getBaseUrl();
+      res.json({ 
+        success: true, 
+        fileUrl: `${baseUrl}${filePath}` 
+      });
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      res.status(500).json({ error: 'Failed to upload file' });
+    }
+  });
+
   // InstaLink - Create a paywall link
   app.post('/api/instalink/create', async (req, res) => {
     try {

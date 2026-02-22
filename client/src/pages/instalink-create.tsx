@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowRight, Upload, DollarSign, Link as LinkIcon, Copy, Check, Image, FileText, Video } from "lucide-react";
+import { ArrowRight, Upload, DollarSign, Link as LinkIcon, Copy, Check, Image, FileText, Video, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,8 +19,74 @@ export default function InstaLinkCreate() {
     title: "",
     description: "",
     price: "4.99",
-    fileUrl: "", // For now, just a URL - later we can add file upload
+    fileUrl: "",
   });
+  const [uploadedFile, setUploadedFile] = useState<{ name: string; url: string } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Maximum file size is 10MB",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsUploading(true);
+    
+    try {
+      // Get upload URL
+      const uploadRes = await fetch('/api/instalink/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      
+      if (!uploadRes.ok) throw new Error('Failed to get upload URL');
+      
+      const { uploadURL } = await uploadRes.json();
+      
+      // Upload file
+      const uploadResult = await fetch(uploadURL, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file
+      });
+      
+      if (!uploadResult.ok) throw new Error('Upload failed');
+      
+      const { fileUrl } = await uploadResult.json();
+      
+      setUploadedFile({ name: file.name, url: fileUrl });
+      setFormData(prev => ({ ...prev, fileUrl }));
+      
+      toast({
+        title: "File uploaded!",
+        description: file.name
+      });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Please try again or paste a URL instead",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeFile = () => {
+    setUploadedFile(null);
+    setFormData(prev => ({ ...prev, fileUrl: "" }));
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,38 +210,89 @@ export default function InstaLinkCreate() {
                   </div>
                 </div>
 
-                {/* File URL (simple for now) */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Content URL (image, video, or file link)</label>
-                  <Input
-                    type="url"
-                    value={formData.fileUrl}
-                    onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
-                    placeholder="https://..."
-                    className="bg-zinc-900 border-zinc-700 text-white h-12"
-                  />
-                  <p className="text-xs text-zinc-500">Paste a link to your content (Google Drive, Dropbox, etc.)</p>
+                {/* File Upload */}
+                <div className="space-y-4">
+                  <label className="text-sm font-medium">Your Content *</label>
+                  
+                  {!uploadedFile ? (
+                    <div className="space-y-3">
+                      {/* Upload Button */}
+                      <div 
+                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
+                          ${isUploading ? 'border-pink-500 bg-pink-500/10' : 'border-zinc-700 hover:border-pink-500/50'}`}
+                        onClick={() => !isUploading && fileInputRef.current?.click()}
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          onChange={handleFileChange}
+                          accept="image/*,video/*,.pdf,.doc,.docx,.zip"
+                          className="hidden"
+                        />
+                        {isUploading ? (
+                          <>
+                            <Loader2 className="w-10 h-10 mx-auto text-pink-400 animate-spin mb-3" />
+                            <p className="text-sm text-zinc-400">Uploading...</p>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="w-10 h-10 mx-auto text-zinc-500 mb-3" />
+                            <p className="text-sm font-medium mb-1">Click to upload</p>
+                            <p className="text-xs text-zinc-500">Photos, videos, PDFs, or any file (max 10MB)</p>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Or paste URL */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-px bg-zinc-800" />
+                        <span className="text-xs text-zinc-500">or paste a link</span>
+                        <div className="flex-1 h-px bg-zinc-800" />
+                      </div>
+                      
+                      <Input
+                        type="url"
+                        value={formData.fileUrl}
+                        onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
+                        placeholder="https://drive.google.com/..."
+                        className="bg-zinc-900 border-zinc-700 text-white h-12"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 p-4 bg-zinc-900 border border-zinc-700 rounded-xl">
+                      <div className="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-pink-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{uploadedFile.name}</p>
+                        <p className="text-xs text-green-400">Uploaded ✓</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={removeFile}
+                        className="text-zinc-400 hover:text-white"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Content Type Icons */}
-                <div className="flex justify-center gap-4 py-4">
+                <div className="flex justify-center gap-6 py-2">
                   <div className="text-center">
-                    <div className="w-12 h-12 mx-auto rounded-full bg-zinc-800 flex items-center justify-center mb-1">
-                      <Image className="w-5 h-5 text-pink-400" />
-                    </div>
-                    <span className="text-xs text-zinc-500">Photos</span>
+                    <Image className="w-6 h-6 mx-auto text-zinc-600 mb-1" />
+                    <span className="text-xs text-zinc-600">Photos</span>
                   </div>
                   <div className="text-center">
-                    <div className="w-12 h-12 mx-auto rounded-full bg-zinc-800 flex items-center justify-center mb-1">
-                      <Video className="w-5 h-5 text-pink-400" />
-                    </div>
-                    <span className="text-xs text-zinc-500">Videos</span>
+                    <Video className="w-6 h-6 mx-auto text-zinc-600 mb-1" />
+                    <span className="text-xs text-zinc-600">Videos</span>
                   </div>
                   <div className="text-center">
-                    <div className="w-12 h-12 mx-auto rounded-full bg-zinc-800 flex items-center justify-center mb-1">
-                      <FileText className="w-5 h-5 text-pink-400" />
-                    </div>
-                    <span className="text-xs text-zinc-500">Files</span>
+                    <FileText className="w-6 h-6 mx-auto text-zinc-600 mb-1" />
+                    <span className="text-xs text-zinc-600">Files</span>
                   </div>
                 </div>
 
