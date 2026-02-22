@@ -200,7 +200,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recipientIdentifier: 'instalink', // No email - public paywall
         price: price.toString(),
         fileUrl: fileUrl || undefined,
-        isAnonymous: false,
         // Disappearing content options
         maxViews: maxViews ? parseInt(maxViews) : null,
         deleteAfterMinutes: deleteAfterMinutes ? parseInt(deleteAfterMinutes) : null,
