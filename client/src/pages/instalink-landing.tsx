@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { ArrowRight, Instagram, Lock, DollarSign, Zap, Image, Video, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+export default function InstaLinkLanding() {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Nav */}
