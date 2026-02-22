@@ -48,15 +48,15 @@ export default function InstaLinkLanding() {
             {/* Disappearing Content Features */}
             <div className="flex flex-wrap justify-center gap-4 mt-10 text-sm">
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/80 border border-zinc-800">
-                <Eye className="w-4 h-4 text-zinc-400" />
+                <Eye className="w-4 h-4 text-pink-400" />
                 <span className="text-zinc-300">View limits</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/80 border border-zinc-800">
-                <Timer className="w-4 h-4 text-zinc-400" />
+                <Timer className="w-4 h-4 text-pink-400" />
                 <span className="text-zinc-300">Self-destruct</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/80 border border-zinc-800">
-                <Flame className="w-4 h-4 text-zinc-400" />
+                <Flame className="w-4 h-4 text-pink-400" />
                 <span className="text-zinc-300">Disappearing content</span>
               </div>
             </div>
