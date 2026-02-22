@@ -19,17 +19,16 @@ export default function InstaLinkCreate() {
     title: "",
     description: "",
     price: "4.99",
-    email: "", // Creator's email to receive payment notifications
     fileUrl: "", // For now, just a URL - later we can add file upload
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.price || !formData.email) {
+    if (!formData.title || !formData.price) {
       toast({
         title: "Missing fields",
-        description: "Please fill in title, price, and your email",
+        description: "Please fill in title and price",
         variant: "destructive"
       });
       return;
@@ -145,19 +144,6 @@ export default function InstaLinkCreate() {
                   </div>
                 </div>
 
-                {/* Creator Email */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Your Email *</label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="you@email.com"
-                    className="bg-zinc-900 border-zinc-700 text-white h-12"
-                  />
-                  <p className="text-xs text-zinc-500">We'll notify you when someone unlocks your content</p>
-                </div>
-
                 {/* File URL (simple for now) */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Content URL (image, video, or file link)</label>
@@ -244,7 +230,7 @@ export default function InstaLinkCreate() {
                 <Button 
                   onClick={() => {
                     setStep("create");
-                    setFormData({ title: "", description: "", price: "4.99", email: "", fileUrl: "" });
+                    setFormData({ title: "", description: "", price: "4.99", fileUrl: "" });
                     setGeneratedLink("");
                   }}
                   variant="ghost"

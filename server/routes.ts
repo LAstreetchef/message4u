@@ -141,14 +141,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // InstaLink - Create a paywall link
   app.post('/api/instalink/create', async (req, res) => {
     try {
-      const { title, description, price, email, fileUrl } = req.body;
+      const { title, description, price, fileUrl } = req.body;
       
-      if (!title || !price || !email) {
-        return res.status(400).json({ error: 'Title, price, and email are required' });
-      }
-      
-      if (!isValidEmail(email)) {
-        return res.status(400).json({ error: 'Invalid email address' });
+      if (!title || !price) {
+        return res.status(400).json({ error: 'Title and price are required' });
       }
       
       // Find or create guest user for InstaLinks
@@ -161,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = await storage.createMessage(guestUser.id, {
         title,
         messageBody: description || title,
-        recipientIdentifier: email, // Creator's email
+        recipientIdentifier: 'instalink', // No email - public paywall
         price: price.toString(),
         fileUrl: fileUrl || undefined,
         isAnonymous: false,
