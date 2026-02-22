@@ -306,21 +306,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/instalink/:slug/pay', async (req, res) => {
     try {
       const { slug } = req.params;
+      const { paymentMethod = 'paypal' } = req.body; // Default to PayPal
       const message = await storage.getMessageBySlug(slug);
       
       if (!message) {
         return res.status(404).json({ error: 'Link not found' });
       }
       
-      if (message.isUnlocked) {
+      if (message.unlocked) {
         return res.json({ 
           unlocked: true, 
           fileUrl: message.fileUrl 
         });
       }
       
-      // Create Stripe checkout session
       const baseUrl = getBaseUrl();
+      const price = parseFloat(message.price);
+      
+      // Try PAL/PayPal first if configured
+      if (USE_PAL && palClient.isConfigured() && (paymentMethod === 'paypal' || paymentMethod === 'venmo')) {
+        try {
+          // Create PAL transaction
+          const transaction = await palClient.createTransaction({
+            messageId: message.id,
+            partnerId: 'instalink', // InstaLink is its own "partner"
+            baseCost: price,
+            partnerPrice: price,
+            contentFlag: message.isAdultContent ? 'adult' : 'standard',
+            currency: 'USD',
+          });
+          
+          // Submit PayPal payment
+          const paymentResult = await palClient.submitPayment({
+            txnId: transaction.txn_id,
+            paymentMethod: paymentMethod as 'paypal' | 'venmo',
+          });
+          
+          if (paymentResult.status === 'redirect_required' && paymentResult.approve_url) {
+            return res.json({ 
+              checkoutUrl: paymentResult.approve_url,
+              txnId: transaction.txn_id,
+              provider: 'paypal'
+            });
+          }
+          
+          // If PayPal failed, fall through to Stripe
+          console.log('PAL/PayPal payment setup failed, falling back to Stripe');
+        } catch (palError: any) {
+          console.error('PAL error, falling back to Stripe:', palError.message);
+        }
+      }
+      
+      // Fallback to Stripe checkout
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [{
@@ -330,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: message.title,
               description: 'Unlock this content',
             },
-            unit_amount: Math.round(parseFloat(message.price) * 100),
+            unit_amount: Math.round(price * 100),
           },
           quantity: 1,
         }],
@@ -343,10 +380,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
       
-      res.json({ checkoutUrl: session.url });
+      res.json({ checkoutUrl: session.url, provider: 'stripe' });
     } catch (error: any) {
       console.error('Error creating InstaLink payment:', error);
       res.status(500).json({ error: 'Failed to create payment' });
+    }
+  });
+
+  // InstaLink - PAL payment callback (handles PayPal return)
+  app.get('/api/instalink/pal/callback', async (req, res) => {
+    try {
+      const { txn_id, token } = req.query;
+      
+      if (!txn_id || !USE_PAL || !palClient.isConfigured()) {
+        return res.redirect('/instalink?error=invalid_callback');
+      }
+      
+      // Get transaction from PAL to find the message
+      const transaction = await palClient.getTransaction(txn_id as string);
+      
+      if (transaction.status === 'completed') {
+        // Payment already processed - unlock the message
+        await storage.markMessageUnlocked(transaction.message_id);
+        
+        // Find the message to get slug for redirect
+        const message = await storage.getMessageById(transaction.message_id);
+        if (message) {
+          return res.redirect(`/l/${message.slug}?success=true`);
+        }
+      }
+      
+      // Payment not yet completed - redirect back to view page
+      const message = await storage.getMessageById(transaction.message_id);
+      if (message) {
+        return res.redirect(`/l/${message.slug}?pending=true`);
+      }
+      
+      res.redirect('/instalink?error=unknown');
+    } catch (error: any) {
+      console.error('Error in PAL callback:', error);
+      res.redirect('/instalink?error=callback_failed');
     }
   });
 
