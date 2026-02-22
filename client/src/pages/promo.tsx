@@ -4,7 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Heart, Lock, DollarSign, Send, Sparkles, ArrowRight, CheckCircle } from "lucide-react";
+import { Lock, DollarSign, Send, Sparkles, ArrowRight, CheckCircle } from "lucide-react";
+import { AnimatedLogo } from "@/components/AnimatedLogo";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -111,9 +112,7 @@ export default function Promo() {
       <div className="relative z-10 min-h-screen flex flex-col">
         <header className="p-4 sm:p-6">
           <div className="flex items-center justify-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-white" fill="currentColor" />
-            </div>
+            <AnimatedLogo size={40} variant="light" />
             <span className="text-xl font-bold text-white">Secret Message</span>
           </div>
         </header>

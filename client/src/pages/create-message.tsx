@@ -13,7 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Heart, ArrowLeft, Calendar as CalendarIcon, FileText, Upload, Ghost, ChevronDown } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, FileText, Upload, Ghost, ChevronDown } from "lucide-react";
+import { AnimatedLogo } from "@/components/AnimatedLogo";
 import { Link, useLocation } from "wouter";
 import { z } from "zod";
 import { format } from "date-fns";
@@ -167,9 +168,7 @@ export default function CreateMessage() {
           <div className="flex justify-between items-center h-16">
             <Link href="/">
               <a className="flex items-center gap-2 hover-elevate rounded-lg px-3 py-2 -ml-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center">
-                  <Heart className="w-4 h-4 text-primary-foreground" fill="currentColor" />
-                </div>
+                <AnimatedLogo size={32} variant="dark" />
                 <span className="text-lg font-heading font-bold text-foreground">Secret Message</span>
               </a>
             </Link>

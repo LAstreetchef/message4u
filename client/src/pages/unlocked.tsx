@@ -3,7 +3,8 @@ import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Unlock, Sparkles, Download, FileIcon } from "lucide-react";
+import { Unlock, Sparkles, Download, FileIcon } from "lucide-react";
+import { AnimatedLogo } from "@/components/AnimatedLogo";
 import { ConfettiEffect } from "@/components/ConfettiEffect";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Message } from "@shared/schema";
@@ -93,9 +94,7 @@ export default function Unlocked() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center items-center h-16">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center">
-                <Heart className="w-4 h-4 text-primary-foreground" fill="currentColor" />
-              </div>
+              <AnimatedLogo size={32} variant="dark" />
               <span className="text-lg font-heading font-bold text-foreground">Secret Message</span>
             </div>
           </div>

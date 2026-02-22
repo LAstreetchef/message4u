@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { ArrowRight, Lock, Shield, DollarSign, Code, Zap, Eye, Send, Palette, CheckCircle, Loader2 } from "lucide-react";
+import { AnimatedLogo } from "@/components/AnimatedLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -216,7 +217,10 @@ export default function Partners() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/">
-              <a className="text-xl font-semibold tracking-tight">Secret Message</a>
+              <a className="flex items-center gap-2">
+                <AnimatedLogo size={32} variant="dark" />
+                <span className="text-xl font-semibold tracking-tight">Secret Message</span>
+              </a>
             </Link>
             <Link href="/">
               <a className="text-sm text-muted-foreground hover:text-foreground">← Back to Home</a>

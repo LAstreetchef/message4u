@@ -25,7 +25,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Heart, Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check, FileIcon, FileText, Wallet, Mail, Save } from "lucide-react";
+import { Plus, Copy, Lock, Unlock, DollarSign, Power, TrendingUp, Check, FileIcon, FileText, Wallet, Mail, Save } from "lucide-react";
+import { AnimatedLogo } from "@/components/AnimatedLogo";
 import { SiPaypal, SiVenmo, SiCashapp } from "react-icons/si";
 import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -221,9 +222,7 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center gap-2 hover-elevate rounded-lg px-3 py-2 -ml-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-instagram flex items-center justify-center">
-                <Heart className="w-4 h-4 text-primary-foreground" fill="currentColor" />
-              </div>
+              <AnimatedLogo size={32} variant="dark" />
               <span className="text-lg font-heading font-bold text-foreground">Secret Message</span>
             </Link>
             <div className="flex items-center gap-4">

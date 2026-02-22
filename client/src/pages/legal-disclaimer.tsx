@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
-import { Heart } from "lucide-react";
 import { Link } from "wouter";
+import { AnimatedLogo } from "@/components/AnimatedLogo";
 
 export default function LegalDisclaimer() {
   return (
@@ -10,9 +10,7 @@ export default function LegalDisclaimer() {
           <div className="flex justify-between items-center h-16">
             <Link href="/">
               <a className="flex items-center gap-2" data-testid="link-home">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-chart-2 flex items-center justify-center">
-                  <Heart className="w-5 h-5 text-primary-foreground" fill="currentColor" />
-                </div>
+                <AnimatedLogo size={40} variant="dark" />
                 <span className="text-xl font-heading font-bold text-foreground">Secret Message</span>
               </a>
             </Link>

@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { ArrowRight, Instagram, Lock, DollarSign, Zap, Image, Video, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AnimatedLogo } from "@/components/AnimatedLogo";
 
 export default function InstaLinkLanding() {
   return (
@@ -11,9 +12,7 @@ export default function InstaLinkLanding() {
           <div className="flex justify-between items-center h-16">
             <Link href="/">
               <a className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
-                  <div className="w-4 h-4 bg-black rounded-sm" />
-                </div>
+                <AnimatedLogo size={32} variant="light" />
                 <span className="text-xl font-semibold">Secret Message</span>
               </a>
             </Link>
