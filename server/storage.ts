@@ -22,8 +22,10 @@ import { randomUUID } from "crypto";
 export interface IStorage {
   // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   getUserByStripeAccountId(stripeAccountId: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  createUser(data: { email: string; passwordHash: string; payoutMethod?: string; payoutAddress?: string }): Promise<User>;
   updateUserCryptoWallet(userId: string, cryptoWalletAddress: string, cryptoWalletType: string): Promise<void>;
   updateUserStripeAccount(userId: string, stripeAccountId: string, onboardingComplete: boolean): Promise<void>;
   updateUserPayoutMethod(userId: string, payoutMethod: string, payoutAddress: string): Promise<void>;
@@ -91,6 +93,24 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByStripeAccountId(stripeAccountId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.stripeAccountId, stripeAccountId));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email.toLowerCase().trim()));
+    return user;
+  }
+
+  async createUser(data: { email: string; passwordHash: string; payoutMethod?: string; payoutAddress?: string }): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values({
+        email: data.email.toLowerCase().trim(),
+        passwordHash: data.passwordHash,
+        payoutMethod: data.payoutMethod || null,
+        payoutAddress: data.payoutAddress || null,
+      })
+      .returning();
     return user;
   }
 

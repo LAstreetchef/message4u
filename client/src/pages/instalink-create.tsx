@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowRight, Upload, DollarSign, Link as LinkIcon, Copy, Check, Image, FileText, Video, X, Loader2, Eye, Clock, Bomb, ChevronDown, ShieldAlert } from "lucide-react";
+import { ArrowRight, Upload, DollarSign, Link as LinkIcon, Copy, Check, Image, FileText, Video, X, Loader2, Eye, Clock, Bomb, ChevronDown, ShieldAlert, Mail, Lock, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +26,10 @@ export default function InstaLinkCreate() {
     deleteAfterMinutes: null as number | null,
     // Content flags
     isAdultContent: false,
+    // Creator account
+    email: "",
+    password: "",
+    paypalEmail: "",
   });
   const [showDisappearingOptions, setShowDisappearingOptions] = useState(false);
   const [disappearingMode, setDisappearingMode] = useState<"none" | "views" | "timer">("none");
@@ -428,12 +432,76 @@ export default function InstaLinkCreate() {
                   />
                 </div>
 
+                {/* Get Paid Section */}
+                <div className="border border-zinc-800 rounded-xl p-4 space-y-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                      <Wallet className="w-5 h-5 text-green-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Get Paid</p>
+                      <p className="text-xs text-zinc-500">Create account to receive payments</p>
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <label className="text-sm text-zinc-400">Your Email *</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                      <Input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="you@example.com"
+                        className="bg-zinc-900 border-zinc-700 text-white h-11 pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-2">
+                    <label className="text-sm text-zinc-400">Password *</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                      <Input
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="Create a password"
+                        className="bg-zinc-900 border-zinc-700 text-white h-11 pl-10"
+                        required
+                        minLength={6}
+                      />
+                    </div>
+                    <p className="text-xs text-zinc-600">Min 6 characters. Used to access your dashboard.</p>
+                  </div>
+
+                  {/* PayPal Email for Payouts */}
+                  <div className="space-y-2">
+                    <label className="text-sm text-zinc-400">PayPal Email (for payouts) *</label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                      <Input
+                        type="email"
+                        value={formData.paypalEmail}
+                        onChange={(e) => setFormData({ ...formData, paypalEmail: e.target.value })}
+                        placeholder="your-paypal@email.com"
+                        className="bg-zinc-900 border-zinc-700 text-white h-11 pl-10"
+                        required
+                      />
+                    </div>
+                    <p className="text-xs text-zinc-600">Where we'll send your earnings</p>
+                  </div>
+                </div>
+
                 <Button 
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !formData.email || !formData.password || !formData.paypalEmail}
                   className="w-full h-12 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90 text-white font-semibold"
                 >
-                  {isSubmitting ? "Creating..." : "Create Link"}
+                  {isSubmitting ? "Creating..." : "Create Link & Account"}
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </form>

@@ -181,20 +181,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // InstaLink - Create a paywall link
   app.post('/api/instalink/create', async (req, res) => {
     try {
-      const { title, description, price, fileUrl, maxViews, deleteAfterMinutes, isAdultContent } = req.body;
+      const { title, description, price, fileUrl, maxViews, deleteAfterMinutes, isAdultContent, email, password, paypalEmail } = req.body;
       
       if (!title || !price) {
         return res.status(400).json({ error: 'Title and price are required' });
       }
       
-      // Find or create guest user for InstaLinks
-      const guestUser = await storage.upsertUser({
-        email: 'instalink@secretmessage4u.com',
-        passwordHash: 'not-used-instalink',
-      });
+      let userId: string;
+      
+      // If creator account info provided, create/login user
+      if (email && password && paypalEmail) {
+        const bcrypt = await import('bcryptjs');
+        const normalizedEmail = email.toLowerCase().trim();
+        
+        // Check if user exists
+        const existingUser = await storage.getUserByEmail(normalizedEmail);
+        
+        if (existingUser) {
+          // Verify password (login)
+          const isValid = await bcrypt.compare(password, existingUser.passwordHash);
+          if (!isValid) {
+            return res.status(401).json({ error: 'Invalid password. If you have an account, use the correct password.' });
+          }
+          userId = existingUser.id;
+          
+          // Update payout info if different
+          if (existingUser.payoutAddress !== paypalEmail) {
+            await storage.updateUserPayoutMethod(userId, 'paypal', paypalEmail);
+          }
+        } else {
+          // Create new user
+          const passwordHash = await bcrypt.hash(password, 10);
+          const newUser = await storage.createUser({
+            email: normalizedEmail,
+            passwordHash,
+            payoutMethod: 'paypal',
+            payoutAddress: paypalEmail,
+          });
+          userId = newUser.id;
+        }
+      } else {
+        // Fallback to guest user (for backwards compatibility)
+        const guestUser = await storage.upsertUser({
+          email: 'instalink@secretmessage4u.com',
+          passwordHash: 'not-used-instalink',
+        });
+        userId = guestUser.id;
+      }
       
       // Create the message (reusing message system for InstaLinks)
-      const message = await storage.createMessage(guestUser.id, {
+      const message = await storage.createMessage(userId, {
         title,
         messageBody: description || title,
         recipientIdentifier: 'instalink', // No email - public paywall
@@ -214,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error('Error creating InstaLink:', error);
-      res.status(500).json({ error: 'Failed to create link' });
+      res.status(500).json({ error: error.message || 'Failed to create link' });
     }
   });
 
