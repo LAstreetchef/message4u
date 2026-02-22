@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { Lock, Unlock, ExternalLink, Loader2, Eye, Clock, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Lock, Unlock, ExternalLink, Loader2, Eye, Clock, AlertTriangle, ShieldAlert, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PayPalCardFields from "@/components/PayPalCardFields";
 
 interface DisappearingInfo {
   maxViews?: number | null;
@@ -35,6 +36,8 @@ export default function InstaLinkView() {
   const [disappearedReason, setDisappearedReason] = useState("");
   const [viewsRemaining, setViewsRemaining] = useState<number | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
+  const [showCardFields, setShowCardFields] = useState(false);
+  const [cardError, setCardError] = useState("");
 
   useEffect(() => {
     fetchLink();
@@ -234,8 +237,8 @@ export default function InstaLinkView() {
                 )}
               </div>
 
-              <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-xl text-center space-y-4">
-                <div>
+              <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-xl space-y-4">
+                <div className="text-center">
                   <p className="text-zinc-400 text-sm">Unlock this content for</p>
                   <p className="text-4xl font-bold mt-1">${data.price}</p>
                 </div>
@@ -260,27 +263,83 @@ export default function InstaLinkView() {
                   </div>
                 )}
                 
-                <Button 
-                  onClick={handlePay}
-                  disabled={paying}
-                  className="w-full h-12 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90 text-white font-semibold"
-                >
-                  {paying ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Unlock className="w-4 h-4 mr-2" />
-                      Pay & Unlock
-                    </>
-                  )}
-                </Button>
-                
-                <p className="text-xs text-zinc-500">
-                  Secure payment via Stripe
-                </p>
+                {/* Adult content: Show card fields */}
+                {data.isAdultContent && showCardFields ? (
+                  <div className="text-left">
+                    {cardError && (
+                      <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400">
+                        {cardError}
+                      </div>
+                    )}
+                    <PayPalCardFields
+                      slug={slug || ''}
+                      price={data.price}
+                      onSuccess={(fileUrl) => {
+                        setData(prev => prev ? { ...prev, unlocked: true, fileUrl } : null);
+                      }}
+                      onError={(err) => setCardError(err)}
+                    />
+                    <button
+                      onClick={() => setShowCardFields(false)}
+                      className="w-full mt-3 text-sm text-zinc-500 hover:text-zinc-300"
+                    >
+                      ← Back to payment options
+                    </button>
+                  </div>
+                ) : data.isAdultContent ? (
+                  // Adult content: Show payment options
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={() => setShowCardFields(true)}
+                      className="w-full h-12 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90 text-white font-semibold"
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Pay with Card
+                    </Button>
+                    <Button 
+                      onClick={handlePay}
+                      disabled={paying}
+                      variant="outline"
+                      className="w-full h-12 border-zinc-700 text-white hover:bg-zinc-800"
+                    >
+                      {paying ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>Pay with PayPal</>
+                      )}
+                    </Button>
+                    <p className="text-xs text-zinc-500 text-center">
+                      Secure payment via PayPal
+                    </p>
+                  </div>
+                ) : (
+                  // Standard content: Stripe button
+                  <div className="text-center">
+                    <Button 
+                      onClick={handlePay}
+                      disabled={paying}
+                      className="w-full h-12 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90 text-white font-semibold"
+                    >
+                      {paying ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Unlock className="w-4 h-4 mr-2" />
+                          Pay & Unlock
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-zinc-500 mt-3">
+                      Secure payment via Stripe
+                    </p>
+                  </div>
+                )}
               </div>
             </>
           ) : (

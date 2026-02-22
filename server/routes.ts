@@ -395,6 +395,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // InstaLink - Create PayPal order for card fields (no redirect)
+  app.post('/api/instalink/:slug/create-order', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const message = await storage.getMessageBySlug(slug);
+      
+      if (!message) {
+        return res.status(404).json({ error: 'Link not found' });
+      }
+      
+      if (message.unlocked) {
+        return res.json({ unlocked: true, fileUrl: message.fileUrl });
+      }
+      
+      if (!message.isAdultContent) {
+        return res.status(400).json({ error: 'Card fields only for adult content' });
+      }
+      
+      if (!USE_PAL || !palClient.isConfigured()) {
+        return res.status(400).json({ error: 'PAL not configured' });
+      }
+      
+      const price = parseFloat(message.price);
+      
+      // Create PAL transaction
+      const transaction = await palClient.createTransaction({
+        messageId: message.id,
+        partnerId: 'instalink',
+        baseCost: price,
+        partnerPrice: price,
+        contentFlag: 'adult',
+        currency: 'USD',
+      });
+      
+      // Get PayPal order (but don't redirect - return order ID for card fields)
+      const paymentResult = await palClient.submitPayment({
+        txnId: transaction.txn_id,
+        paymentMethod: 'paypal',
+      });
+      
+      // Extract order_id from the response
+      const orderId = (paymentResult as any).order_id;
+      
+      if (!orderId) {
+        return res.status(500).json({ error: 'Failed to create PayPal order' });
+      }
+      
+      res.json({
+        orderId,
+        txnId: transaction.txn_id,
+        clientId: process.env.PAYPAL_CLIENT_ID || 'Ae1JLBuqXHfT91Q6UvtU2NvQl68FSX8NzN36vrzvouOSOtTnc2L1PuEcy4yt6quxpDa291fdWtU1cF3a',
+      });
+    } catch (error: any) {
+      console.error('Error creating PayPal order:', error);
+      res.status(500).json({ error: 'Failed to create order', details: error.message });
+    }
+  });
+
+  // InstaLink - Capture PayPal order after card fields submit
+  app.post('/api/instalink/:slug/capture-order', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const { orderId, txnId } = req.body;
+      
+      if (!orderId) {
+        return res.status(400).json({ error: 'Order ID required' });
+      }
+      
+      const message = await storage.getMessageBySlug(slug);
+      
+      if (!message) {
+        return res.status(404).json({ error: 'Link not found' });
+      }
+      
+      if (message.unlocked) {
+        return res.json({ success: true, unlocked: true, fileUrl: message.fileUrl });
+      }
+      
+      // Capture the PayPal order via direct API call
+      // (PAL's submitPayment already created the order, now we capture)
+      const captureResponse = await fetch(`https://api-m.paypal.com/v2/checkout/orders/${orderId}/capture`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64')}`,
+        },
+      });
+      
+      const captureData = await captureResponse.json();
+      
+      if (captureData.status === 'COMPLETED') {
+        // Mark message as unlocked
+        await storage.markMessageUnlocked(message.id);
+        
+        // Update PAL transaction if we have txnId
+        if (txnId && USE_PAL && palClient.isConfigured()) {
+          try {
+            // PAL should pick this up via webhook, but we can try to update
+          } catch (e) {
+            // Ignore PAL update errors
+          }
+        }
+        
+        return res.json({ 
+          success: true, 
+          unlocked: true, 
+          fileUrl: message.fileUrl 
+        });
+      } else {
+        return res.status(400).json({ 
+          error: 'Payment not completed', 
+          status: captureData.status,
+          details: captureData
+        });
+      }
+    } catch (error: any) {
+      console.error('Error capturing PayPal order:', error);
+      res.status(500).json({ error: 'Failed to capture payment', details: error.message });
+    }
+  });
+
   // InstaLink - PAL payment callback (handles PayPal return)
   app.get('/api/instalink/pal/callback', async (req, res) => {
     try {
