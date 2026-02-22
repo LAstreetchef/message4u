@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -5,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { HelpWidget } from "@/components/HelpWidget";
+import { AccessGate } from "@/components/AccessGate";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import Promo from "@/pages/promo";
@@ -22,6 +24,22 @@ import InstaLink from "@/pages/insta-link";
 import InstaLinkLanding from "@/pages/instalink-landing";
 import InstaLinkCreate from "@/pages/instalink-create";
 import InstaLinkView from "@/pages/instalink-view";
+
+// Routes that don't require access gate (public payment/view routes)
+const PUBLIC_ROUTES = [
+  '/l/',      // InstaLink view
+  '/m/',      // Message paywall
+  '/p/',      // Partner links
+  '/i/',      // InstaLink username
+  '/promo',
+  '/privacy',
+  '/legal-disclaimer',
+  '/sms-consent',
+];
+
+function isPublicRoute(path: string): boolean {
+  return PUBLIC_ROUTES.some(route => path.startsWith(route));
+}
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -60,6 +78,20 @@ function Router() {
 }
 
 function App() {
+  const [hasAccess, setHasAccess] = useState(() => {
+    return localStorage.getItem("sm4u_access") === "granted";
+  });
+
+  // Check if current route is public (no gate needed) using window.location
+  const isPublic = isPublicRoute(window.location.pathname);
+
+  // Show access gate for protected routes
+  if (!isPublic && !hasAccess) {
+    return (
+      <AccessGate onAccessGranted={() => setHasAccess(true)} />
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
