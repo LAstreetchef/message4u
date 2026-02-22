@@ -100,14 +100,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Find or create a guest user for anonymous messages
-      let guestUser = await storage.getUserByEmail('guest@secretmessage4u.com');
-      if (!guestUser) {
-        guestUser = await storage.createUser({
-          email: 'guest@secretmessage4u.com',
-          password: 'not-used-' + Date.now(),
-          disclaimerAgreed: true,
-        });
-      }
+      const guestUser = await storage.upsertUser({
+        email: 'guest@secretmessage4u.com',
+        password: 'not-used-guest',
+      });
       
       // Create the message
       const message = await storage.createMessage(guestUser.id, {
@@ -156,14 +152,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Find or create guest user for InstaLinks
-      let guestUser = await storage.getUserByEmail('instalink@secretmessage4u.com');
-      if (!guestUser) {
-        guestUser = await storage.createUser({
-          email: 'instalink@secretmessage4u.com',
-          password: 'not-used-' + Date.now(),
-          disclaimerAgreed: true,
-        });
-      }
+      const guestUser = await storage.upsertUser({
+        email: 'instalink@secretmessage4u.com',
+        password: 'not-used-instalink',
+      });
       
       // Create the message (reusing message system for InstaLinks)
       const message = await storage.createMessage(guestUser.id, {
