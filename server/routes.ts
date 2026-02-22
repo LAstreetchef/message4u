@@ -39,17 +39,15 @@ if (!process.env.NOWPAYMENTS_API_KEY) {
 
 // Pending crypto payouts are now stored in the database (see schema.ts)
 
-// Calculate platform fee: $1.69 + 6.9% of amount
+// Calculate platform fee: 14.5% standard, 18% adult content
 // Works in cents (integers) to avoid floating point rounding errors
-function calculatePlatformFee(amount: number): { platformFee: number; senderEarnings: number } {
+function calculatePlatformFee(amount: number, isAdultContent: boolean = false): { platformFee: number; senderEarnings: number } {
   // Convert amount to cents for integer arithmetic
   const amountCents = Math.round(amount * 100);
   
-  // Calculate platform fee in cents: $1.69 (169 cents) + 6.9% of amount
-  const calculatedFeeCents = 169 + Math.round(amountCents * 0.069);
-  
-  // Clamp platform fee to not exceed the total amount
-  const platformFeeCents = Math.min(calculatedFeeCents, amountCents);
+  // Platform fee: 14.5% standard, 18% adult
+  const feeRate = isAdultContent ? 0.18 : 0.145;
+  const platformFeeCents = Math.round(amountCents * feeRate);
   
   // Calculate sender earnings as remainder (guaranteed to sum exactly to amount)
   const senderEarningsCents = amountCents - platformFeeCents;
@@ -1456,7 +1454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Calculate fees using existing logic
       const amount = parseFloat(message.price);
-      const { platformFee, senderEarnings } = calculatePlatformFee(amount);
+      const { platformFee, senderEarnings } = calculatePlatformFee(amount, message.isAdultContent || false);
 
       // Create transaction in PAL
       // Partner ID is the message sender's user ID
@@ -1465,7 +1463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         partnerId: message.userId,
         baseCost: platformFee, // Platform takes this as base
         partnerPrice: amount,  // Total price paid by recipient
-        contentFlag: 'standard',
+        contentFlag: message.isAdultContent ? 'adult' : 'standard',
         currency: 'USD',
       });
 
@@ -1539,7 +1537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (message) {
           const amount = txn.amounts.transaction_total;
-          const { platformFee, senderEarnings } = calculatePlatformFee(amount);
+          const { platformFee, senderEarnings } = calculatePlatformFee(amount, message.isAdultContent || false);
           
           await storage.createPayment({
             messageId: message.id,
@@ -1671,8 +1669,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.json({ received: true, status: 'already_processed' });
         }
 
+        // Get message to check if adult content
+        const message = await storage.getMessageById(messageId);
         const amount = parseFloat(payment.price_amount);
-        const { platformFee, senderEarnings } = calculatePlatformFee(amount);
+        const { platformFee, senderEarnings } = calculatePlatformFee(amount, message?.isAdultContent || false);
         
         await storage.createPayment({
           messageId,
@@ -1737,9 +1737,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         console.log(`[Stripe Webhook] Processing checkout.session.completed for message ${messageId}`);
 
+        // Get message to check if adult content
+        const message = await storage.getMessageById(messageId);
+        
         // Create payment record with platform fee calculation
         const amount = session.amount_total! / 100;
-        const { platformFee, senderEarnings } = calculatePlatformFee(amount);
+        const { platformFee, senderEarnings } = calculatePlatformFee(amount, message?.isAdultContent || false);
         
         await storage.createPayment({
           messageId,
@@ -1880,7 +1883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (session.payment_status === 'paid') {
         // Create payment record with platform fee calculation
         const amount = session.amount_total! / 100;
-        const { platformFee, senderEarnings } = calculatePlatformFee(amount);
+        const { platformFee, senderEarnings } = calculatePlatformFee(amount, message.isAdultContent || false);
         
         await storage.createPayment({
           messageId: message.id,
