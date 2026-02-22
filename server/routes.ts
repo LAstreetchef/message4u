@@ -181,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // InstaLink - Create a paywall link
   app.post('/api/instalink/create', async (req, res) => {
     try {
-      const { title, description, price, fileUrl, maxViews, deleteAfterMinutes } = req.body;
+      const { title, description, price, fileUrl, maxViews, deleteAfterMinutes, isAdultContent } = req.body;
       
       if (!title || !price) {
         return res.status(400).json({ error: 'Title and price are required' });
@@ -204,6 +204,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Disappearing content options
         maxViews: maxViews ? parseInt(maxViews) : null,
         deleteAfterMinutes: deleteAfterMinutes ? parseInt(deleteAfterMinutes) : null,
+        // Content flags
+        isAdultContent: isAdultContent || false,
       });
       
       res.json({ 
@@ -262,6 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         unlocked: message.unlocked,
         fileUrl: message.unlocked ? message.fileUrl : undefined,
         disappearing: disappearingInfo,
+        isAdultContent: message.isAdultContent || false,
       });
     } catch (error: any) {
       console.error('Error fetching InstaLink:', error);

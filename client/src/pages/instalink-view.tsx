@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { Lock, Unlock, ExternalLink, Loader2, Eye, Clock, AlertTriangle } from "lucide-react";
+import { Lock, Unlock, ExternalLink, Loader2, Eye, Clock, AlertTriangle, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface DisappearingInfo {
@@ -22,6 +22,7 @@ interface InstaLinkData {
   fileUrl?: string;
   creatorName?: string;
   disappearing?: DisappearingInfo | null;
+  isAdultContent?: boolean;
 }
 
 export default function InstaLinkView() {
@@ -223,6 +224,14 @@ export default function InstaLinkView() {
                     <p className="text-zinc-400 mt-2">{data.description}</p>
                   )}
                 </div>
+
+                {/* Adult content badge */}
+                {data.isAdultContent && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 border border-red-500/40 rounded-full">
+                    <ShieldAlert className="w-4 h-4 text-red-400" />
+                    <span className="text-sm font-medium text-red-400">18+ Adult Content</span>
+                  </div>
+                )}
               </div>
 
               <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-xl text-center space-y-4">

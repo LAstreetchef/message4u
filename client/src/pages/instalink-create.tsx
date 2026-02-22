@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowRight, Upload, DollarSign, Link as LinkIcon, Copy, Check, Image, FileText, Video, X, Loader2, Eye, Clock, Bomb, ChevronDown } from "lucide-react";
+import { ArrowRight, Upload, DollarSign, Link as LinkIcon, Copy, Check, Image, FileText, Video, X, Loader2, Eye, Clock, Bomb, ChevronDown, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +24,8 @@ export default function InstaLinkCreate() {
     // Disappearing options
     maxViews: null as number | null,
     deleteAfterMinutes: null as number | null,
+    // Content flags
+    isAdultContent: false,
   });
   const [showDisappearingOptions, setShowDisappearingOptions] = useState(false);
   const [disappearingMode, setDisappearingMode] = useState<"none" | "views" | "timer">("none");
@@ -407,6 +409,23 @@ export default function InstaLinkCreate() {
                       )}
                     </div>
                   )}
+                </div>
+
+                {/* Adult Content Toggle */}
+                <div className="flex items-center justify-between p-4 border border-zinc-800 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                      <ShieldAlert className="w-5 h-5 text-red-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Adult Content (18+)</p>
+                      <p className="text-xs text-zinc-500">Mark if content is NSFW</p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={formData.isAdultContent}
+                    onCheckedChange={(checked) => setFormData({ ...formData, isAdultContent: checked })}
+                  />
                 </div>
 
                 <Button 
