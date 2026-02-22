@@ -142,6 +142,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // InstaLink - Create a paywall link
+  app.post('/api/instalink/create', async (req, res) => {
+    try {
+      const { title, description, price, email, fileUrl } = req.body;
+      
+      if (!title || !price || !email) {
+        return res.status(400).json({ error: 'Title, price, and email are required' });
+      }
+      
+      if (!isValidEmail(email)) {
+        return res.status(400).json({ error: 'Invalid email address' });
+      }
+      
+      // Find or create guest user for InstaLinks
+      let guestUser = await storage.getUserByEmail('instalink@secretmessage4u.com');
+      if (!guestUser) {
+        guestUser = await storage.createUser({
+          email: 'instalink@secretmessage4u.com',
+          password: 'not-used-' + Date.now(),
+          disclaimerAgreed: true,
+        });
+      }
+      
+      // Create the message (reusing message system for InstaLinks)
+      const message = await storage.createMessage(guestUser.id, {
+        title,
+        messageBody: description || title,
+        recipientIdentifier: email, // Creator's email
+        price: price.toString(),
+        fileUrl: fileUrl || undefined,
+        isAnonymous: false,
+      });
+      
+      res.json({ 
+        success: true,
+        slug: message.slug,
+        link: `https://secretmessage4u.com/l/${message.slug}`
+      });
+    } catch (error: any) {
+      console.error('Error creating InstaLink:', error);
+      res.status(500).json({ error: 'Failed to create link' });
+    }
+  });
+
+  // InstaLink - Get link details
+  app.get('/api/instalink/:slug', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const message = await storage.getMessageBySlug(slug);
+      
+      if (!message) {
+        return res.status(404).json({ error: 'Link not found' });
+      }
+      
+      // Return public info (don't expose fileUrl until paid)
+      res.json({
+        id: message.id,
+        slug: message.slug,
+        title: message.title,
+        description: message.messageBody !== message.title ? message.messageBody : undefined,
+        price: message.price,
+        unlocked: message.isUnlocked,
+        fileUrl: message.isUnlocked ? message.fileUrl : undefined,
+      });
+    } catch (error: any) {
+      console.error('Error fetching InstaLink:', error);
+      res.status(500).json({ error: 'Failed to fetch link' });
+    }
+  });
+
+  // InstaLink - Initiate payment
+  app.post('/api/instalink/:slug/pay', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const message = await storage.getMessageBySlug(slug);
+      
+      if (!message) {
+        return res.status(404).json({ error: 'Link not found' });
+      }
+      
+      if (message.isUnlocked) {
+        return res.json({ 
+          unlocked: true, 
+          fileUrl: message.fileUrl 
+        });
+      }
+      
+      // Create Stripe checkout session
+      const baseUrl = getBaseUrl();
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: message.title,
+              description: 'Unlock this content',
+            },
+            unit_amount: Math.round(parseFloat(message.price) * 100),
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: `${baseUrl}/l/${slug}?success=true`,
+        cancel_url: `${baseUrl}/l/${slug}?canceled=true`,
+        metadata: {
+          messageId: message.id,
+          type: 'instalink',
+        },
+      });
+      
+      res.json({ checkoutUrl: session.url });
+    } catch (error: any) {
+      console.error('Error creating InstaLink payment:', error);
+      res.status(500).json({ error: 'Failed to create payment' });
+    }
+  });
+
   // Partner inquiry (public)
   app.post('/api/partner-inquiry', async (req, res) => {
     try {

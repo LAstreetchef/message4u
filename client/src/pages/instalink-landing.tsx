@@ -1,22 +1,6 @@
-import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowRight, Instagram, Lock, DollarSign, Zap, Copy, Check } from "lucide-react";
+import { ArrowRight, Instagram, Lock, DollarSign, Zap, Image, Video, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-
-export default function InstaLinkLanding() {
-  const [username, setUsername] = useState("");
-  const [copied, setCopied] = useState(false);
-  
-  const generatedLink = username ? `secretmessage4u.com/i/${username.toLowerCase().replace(/[^a-z0-9]/g, '')}` : '';
-
-  const handleCopy = () => {
-    if (generatedLink) {
-      navigator.clipboard.writeText(`https://${generatedLink}`);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -55,55 +39,23 @@ export default function InstaLinkLanding() {
             </h1>
             
             <p className="text-xl text-zinc-400 max-w-xl mx-auto">
-              Get paid for anonymous messages. Drop the link in your bio — fans send secrets, you unlock them for cash.
+              Sell photos, videos, and files directly from your Instagram bio. One link. Instant payments.
             </p>
           </div>
         </section>
 
-        {/* Link Generator */}
+        {/* CTA */}
         <section className="py-16 px-4 sm:px-6 lg:px-8 border-b border-zinc-800">
-          <div className="max-w-md mx-auto space-y-6">
-            <h2 className="text-2xl font-semibold text-center">Create Your Link</h2>
+          <div className="max-w-md mx-auto text-center space-y-6">
+            <h2 className="text-2xl font-semibold">Ready to Start Earning?</h2>
+            <p className="text-zinc-400">Create your first paid link in under 60 seconds</p>
             
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm text-zinc-400">Your username</label>
-                <Input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="yourname"
-                  className="bg-zinc-900 border-zinc-700 text-white h-12 text-lg"
-                />
-              </div>
-              
-              {username && (
-                <div className="p-4 bg-zinc-900 border border-zinc-700 rounded-lg space-y-3">
-                  <p className="text-sm text-zinc-400">Your InstaLink:</p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 text-pink-400 text-sm break-all">
-                      https://{generatedLink}
-                    </code>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCopy}
-                      className="bg-transparent border-zinc-700 hover:bg-zinc-800"
-                    >
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    </Button>
-                  </div>
-                </div>
-              )}
-              
-              {username && (
-                <Link href={`/i/${username.toLowerCase().replace(/[^a-z0-9]/g, '')}`}>
-                  <Button className="w-full h-12 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90 text-white font-semibold">
-                    Preview Your Page
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
-                </Link>
-              )}
-            </div>
+            <Link href="/instalink/create">
+              <Button className="h-14 px-8 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90 text-white font-semibold text-lg">
+                Create Your Link
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Button>
+            </Link>
           </div>
         </section>
 
@@ -115,21 +67,21 @@ export default function InstaLinkLanding() {
             <div className="grid md:grid-cols-3 gap-8">
               <div className="text-center space-y-4">
                 <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
-                  <Instagram className="w-6 h-6" />
+                  <Lock className="w-6 h-6" />
                 </div>
-                <h3 className="font-semibold text-lg">1. Add to Bio</h3>
+                <h3 className="font-semibold text-lg">1. Upload Content</h3>
                 <p className="text-zinc-400 text-sm">
-                  Drop your InstaLink in your Instagram bio
+                  Add your photo, video, or file and set your price
                 </p>
               </div>
               
               <div className="text-center space-y-4">
                 <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
-                  <Lock className="w-6 h-6" />
+                  <Instagram className="w-6 h-6" />
                 </div>
-                <h3 className="font-semibold text-lg">2. Fans Send Secrets</h3>
+                <h3 className="font-semibold text-lg">2. Share the Link</h3>
                 <p className="text-zinc-400 text-sm">
-                  They type anonymous messages — encrypted and private
+                  Drop the link in your bio — fans tap to view
                 </p>
               </div>
               
@@ -137,9 +89,41 @@ export default function InstaLinkLanding() {
                 <div className="w-14 h-14 mx-auto rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center">
                   <DollarSign className="w-6 h-6" />
                 </div>
-                <h3 className="font-semibold text-lg">3. You Get Paid</h3>
+                <h3 className="font-semibold text-lg">3. Get Paid Instantly</h3>
                 <p className="text-zinc-400 text-sm">
-                  Pay to unlock each message — keep 100% of earnings
+                  Fans pay to unlock — money goes straight to you
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* What You Can Sell */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8 border-b border-zinc-800">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl font-semibold text-center mb-12">What You Can Sell</h2>
+            <div className="grid sm:grid-cols-3 gap-6">
+              <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg text-center">
+                <Image className="w-10 h-10 text-pink-400 mx-auto mb-4" />
+                <h3 className="font-semibold mb-2">Photos</h3>
+                <p className="text-zinc-400 text-sm">
+                  Exclusive pics, behind-the-scenes, premium content
+                </p>
+              </div>
+              
+              <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg text-center">
+                <Video className="w-10 h-10 text-pink-400 mx-auto mb-4" />
+                <h3 className="font-semibold mb-2">Videos</h3>
+                <p className="text-zinc-400 text-sm">
+                  Tutorials, vlogs, exclusive clips
+                </p>
+              </div>
+              
+              <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg text-center">
+                <FileText className="w-10 h-10 text-pink-400 mx-auto mb-4" />
+                <h3 className="font-semibold mb-2">Files</h3>
+                <p className="text-zinc-400 text-sm">
+                  PDFs, guides, presets, templates
                 </p>
               </div>
             </div>
@@ -152,25 +136,25 @@ export default function InstaLinkLanding() {
             <div className="grid sm:grid-cols-2 gap-6">
               <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg">
                 <Zap className="w-8 h-8 text-pink-400 mb-4" />
-                <h3 className="font-semibold mb-2">No Signup Required</h3>
+                <h3 className="font-semibold mb-2">No Account Needed</h3>
                 <p className="text-zinc-400 text-sm">
-                  Just pick a username and start sharing. Your fans don't need accounts either.
-                </p>
-              </div>
-              
-              <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg">
-                <Lock className="w-8 h-8 text-pink-400 mb-4" />
-                <h3 className="font-semibold mb-2">100% Anonymous</h3>
-                <p className="text-zinc-400 text-sm">
-                  Messages are encrypted. You never know who sent them — that's the fun.
+                  Create links instantly. Fans pay without signing up.
                 </p>
               </div>
               
               <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg">
                 <DollarSign className="w-8 h-8 text-pink-400 mb-4" />
-                <h3 className="font-semibold mb-2">Set Your Price</h3>
+                <h3 className="font-semibold mb-2">Keep More Money</h3>
                 <p className="text-zinc-400 text-sm">
-                  Charge $1, $5, $20 — whatever you want. You control your earnings.
+                  Low fees. No monthly charges. You keep most of what you earn.
+                </p>
+              </div>
+              
+              <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg">
+                <Lock className="w-8 h-8 text-pink-400 mb-4" />
+                <h3 className="font-semibold mb-2">Secure Payments</h3>
+                <p className="text-zinc-400 text-sm">
+                  Powered by Stripe. Credit cards, Apple Pay, Google Pay.
                 </p>
               </div>
               
@@ -178,7 +162,7 @@ export default function InstaLinkLanding() {
                 <Instagram className="w-8 h-8 text-pink-400 mb-4" />
                 <h3 className="font-semibold mb-2">Made for Instagram</h3>
                 <p className="text-zinc-400 text-sm">
-                  Mobile-first design. Looks perfect when fans tap your bio link.
+                  Mobile-first. Looks perfect when fans tap your bio link.
                 </p>
               </div>
             </div>

@@ -20,6 +20,8 @@ import Partners from "@/pages/partners";
 import PartnerLink from "@/pages/partner-link";
 import InstaLink from "@/pages/insta-link";
 import InstaLinkLanding from "@/pages/instalink-landing";
+import InstaLinkCreate from "@/pages/instalink-create";
+import InstaLinkView from "@/pages/instalink-view";
 
 function Router() {
   const { isAuthenticated } = useAuth();
@@ -35,6 +37,8 @@ function Router() {
       <Route path="/p/:partnerId" component={PartnerLink} />
       <Route path="/i/:username" component={InstaLink} />
       <Route path="/instalink" component={InstaLinkLanding} />
+      <Route path="/instalink/create" component={InstaLinkCreate} />
+      <Route path="/l/:slug" component={InstaLinkView} />
       <Route path="/m/:slug" component={Paywall} />
       <Route path="/m/:slug/unlocked" component={Unlocked} />
       
