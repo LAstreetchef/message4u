@@ -102,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find or create a guest user for anonymous messages
       const guestUser = await storage.upsertUser({
         email: 'guest@secretmessage4u.com',
-        password: 'not-used-guest',
+        passwordHash: 'not-used-guest',
       });
       
       // Create the message
@@ -190,7 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Find or create guest user for InstaLinks
       const guestUser = await storage.upsertUser({
         email: 'instalink@secretmessage4u.com',
-        password: 'not-used-instalink',
+        passwordHash: 'not-used-instalink',
       });
       
       // Create the message (reusing message system for InstaLinks)
@@ -201,8 +201,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         price: price.toString(),
         fileUrl: fileUrl || undefined,
         // Disappearing content options
-        maxViews: maxViews ? parseInt(maxViews) : null,
-        deleteAfterMinutes: deleteAfterMinutes ? parseInt(deleteAfterMinutes) : null,
+        maxViews: maxViews ? Number(maxViews) : undefined,
+        deleteAfterMinutes: deleteAfterMinutes ? Number(deleteAfterMinutes) : undefined,
         // Content flags
         isAdultContent: isAdultContent || false,
       });
