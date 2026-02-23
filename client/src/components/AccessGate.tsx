@@ -72,7 +72,7 @@ export function AccessGate({ onAccessGranted }: AccessGateProps) {
             <span className="font-semibold text-lg">18+ Only</span>
           </div>
           <p className="text-zinc-400 text-sm">
-            This site contains adult content. You must be 18 years or older to enter.
+            You must be 18 years or older to use this service.
           </p>
         </div>
 
@@ -99,7 +99,7 @@ export function AccessGate({ onAccessGranted }: AccessGateProps) {
               </div>
             </div>
             <span className="text-sm text-zinc-300 group-hover:text-white transition-colors">
-              I confirm that I am <strong>18 years of age or older</strong> and agree to view adult content
+              I confirm that I am <strong>18 years of age or older</strong>
             </span>
           </label>
 
