@@ -414,7 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quantity: 1,
         }],
         mode: 'payment',
-        success_url: `${baseUrl}/l/${slug}?success=true`,
+        success_url: `${baseUrl}/l/${slug}?success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/l/${slug}?canceled=true`,
         metadata: {
           messageId: message.id,
@@ -583,6 +583,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error in PAL callback:', error);
       res.redirect('/instalink?error=callback_failed');
+    }
+  });
+
+  // InstaLink - Check payment status (fallback if webhook is slow)
+  app.get('/api/instalink/:slug/check-payment', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const { session_id } = req.query;
+
+      const message = await storage.getMessageBySlug(slug);
+      if (!message) {
+        return res.status(404).json({ error: 'Link not found' });
+      }
+
+      // Already unlocked
+      if (message.unlocked) {
+        return res.json({ unlocked: true, fileUrl: message.fileUrl });
+      }
+
+      // If no session_id, we can't verify
+      if (!session_id) {
+        return res.json({ unlocked: false });
+      }
+
+      // Check if payment already exists for this session
+      const existingPayment = await storage.getPaymentBySessionId(session_id as string);
+      if (existingPayment) {
+        await storage.markMessageUnlocked(message.id);
+        return res.json({ unlocked: true, fileUrl: message.fileUrl });
+      }
+
+      // Verify directly with Stripe
+      const session = await stripe.checkout.sessions.retrieve(session_id as string);
+      
+      if (session.payment_status === 'paid' && session.metadata?.messageId === message.id) {
+        // Create payment record
+        const amount = session.amount_total! / 100;
+        const { platformFee, senderEarnings } = calculatePlatformFee(amount, message.isAdultContent || false);
+        
+        await storage.createPayment({
+          messageId: message.id,
+          paymentProvider: 'stripe',
+          stripeSessionId: session.id,
+          amount: amount.toString(),
+          platformFee: platformFee.toString(),
+          senderEarnings: senderEarnings.toString(),
+        });
+
+        // Mark as unlocked
+        await storage.markMessageUnlocked(message.id);
+        
+        return res.json({ unlocked: true, fileUrl: message.fileUrl });
+      }
+
+      res.json({ unlocked: false });
+    } catch (error: any) {
+      console.error('Error checking InstaLink payment:', error);
+      res.status(500).json({ error: 'Failed to check payment' });
     }
   });
 

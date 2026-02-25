@@ -40,7 +40,32 @@ export default function InstaLinkView() {
   const [cardError, setCardError] = useState("");
 
   useEffect(() => {
-    fetchLink();
+    const checkPaymentFirst = async () => {
+      // Check if we're returning from Stripe checkout
+      const params = new URLSearchParams(window.location.search);
+      const success = params.get('success');
+      const sessionId = params.get('session_id');
+      
+      if (success === 'true' && sessionId) {
+        // Verify payment with backend
+        try {
+          const response = await fetch(`/api/instalink/${slug}/check-payment?session_id=${sessionId}`);
+          const result = await response.json();
+          
+          if (result.unlocked) {
+            // Payment confirmed - clear URL params and fetch fresh data
+            window.history.replaceState({}, '', `/l/${slug}`);
+          }
+        } catch (err) {
+          console.error('Payment check failed:', err);
+        }
+      }
+      
+      // Now fetch the link data
+      fetchLink();
+    };
+    
+    checkPaymentFirst();
   }, [slug]);
 
   useEffect(() => {
