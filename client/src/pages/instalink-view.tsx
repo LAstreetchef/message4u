@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { Lock, Unlock, ExternalLink, Loader2, Eye, Clock, AlertTriangle, ShieldAlert, CreditCard } from "lucide-react";
+import { Lock, Unlock, ExternalLink, Loader2, Eye, Clock, AlertTriangle, ShieldAlert, CreditCard, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PayPalCardFields from "@/components/PayPalCardFields";
+import { decrypt, getKeyFromUrl } from "@/lib/crypto";
 
 interface DisappearingInfo {
   maxViews?: number | null;
@@ -24,6 +25,7 @@ interface InstaLinkData {
   creatorName?: string;
   disappearing?: DisappearingInfo | null;
   isAdultContent?: boolean;
+  isEncrypted?: boolean;
 }
 
 export default function InstaLinkView() {
@@ -38,6 +40,8 @@ export default function InstaLinkView() {
   const [timeRemaining, setTimeRemaining] = useState<string | null>(null);
   const [showCardFields, setShowCardFields] = useState(false);
   const [cardError, setCardError] = useState("");
+  const [decryptedDescription, setDecryptedDescription] = useState<string | null>(null);
+  const [decryptionError, setDecryptionError] = useState(false);
 
   useEffect(() => {
     const checkPaymentFirst = async () => {
@@ -117,6 +121,23 @@ export default function InstaLinkView() {
       
       if (linkData.disappearing?.viewsRemaining != null) {
         setViewsRemaining(linkData.disappearing.viewsRemaining);
+      }
+      
+      // Decrypt content if encrypted and unlocked
+      if (linkData.isEncrypted && linkData.unlocked && linkData.description) {
+        const key = getKeyFromUrl();
+        if (key) {
+          try {
+            const decrypted = await decrypt(linkData.description, key);
+            setDecryptedDescription(decrypted);
+          } catch (err) {
+            console.error('Decryption failed:', err);
+            setDecryptionError(true);
+          }
+        } else {
+          // No key in URL - can't decrypt
+          setDecryptionError(true);
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load');
@@ -248,8 +269,14 @@ export default function InstaLinkView() {
                 
                 <div>
                   <h1 className="text-2xl font-bold">{data.title}</h1>
-                  {data.description && (
+                  {data.description && !data.isEncrypted && (
                     <p className="text-zinc-400 mt-2">{data.description}</p>
+                  )}
+                  {data.isEncrypted && (
+                    <div className="flex items-center justify-center gap-1.5 text-green-400 mt-2">
+                      <Shield className="w-4 h-4" />
+                      <span className="text-sm">End-to-end encrypted</span>
+                    </div>
                   )}
                 </div>
 
@@ -408,6 +435,29 @@ export default function InstaLinkView() {
               )}
 
               <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-xl text-center space-y-4">
+                {/* Decryption error */}
+                {data.isEncrypted && decryptionError && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <p className="text-red-400 text-sm">
+                      Unable to decrypt content. Make sure you're using the original link with the encryption key.
+                    </p>
+                  </div>
+                )}
+                
+                {/* Decrypted message */}
+                {decryptedDescription && (
+                  <div className="p-4 bg-zinc-800 rounded-lg text-left">
+                    <p className="text-zinc-200 whitespace-pre-wrap">{decryptedDescription}</p>
+                  </div>
+                )}
+                
+                {/* Non-encrypted description */}
+                {data.description && !data.isEncrypted && (
+                  <div className="p-4 bg-zinc-800 rounded-lg text-left">
+                    <p className="text-zinc-200 whitespace-pre-wrap">{data.description}</p>
+                  </div>
+                )}
+                
                 {data.fileUrl && (
                   <Button 
                     onClick={() => {

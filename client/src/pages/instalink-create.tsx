@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowRight, Upload, DollarSign, Link as LinkIcon, Copy, Check, Image, FileText, Video, X, Loader2, Eye, Clock, Bomb, ChevronDown, ShieldAlert, Mail, Lock, Wallet } from "lucide-react";
+import { ArrowRight, Upload, DollarSign, Link as LinkIcon, Copy, Check, Image, FileText, Video, X, Loader2, Eye, Clock, Bomb, ChevronDown, ShieldAlert, Mail, Lock, Wallet, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { AnimatedLogo } from "@/components/AnimatedLogo";
+import { generateKey, encrypt } from "@/lib/crypto";
 
 export default function InstaLinkCreate() {
   const [, setLocation] = useLocation();
@@ -116,10 +117,22 @@ export default function InstaLinkCreate() {
     setIsSubmitting(true);
     
     try {
+      // Generate encryption key
+      const encryptionKey = await generateKey();
+      
+      // Encrypt the description/message if present
+      let encryptedData = { ...formData };
+      if (formData.description) {
+        encryptedData.description = await encrypt(formData.description, encryptionKey);
+      }
+      
+      // Mark as encrypted
+      (encryptedData as any).isEncrypted = true;
+      
       const response = await fetch('/api/instalink/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(encryptedData)
       });
       
       const data = await response.json();
@@ -128,7 +141,8 @@ export default function InstaLinkCreate() {
         throw new Error(data.error || 'Failed to create link');
       }
       
-      setGeneratedLink(`https://secretmessage4u.com/l/${data.slug}`);
+      // Append encryption key to URL fragment (never sent to server)
+      setGeneratedLink(`https://secretmessage4u.com/l/${data.slug}#${encryptionKey}`);
       setStep("success");
     } catch (error: any) {
       toast({

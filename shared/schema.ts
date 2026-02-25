@@ -48,6 +48,7 @@ export const messages = pgTable("messages", {
   fileUrl: text("file_url"),
   fileType: varchar("file_type", { length: 100 }),
   isAdultContent: boolean("is_adult_content").notNull().default(false),
+  isEncrypted: boolean("is_encrypted").notNull().default(false),
   unlocked: boolean("unlocked").notNull().default(false),
   active: boolean("active").notNull().default(true),
   expiresAt: timestamp("expires_at"),
@@ -70,12 +71,14 @@ export const insertMessageSchema = createInsertSchema(messages).pick({
   fileUrl: true,
   fileType: true,
   isAdultContent: true,
+  isEncrypted: true,
   maxViews: true,
   deleteAfterMinutes: true,
   deleteAt: true,
 }).extend({
   expiresAt: z.union([z.string(), z.date()]).optional(),
   isAdultContent: z.boolean().optional().default(false),
+  isEncrypted: z.boolean().optional().default(false),
   maxViews: z.number().min(1).max(100).optional().nullable(),
   deleteAfterMinutes: z.number().min(1).max(43200).optional().nullable(), // max 30 days
   deleteAt: z.union([z.string(), z.date()]).optional().nullable(),

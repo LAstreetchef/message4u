@@ -18,6 +18,10 @@ import {
 import { db } from "./db";
 import { eq, and, desc, lt } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { nanoid, customAlphabet } from "nanoid";
+
+// Custom alphabet for short, URL-safe slugs (no confusing chars like 0/O, 1/l/I)
+const generateSlug = customAlphabet('23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz', 8);
 
 export interface IStorage {
   // User operations
@@ -174,7 +178,7 @@ export class DatabaseStorage implements IStorage {
 
   // Message operations
   async createMessage(userId: string, messageData: InsertMessage): Promise<Message> {
-    const slug = randomUUID();
+    const slug = generateSlug(); // Short 8-char slug instead of UUID
     
     // Convert date strings to Date objects
     const processedData = {
