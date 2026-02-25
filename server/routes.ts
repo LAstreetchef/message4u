@@ -84,6 +84,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // Short URL redirects for Instagram bio
+  app.get('/create', (_req, res) => res.redirect('/instalink'));
+  app.get('/go', (_req, res) => res.redirect('/instalink'));
+
   // Public message creation (for link-in-bio / Instagram links)
   app.post('/api/public/messages', async (req, res) => {
     try {
