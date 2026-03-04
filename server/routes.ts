@@ -2124,12 +2124,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
+  // Object access - allow unauthenticated access for unlocked messages
+  app.get("/objects/:objectPath(*)", async (req: any, res) => {
     try {
-      const userId = req.user.id;
       const objectStorageService = new ObjectStorageService();
+      const requestedPath = req.path;
       
-      const objectFile = await objectStorageService.getObjectEntityFile(req.path);
+      // Check if this file belongs to an unlocked message (query directly)
+      const unlockedMessage = await storage.getUnlockedMessageByFileUrl(requestedPath);
+      
+      if (unlockedMessage) {
+        // Message is unlocked - serve file without auth
+        const objectFile = await objectStorageService.getObjectEntityFile(requestedPath);
+        return objectStorageService.downloadObject(objectFile, res);
+      }
+      
+      // Not an unlocked message file - require authentication
+      if (!req.user?.id) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const userId = req.user.id;
+      const objectFile = await objectStorageService.getObjectEntityFile(requestedPath);
       const canAccess = await objectStorageService.canAccessObjectEntity({
         objectFile,
         userId: userId,

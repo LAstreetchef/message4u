@@ -16,7 +16,7 @@ import {
   type InsertPendingCryptoPayout,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, lt } from "drizzle-orm";
+import { eq, and, or, desc, lt } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { nanoid, customAlphabet } from "nanoid";
 
@@ -47,6 +47,7 @@ export interface IStorage {
   incrementViewCount(messageId: string): Promise<Message | undefined>;
   markMessageDisappeared(messageId: string): Promise<void>;
   checkAndMarkDisappeared(message: Message): Promise<boolean>;
+  getUnlockedMessageByFileUrl(fileUrl: string): Promise<Message | undefined>;
 
   // Payment operations
   createPayment(payment: InsertPayment): Promise<Payment>;
@@ -313,6 +314,22 @@ export class DatabaseStorage implements IStorage {
     }
 
     return false;
+  }
+
+  async getUnlockedMessageByFileUrl(fileUrl: string): Promise<Message | undefined> {
+    const [message] = await db
+      .select()
+      .from(messages)
+      .where(
+        and(
+          eq(messages.unlocked, true),
+          or(
+            eq(messages.imageUrl, fileUrl),
+            eq(messages.fileUrl, fileUrl)
+          )
+        )
+      );
+    return message;
   }
 
   // Payment operations
