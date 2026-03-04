@@ -246,14 +246,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Serve the file from uploads directory
       const uploadsDir = path.join(process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads"), "uploads");
-      const filePath = path.join(uploadsDir, fileName);
+      
+      // Find file - might be with or without extension
+      let filePath = path.join(uploadsDir, fileName);
+      let actualFileName = fileName;
       
       if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: "File not found" });
+        // Try to find file with matching prefix (uuid might be without extension)
+        const files = fs.existsSync(uploadsDir) ? fs.readdirSync(uploadsDir) : [];
+        const matchingFile = files.find(f => f.startsWith(fileName.split('.')[0]));
+        if (matchingFile) {
+          filePath = path.join(uploadsDir, matchingFile);
+          actualFileName = matchingFile;
+        } else {
+          return res.status(404).json({ error: "File not found" });
+        }
       }
       
       // Determine content type
-      const ext = path.extname(fileName).toLowerCase();
+      const ext = path.extname(actualFileName).toLowerCase();
       const mimeTypes: Record<string, string> = {
         '.jpg': 'image/jpeg',
         '.jpeg': 'image/jpeg',
