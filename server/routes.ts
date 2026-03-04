@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import fs from "fs";
+import path from "path";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./passwordAuth";
 import { insertMessageSchema } from "@shared/schema";
@@ -212,6 +214,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.setHeader('Content-Type', metadata.contentType);
       res.setHeader('Content-Length', metadata.size);
       localFile.createReadStream().pipe(res);
+    } catch (error: any) {
+      console.error('Error serving file:', error);
+      res.status(500).json({ error: 'Failed to serve file' });
+    }
+  });
+
+  // Serve files from /objects/uploads/ path (alternative URL format)
+  app.get("/objects/uploads/:fileName", async (req: any, res) => {
+    try {
+      const { fileName } = req.params;
+      const objectStorageService = new ObjectStorageService();
+      
+      // Construct the file URL to check against messages
+      const baseUrl = getBaseUrl();
+      const fileUrl = `${baseUrl}/objects/uploads/${fileName}`;
+      const altFileUrl = `/objects/uploads/${fileName}`; // Also check relative URL
+      
+      // Check if this file belongs to an unlocked message
+      let unlockedMessage = await storage.getUnlockedMessageByFileUrl(fileUrl);
+      if (!unlockedMessage) {
+        unlockedMessage = await storage.getUnlockedMessageByFileUrl(altFileUrl);
+      }
+      
+      if (!unlockedMessage) {
+        // Not unlocked - check if user is authenticated
+        if (!req.user?.id) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+      }
+      
+      // Serve the file from uploads directory
+      const uploadsDir = path.join(process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads"), "uploads");
+      const filePath = path.join(uploadsDir, fileName);
+      
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      
+      // Determine content type
+      const ext = path.extname(fileName).toLowerCase();
+      const mimeTypes: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+        '.mp4': 'video/mp4',
+        '.webm': 'video/webm',
+        '.pdf': 'application/pdf',
+      };
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
+      
+      const stats = fs.statSync(filePath);
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Length', stats.size);
+      fs.createReadStream(filePath).pipe(res);
     } catch (error: any) {
       console.error('Error serving file:', error);
       res.status(500).json({ error: 'Failed to serve file' });
