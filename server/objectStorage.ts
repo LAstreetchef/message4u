@@ -138,6 +138,23 @@ export class ObjectStorageService {
     return `/objects/uploads/${fileName}`;
   }
 
+  // Get file path for a given objectId (used for /api/upload/:objectId)
+  getFilePath(objectId: string): string {
+    const uploadsDir = path.join(UPLOAD_DIR, "uploads");
+    // Check for file with or without extension
+    const files = fs.existsSync(uploadsDir) ? fs.readdirSync(uploadsDir) : [];
+    const matchingFile = files.find(f => f.startsWith(objectId));
+    if (matchingFile) {
+      return path.join(uploadsDir, matchingFile);
+    }
+    return path.join(uploadsDir, objectId);
+  }
+
+  // Create a LocalFile wrapper for a given path
+  getLocalFile(filePath: string): LocalFile {
+    return createLocalFile(filePath);
+  }
+
   async getObjectEntityFile(objectPath: string): Promise<LocalFile> {
     if (!objectPath.startsWith("/objects/")) {
       throw new ObjectNotFoundError();

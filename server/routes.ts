@@ -180,6 +180,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve uploaded files - allow access for unlocked messages
+  app.get("/api/upload/:objectId", async (req: any, res) => {
+    try {
+      const { objectId } = req.params;
+      const objectStorageService = new ObjectStorageService();
+      
+      // Construct the file URL to check against messages
+      const baseUrl = getBaseUrl();
+      const fileUrl = `${baseUrl}/api/upload/${objectId}`;
+      
+      // Check if this file belongs to an unlocked message
+      const unlockedMessage = await storage.getUnlockedMessageByFileUrl(fileUrl);
+      
+      if (!unlockedMessage) {
+        // Not unlocked - check if user is authenticated and owns the file
+        if (!req.user?.id) {
+          return res.status(401).json({ message: "Content not unlocked" });
+        }
+      }
+      
+      // Serve the file
+      const filePath = objectStorageService.getFilePath(objectId);
+      const localFile = objectStorageService.getLocalFile(filePath);
+      
+      if (!localFile.exists()) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      
+      const metadata = localFile.getMetadata();
+      res.setHeader('Content-Type', metadata.contentType);
+      res.setHeader('Content-Length', metadata.size);
+      localFile.createReadStream().pipe(res);
+    } catch (error: any) {
+      console.error('Error serving file:', error);
+      res.status(500).json({ error: 'Failed to serve file' });
+    }
+  });
+
   // InstaLink - Create a paywall link
   app.post('/api/instalink/create', async (req, res) => {
     try {
