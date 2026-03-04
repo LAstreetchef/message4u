@@ -228,18 +228,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Construct the file URL to check against messages
       const baseUrl = getBaseUrl();
-      const fileUrl = `${baseUrl}/objects/uploads/${fileName}`;
-      const altFileUrl = `/objects/uploads/${fileName}`; // Also check relative URL
+      
+      // Try multiple URL formats that might be stored in DB
+      const urlsToTry = [
+        `${baseUrl}/objects/uploads/${fileName}`,
+        `/objects/uploads/${fileName}`,
+        `https://secretmessage4u.com/objects/uploads/${fileName}`,
+        `https://message4u.onrender.com/objects/uploads/${fileName}`,
+      ];
+      
+      // Also try with common extensions if fileName doesn't have one
+      if (!path.extname(fileName)) {
+        const exts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.pdf'];
+        exts.forEach(ext => {
+          urlsToTry.push(`${baseUrl}/objects/uploads/${fileName}${ext}`);
+          urlsToTry.push(`/objects/uploads/${fileName}${ext}`);
+          urlsToTry.push(`https://secretmessage4u.com/objects/uploads/${fileName}${ext}`);
+        });
+      }
       
       // Check if this file belongs to an unlocked message
-      let unlockedMessage = await storage.getUnlockedMessageByFileUrl(fileUrl);
-      if (!unlockedMessage) {
-        unlockedMessage = await storage.getUnlockedMessageByFileUrl(altFileUrl);
+      let unlockedMessage = null;
+      for (const url of urlsToTry) {
+        unlockedMessage = await storage.getUnlockedMessageByFileUrl(url);
+        if (unlockedMessage) break;
       }
       
       if (!unlockedMessage) {
         // Not unlocked - check if user is authenticated
         if (!req.user?.id) {
+          console.log(`File access denied for ${fileName}. Tried URLs:`, urlsToTry.slice(0, 4));
           return res.status(401).json({ message: "Unauthorized" });
         }
       }
