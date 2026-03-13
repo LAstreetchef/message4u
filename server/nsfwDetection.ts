@@ -1,22 +1,22 @@
-let model: any = null;
-let nsfwjs: any = null;
-let tf: any = null;
+// NudeNet API configuration
+const NUDENET_API_URL = process.env.NUDENET_API_URL || 'https://nudenet-api.onrender.com';
 
-// Initialize the model (call once on server start)
+let isServiceAvailable = false;
+
+// Initialize - check if NudeNet API is available
 export async function initializeNSFWModel() {
   try {
-    console.log('[NSFW] Loading dependencies...');
+    console.log('[NSFW] Checking NudeNet API availability...');
+    const response = await fetch(`${NUDENET_API_URL}/health`);
     
-    // Dynamic import to avoid ES module issues
-    nsfwjs = await import('nsfwjs');
-    tf = await import('@tensorflow/tfjs-node');
-    
-    console.log('[NSFW] Loading model...');
-    model = await nsfwjs.load();
-    console.log('[NSFW] Model loaded successfully');
-  } catch (error) {
-    console.error('[NSFW] Failed to load model:', error);
-    throw error;
+    if (response.ok) {
+      isServiceAvailable = true;
+      console.log('[NSFW] NudeNet API is available');
+    } else {
+      console.warn('[NSFW] NudeNet API returned non-OK status:', response.status);
+    }
+  } catch (error: any) {
+    console.warn('[NSFW] NudeNet API not reachable:', error.message);
   }
 }
 
@@ -30,7 +30,7 @@ export interface NSFWResult {
 }
 
 /**
- * Check if an image is NSFW
+ * Check if an image is NSFW using NudeNet API
  * @param imageBuffer - Buffer containing the image data
  * @param threshold - Probability threshold for NSFW classification (default 0.6)
  * @returns NSFWResult with classification details
@@ -39,47 +39,43 @@ export async function checkImageNSFW(
   imageBuffer: Buffer,
   threshold: number = 0.6
 ): Promise<NSFWResult> {
-  if (!model) {
-    throw new Error('NSFW model not initialized. Call initializeNSFWModel() first.');
+  if (!isServiceAvailable) {
+    throw new Error('NSFW detection service not available');
   }
 
   try {
-    // Decode image from buffer
-    const imageTensor = tf.node.decodeImage(imageBuffer, 3);
-    
-    // Run prediction
-    const predictions = await model.classify(imageTensor);
-    
-    // Clean up tensor to prevent memory leaks
-    imageTensor.dispose();
+    // Create form data with image
+    const FormData = (await import('form-data')).default;
+    const formData = new FormData();
+    formData.append('image', imageBuffer, {
+      filename: 'upload.jpg',
+      contentType: 'image/jpeg',
+    });
 
-    // Check for NSFW content
-    // Categories: Drawing, Hentai, Neutral, Porn, Sexy
-    const nsfwCategories = ['Porn', 'Hentai', 'Sexy'];
-    const nsfwScore = predictions
-      .filter(p => nsfwCategories.includes(p.className))
-      .reduce((sum, p) => sum + p.probability, 0);
+    // Call NudeNet API
+    const response = await fetch(`${NUDENET_API_URL}/detect`, {
+      method: 'POST',
+      body: formData as any,
+      headers: formData.getHeaders(),
+    });
 
-    const isNSFW = nsfwScore >= threshold;
-    
-    // Find the highest NSFW category
-    const nsfwPrediction = predictions
-      .filter(p => nsfwCategories.includes(p.className))
-      .sort((a, b) => b.probability - a.probability)[0];
+    if (!response.ok) {
+      throw new Error(`NudeNet API returned ${response.status}`);
+    }
+
+    const result = await response.json();
 
     return {
-      isNSFW,
-      predictions: predictions.map(p => ({
-        className: p.className,
-        probability: Math.round(p.probability * 100) / 100,
+      isNSFW: result.isNSFW,
+      predictions: result.detections.map((d: any) => ({
+        className: d.label,
+        probability: d.confidence,
       })),
-      reason: isNSFW 
-        ? `Detected ${nsfwPrediction?.className} (${Math.round((nsfwPrediction?.probability || 0) * 100)}% confidence)`
-        : undefined,
+      reason: result.reason,
     };
-  } catch (error) {
-    console.error('[NSFW] Error during classification:', error);
-    throw new Error('Failed to analyze image content');
+  } catch (error: any) {
+    console.error('[NSFW] Error calling NudeNet API:', error);
+    throw new Error(`Failed to analyze image: ${error.message}`);
   }
 }
 
@@ -94,5 +90,5 @@ export function isImageFile(contentType: string): boolean {
  * Check if NSFW detection is available
  */
 export function isNSFWDetectionAvailable(): boolean {
-  return model !== null;
+  return isServiceAvailable;
 }
