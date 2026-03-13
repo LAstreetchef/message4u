@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { registerWidgetRoutes } from "./widgetRoutes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initializeNSFWModel } from "./nsfwDetection";
 
 const app = express();
 
@@ -48,6 +49,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize NSFW detection model
+  try {
+    await initializeNSFWModel();
+  } catch (error) {
+    console.error('Warning: NSFW detection unavailable:', error);
+    console.log('Uploads will proceed without NSFW filtering');
+  }
+  
   // Register widget routes (CORS-enabled for embeds)
   registerWidgetRoutes(app);
   

@@ -13,6 +13,7 @@ import { sendMessageNotification, sendPartnerInquiry, isValidEmail } from "./ema
 import { NOWPaymentsPayoutService } from "./nowpaymentsPayoutService";
 import { getBaseUrl } from "./url";
 import { palClient } from "./palClient";
+import { checkImageNSFW, isImageFile, isNSFWDetectionAvailable } from "./nsfwDetection";
 
 // PAL (Payment Abstraction Layer) configuration
 const USE_PAL = process.env.USE_PAL === 'true';
@@ -167,6 +168,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         chunks.push(chunk);
       }
       const buffer = Buffer.concat(chunks);
+      
+      // NSFW check for images
+      if (isNSFWDetectionAvailable() && isImageFile(contentType)) {
+        try {
+          const nsfwResult = await checkImageNSFW(buffer);
+          
+          if (nsfwResult.isNSFW) {
+            console.log(`[NSFW] Blocked upload ${objectId}: ${nsfwResult.reason}`);
+            return res.status(400).json({ 
+              error: 'NSFW content not allowed',
+              reason: nsfwResult.reason,
+              details: nsfwResult.predictions
+            });
+          }
+          
+          console.log(`[NSFW] Upload ${objectId} passed NSFW check`);
+        } catch (nsfwError) {
+          console.error('[NSFW] Error during NSFW check:', nsfwError);
+          // Continue with upload if NSFW check fails (graceful degradation)
+          console.log('[NSFW] Allowing upload despite NSFW check failure');
+        }
+      }
       
       const objectStorageService = new ObjectStorageService();
       const filePath = await objectStorageService.saveUploadedFile(objectId, buffer);
@@ -2187,6 +2210,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (buffer.length === 0) {
         return res.status(400).json({ error: "No file data received" });
+      }
+      
+      // NSFW check for images
+      if (isNSFWDetectionAvailable() && isImageFile(contentType)) {
+        try {
+          const nsfwResult = await checkImageNSFW(buffer);
+          
+          if (nsfwResult.isNSFW) {
+            console.log(`[NSFW] Blocked authenticated upload ${objectId}: ${nsfwResult.reason}`);
+            return res.status(400).json({ 
+              error: 'NSFW content not allowed',
+              reason: nsfwResult.reason,
+              details: nsfwResult.predictions
+            });
+          }
+          
+          console.log(`[NSFW] Authenticated upload ${objectId} passed NSFW check`);
+        } catch (nsfwError) {
+          console.error('[NSFW] Error during NSFW check:', nsfwError);
+          // Continue with upload if NSFW check fails (graceful degradation)
+          console.log('[NSFW] Allowing upload despite NSFW check failure');
+        }
       }
       
       // Determine file extension from content type
