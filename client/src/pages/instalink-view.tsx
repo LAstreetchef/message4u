@@ -280,14 +280,33 @@ export default function InstaLinkView() {
                   )}
                 </div>
 
-                {/* Adult content badge */}
+                {/* NSFW badge */}
                 {data.isAdultContent && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-500/20 border border-red-500/40 rounded-full">
-                    <ShieldAlert className="w-4 h-4 text-red-400" />
-                    <span className="text-sm font-medium text-red-400">18+ Adult Content</span>
+                  <div className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-orange-500/20 border border-pink-500/40 rounded-full backdrop-blur">
+                    <span className="text-base font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-orange-400 bg-clip-text text-transparent">
+                      NSFW
+                    </span>
                   </div>
                 )}
               </div>
+
+              {/* Blurred preview for NSFW content with file */}
+              {data.isAdultContent && data.fileUrl && (
+                <div className="relative aspect-square rounded-xl overflow-hidden border border-zinc-800">
+                  <img 
+                    src={data.fileUrl} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover blur-3xl scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80 flex items-center justify-center">
+                    <div className="text-center space-y-3">
+                      <Lock className="w-12 h-12 text-pink-400 mx-auto" />
+                      <p className="text-white font-semibold text-lg">Unlock to reveal</p>
+                      <p className="text-zinc-300 text-sm px-4">Pay below to view full content</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-xl space-y-4">
                 <div className="text-center">

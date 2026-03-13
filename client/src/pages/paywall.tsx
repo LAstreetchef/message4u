@@ -191,6 +191,16 @@ export default function Paywall() {
           <h1 className="text-4xl font-heading font-bold mb-3" data-testid="text-message-title">
             {message.title}
           </h1>
+          
+          {/* NSFW badge */}
+          {message.isAdultContent && (
+            <div className="inline-flex items-center gap-1.5 px-4 py-2 mb-3 bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-orange-500/20 border border-pink-500/40 rounded-full backdrop-blur">
+              <span className="text-base font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-orange-400 bg-clip-text text-transparent">
+                NSFW
+              </span>
+            </div>
+          )}
+          
           <p className="text-lg text-muted-foreground">
             Someone sent you a secret message 👀
           </p>
