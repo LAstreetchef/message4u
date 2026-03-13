@@ -194,10 +194,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const objectStorageService = new ObjectStorageService();
       const filePath = await objectStorageService.saveUploadedFile(objectId, buffer);
       
-      const baseUrl = getBaseUrl();
+      // Return the path directly - frontend will store this in DB
+      // Don't add baseUrl - it breaks file retrieval
       res.json({ 
         success: true, 
-        fileUrl: `${baseUrl}${filePath}` 
+        fileUrl: filePath 
       });
     } catch (error: any) {
       console.error('Error uploading file:', error);
