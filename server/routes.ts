@@ -560,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: message.title,
+              name: message.title || 'Secret Message',
               description: 'Unlock this content',
             },
             unit_amount: Math.round(price * 100),
@@ -1567,7 +1567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             price_data: {
               currency: 'usd',
               product_data: {
-                name: message.title,
+                name: message.title || 'Secret Message',
                 description: 'Unlock this secret message',
               },
               unit_amount: Math.round(parseFloat(message.price) * 100),
