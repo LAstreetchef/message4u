@@ -157,13 +157,23 @@ export class ObjectStorageService {
 
   async getObjectEntityFile(objectPath: string): Promise<LocalFile> {
     if (!objectPath.startsWith("/objects/")) {
+      console.error(`[Storage] Invalid object path (missing /objects/): ${objectPath}`);
       throw new ObjectNotFoundError();
     }
 
     const relativePath = objectPath.slice("/objects/".length);
     const fullPath = path.join(UPLOAD_DIR, relativePath);
     
+    console.log(`[Storage] Looking for file: ${fullPath}`);
+    console.log(`[Storage] File exists: ${fs.existsSync(fullPath)}`);
+    
     if (!fs.existsSync(fullPath)) {
+      // List what files DO exist in the directory
+      const dir = path.dirname(fullPath);
+      if (fs.existsSync(dir)) {
+        const files = fs.readdirSync(dir);
+        console.log(`[Storage] Files in ${dir}:`, files);
+      }
       throw new ObjectNotFoundError();
     }
     
