@@ -13,7 +13,16 @@ interface ObjectUploaderProps {
     url?: string;
     uploadURL?: string;
   }>;
-  onComplete?: (result: { successful: Array<{ uploadURL: string; type?: string; name: string; size?: number }> }) => void;
+  onComplete?: (result: { 
+    successful: Array<{ 
+      uploadURL: string; 
+      type?: string; 
+      name: string; 
+      size?: number;
+      isAdultContent?: boolean;
+      nsfwDetails?: any;
+    }> 
+  }) => void;
   buttonClassName?: string;
   buttonVariant?: "default" | "outline" | "ghost" | "secondary";
   children: ReactNode;
@@ -110,10 +119,15 @@ export function ObjectUploader({
         }
       });
 
-      await new Promise<void>((resolve, reject) => {
+      const responseData = await new Promise<any>((resolve, reject) => {
         xhr.addEventListener("load", () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
+            try {
+              const response = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+              resolve(response);
+            } catch {
+              resolve({});
+            }
           } else {
             reject(new Error(`Upload failed with status ${xhr.status}`));
           }
@@ -134,6 +148,8 @@ export function ObjectUploader({
           type: selectedFile.type || "application/octet-stream",
           name: selectedFile.name,
           size: selectedFile.size,
+          isAdultContent: responseData.isAdultContent || false,
+          nsfwDetails: responseData.nsfwDetails,
         }],
       });
 

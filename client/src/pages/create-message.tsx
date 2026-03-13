@@ -312,10 +312,21 @@ export default function CreateMessage() {
                             type: file.type || "application/octet-stream",
                             name: file.name,
                           });
-                          toast({
-                            title: "File uploaded!",
-                            description: `${file.name} is ready`,
-                          });
+                          
+                          // Auto-flag adult content if detected
+                          if (file.isAdultContent) {
+                            form.setValue("isAdultContent", true);
+                            toast({
+                              title: "⚠️ Adult content detected",
+                              description: `${file.name} flagged as NSFW. Will be routed to CCBill (15% fee).`,
+                              variant: "default",
+                            });
+                          } else {
+                            toast({
+                              title: "File uploaded!",
+                              description: `${file.name} is ready`,
+                            });
+                          }
                         }
                       }}
                       buttonVariant="outline"
