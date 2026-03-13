@@ -1,11 +1,16 @@
-import * as nsfwjs from 'nsfwjs';
-import * as tf from '@tensorflow/tfjs-node';
-
-let model: nsfwjs.NSFWJS | null = null;
+let model: any = null;
+let nsfwjs: any = null;
+let tf: any = null;
 
 // Initialize the model (call once on server start)
 export async function initializeNSFWModel() {
   try {
+    console.log('[NSFW] Loading dependencies...');
+    
+    // Dynamic import to avoid ES module issues
+    nsfwjs = await import('nsfwjs');
+    tf = await import('@tensorflow/tfjs-node');
+    
     console.log('[NSFW] Loading model...');
     model = await nsfwjs.load();
     console.log('[NSFW] Model loaded successfully');

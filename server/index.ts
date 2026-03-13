@@ -49,12 +49,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize NSFW detection model
+  // Initialize NSFW detection model (optional - fails gracefully)
   try {
     await initializeNSFWModel();
-  } catch (error) {
-    console.error('Warning: NSFW detection unavailable:', error);
-    console.log('Uploads will proceed without NSFW filtering');
+  } catch (error: any) {
+    console.warn('[NSFW] Warning: NSFW detection unavailable');
+    console.warn('[NSFW] Error:', error.message || error);
+    console.warn('[NSFW] Uploads will proceed without NSFW filtering');
   }
   
   // Register widget routes (CORS-enabled for embeds)
