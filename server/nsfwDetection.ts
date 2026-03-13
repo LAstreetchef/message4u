@@ -46,24 +46,26 @@ export async function checkImageNSFW(
   try {
     // Create form data with image
     const FormData = (await import('form-data')).default;
+    const axios = (await import('axios')).default;
+    
     const formData = new FormData();
     formData.append('image', imageBuffer, {
       filename: 'upload.jpg',
       contentType: 'image/jpeg',
     });
 
-    // Call NudeNet API
-    const response = await fetch(`${NUDENET_API_URL}/detect`, {
-      method: 'POST',
-      body: formData as any,
+    // Call NudeNet API using axios (better multipart support)
+    const response = await axios.post(`${NUDENET_API_URL}/detect`, formData, {
       headers: formData.getHeaders(),
+      validateStatus: () => true, // Don't throw on non-2xx status
     });
 
-    if (!response.ok) {
-      throw new Error(`NudeNet API returned ${response.status}`);
+    if (response.status !== 200) {
+      const errorMsg = response.data?.error || `HTTP ${response.status}`;
+      throw new Error(`NudeNet API error: ${errorMsg}`);
     }
 
-    const result = await response.json();
+    const result = response.data;
 
     return {
       isNSFW: result.isNSFW,
