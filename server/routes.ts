@@ -170,20 +170,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const buffer = Buffer.concat(chunks);
       
       // NSFW check for images
+      let isAdultContent = false;
+      let nsfwDetails = null;
+      
       if (isNSFWDetectionAvailable() && isImageFile(contentType)) {
         try {
           const nsfwResult = await checkImageNSFW(buffer);
           
           if (nsfwResult.isNSFW) {
-            console.log(`[NSFW] Blocked upload ${objectId}: ${nsfwResult.reason}`);
-            return res.status(400).json({ 
-              error: 'NSFW content not allowed',
+            isAdultContent = true;
+            nsfwDetails = {
               reason: nsfwResult.reason,
-              details: nsfwResult.predictions
-            });
+              predictions: nsfwResult.predictions
+            };
+            console.log(`[NSFW] Flagged upload ${objectId}: ${nsfwResult.reason}`);
+          } else {
+            console.log(`[NSFW] Upload ${objectId} passed NSFW check`);
           }
-          
-          console.log(`[NSFW] Upload ${objectId} passed NSFW check`);
         } catch (nsfwError) {
           console.error('[NSFW] Error during NSFW check:', nsfwError);
           // Continue with upload if NSFW check fails (graceful degradation)
@@ -194,11 +197,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const objectStorageService = new ObjectStorageService();
       const filePath = await objectStorageService.saveUploadedFile(objectId, buffer);
       
-      // Return the path directly - frontend will store this in DB
+      // Return the path with NSFW flag - frontend will store this in DB
       // Don't add baseUrl - it breaks file retrieval
       res.json({ 
         success: true, 
-        fileUrl: filePath 
+        fileUrl: filePath,
+        isAdultContent,
+        nsfwDetails
       });
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -1560,7 +1565,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const baseUrl = getBaseUrl({ req });
+      const price = parseFloat(message.price);
       
+      // Route based on content type:
+      // - Adult content → PAL/CCBill (15% fee)
+      // - Standard content → Stripe (3% fee)
+      
+      if (message.isAdultContent && USE_PAL && palClient.isConfigured()) {
+        // Adult content: Use PAL/CCBill (15% fee via contentFlag routing)
+        try {
+          const transaction = await palClient.createTransaction({
+            messageId: message.id,
+            partnerId: 'sm4u',
+            baseCost: price,
+            partnerPrice: price,
+            contentFlag: 'adult',
+            currency: 'USD',
+          });
+          
+          const paymentResult = await palClient.submitPayment({
+            txnId: transaction.txn_id,
+            paymentMethod: 'card',  // PAL routes adult+card to CCBill
+          });
+          
+          if (paymentResult.status === 'redirect_required' && paymentResult.approve_url) {
+            return res.json({ 
+              url: paymentResult.approve_url,
+              txnId: transaction.txn_id,
+              provider: 'ccbill'
+            });
+          }
+          
+          // CCBill failed - return error (don't fall back to Stripe for adult)
+          return res.status(400).json({ 
+            message: 'Payment setup failed. Adult content requires CCBill.',
+            provider: 'ccbill'
+          });
+        } catch (palError: any) {
+          console.error('PAL error for adult content:', palError.message);
+          return res.status(500).json({ 
+            message: 'Payment service unavailable for adult content',
+            details: palError.message
+          });
+        }
+      }
+      
+      // Standard content: Use Stripe
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -1571,7 +1621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 name: message.title || 'Secret Message',
                 description: 'Unlock this secret message',
               },
-              unit_amount: Math.round(parseFloat(message.price) * 100),
+              unit_amount: Math.round(price * 100),
             },
             quantity: 1,
           },
@@ -2214,20 +2264,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // NSFW check for images
+      let isAdultContent = false;
+      let nsfwDetails = null;
+      
       if (isNSFWDetectionAvailable() && isImageFile(contentType)) {
         try {
           const nsfwResult = await checkImageNSFW(buffer);
           
           if (nsfwResult.isNSFW) {
-            console.log(`[NSFW] Blocked authenticated upload ${objectId}: ${nsfwResult.reason}`);
-            return res.status(400).json({ 
-              error: 'NSFW content not allowed',
+            isAdultContent = true;
+            nsfwDetails = {
               reason: nsfwResult.reason,
-              details: nsfwResult.predictions
-            });
+              predictions: nsfwResult.predictions
+            };
+            console.log(`[NSFW] Flagged authenticated upload ${objectId}: ${nsfwResult.reason}`);
+          } else {
+            console.log(`[NSFW] Authenticated upload ${objectId} passed NSFW check`);
           }
-          
-          console.log(`[NSFW] Authenticated upload ${objectId} passed NSFW check`);
         } catch (nsfwError) {
           console.error('[NSFW] Error during NSFW check:', nsfwError);
           // Continue with upload if NSFW check fails (graceful degradation)
@@ -2254,7 +2307,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `file${ext}`
       );
       
-      res.json({ objectPath, success: true });
+      res.json({ 
+        objectPath, 
+        success: true, 
+        isAdultContent, 
+        nsfwDetails 
+      });
     } catch (error) {
       console.error("Error uploading file:", error);
       res.status(500).json({ error: "Failed to upload file" });
