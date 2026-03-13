@@ -300,32 +300,106 @@ export default function Paywall() {
               </p>
             </div>
 
-            <Button
-              size="lg"
-              className="w-full rounded-full text-lg bg-gradient-instagram hover:opacity-90 shadow-lg shadow-primary/30 relative overflow-hidden group border-0"
-              onClick={handlePayment}
-              disabled={isProcessing}
-              data-testid="button-pay-unlock"
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                {isProcessing ? (
-                  <>
-                    <div className="animate-spin w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5" />
-                    Pay to Unlock
-                  </>
-                )}
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-accent to-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Button>
+            {message.isAdultContent ? (
+              // NSFW content - show alternative payment options
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-orange-500/10 border border-pink-500/30">
+                  <p className="text-sm font-semibold text-center mb-2">
+                    🚀 Card payments coming soon for NSFW content
+                  </p>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Use instant payment options below with <strong>lower fees</strong> (3% vs 15%)
+                  </p>
+                </div>
 
-            <p className="text-xs text-center text-muted-foreground">
-              Secure payment powered by Stripe
-            </p>
+                <div className="grid gap-3">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full rounded-full text-lg hover:bg-primary/10"
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon",
+                        description: "Crypto payments will be available shortly!",
+                      });
+                    }}
+                    data-testid="button-pay-crypto"
+                  >
+                    <span className="flex items-center gap-2">
+                      💎 Pay with Crypto (3% fee)
+                    </span>
+                  </Button>
+
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full rounded-full text-lg hover:bg-primary/10"
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon",
+                        description: "PayPal payments will be available shortly!",
+                      });
+                    }}
+                    data-testid="button-pay-paypal"
+                  >
+                    <span className="flex items-center gap-2">
+                      💳 Pay with PayPal (3% fee)
+                    </span>
+                  </Button>
+
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full rounded-full text-lg hover:bg-primary/10"
+                    onClick={() => {
+                      toast({
+                        title: "Coming Soon",
+                        description: "Venmo payments will be available shortly!",
+                      });
+                    }}
+                    data-testid="button-pay-venmo"
+                  >
+                    <span className="flex items-center gap-2">
+                      📱 Pay with Venmo (3% fee)
+                    </span>
+                  </Button>
+                </div>
+
+                <p className="text-xs text-center text-muted-foreground">
+                  All payment options launching soon
+                </p>
+              </div>
+            ) : (
+              // Standard content - show Stripe button
+              <>
+                <Button
+                  size="lg"
+                  className="w-full rounded-full text-lg bg-gradient-instagram hover:opacity-90 shadow-lg shadow-primary/30 relative overflow-hidden group border-0"
+                  onClick={handlePayment}
+                  disabled={isProcessing}
+                  data-testid="button-pay-unlock"
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-2">
+                    {isProcessing ? (
+                      <>
+                        <div className="animate-spin w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-5 h-5" />
+                        Pay to Unlock
+                      </>
+                    )}
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-accent to-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Button>
+
+                <p className="text-xs text-center text-muted-foreground">
+                  Secure payment powered by Stripe
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </main>

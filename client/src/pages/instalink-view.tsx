@@ -358,32 +358,52 @@ export default function InstaLinkView() {
                     </button>
                   </div>
                 ) : data.isAdultContent ? (
-                  // Adult content: Show payment options
+                  // Adult content: Show alternative payment options
                   <div className="space-y-3">
+                    <div className="p-4 rounded-lg bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-orange-500/10 border border-pink-500/30">
+                      <p className="text-sm font-semibold text-center mb-2 text-white">
+                        🚀 Card payments coming soon for NSFW content
+                      </p>
+                      <p className="text-xs text-center text-zinc-400">
+                        Use instant payment options below with <strong>lower fees</strong> (3% vs 15%)
+                      </p>
+                    </div>
+
                     <Button 
-                      onClick={() => setShowCardFields(true)}
-                      className="w-full h-12 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90 text-white font-semibold"
-                    >
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Pay with Card
-                    </Button>
-                    <Button 
-                      onClick={handlePay}
-                      disabled={paying}
+                      onClick={() => {
+                        // TODO: Implement crypto payment
+                        alert('Crypto payments launching soon! Lower fees (3%)');
+                      }}
                       variant="outline"
                       className="w-full h-12 border-zinc-700 text-white hover:bg-zinc-800"
                     >
-                      {paying ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Processing...
-                        </>
-                      ) : (
-                        <>Pay with PayPal</>
-                      )}
+                      💎 Pay with Crypto (3% fee)
                     </Button>
+
+                    <Button 
+                      onClick={() => {
+                        // TODO: Implement PayPal
+                        alert('PayPal payments launching soon! Lower fees (3%)');
+                      }}
+                      variant="outline"
+                      className="w-full h-12 border-zinc-700 text-white hover:bg-zinc-800"
+                    >
+                      💳 Pay with PayPal (3% fee)
+                    </Button>
+
+                    <Button 
+                      onClick={() => {
+                        // TODO: Implement Venmo
+                        alert('Venmo payments launching soon! Lower fees (3%)');
+                      }}
+                      variant="outline"
+                      className="w-full h-12 border-zinc-700 text-white hover:bg-zinc-800"
+                    >
+                      📱 Pay with Venmo (3% fee)
+                    </Button>
+
                     <p className="text-xs text-zinc-500 text-center">
-                      Secure payment via PayPal
+                      All payment options launching soon
                     </p>
                   </div>
                 ) : (
