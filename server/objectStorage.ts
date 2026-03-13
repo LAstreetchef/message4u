@@ -189,11 +189,27 @@ export class ObjectStorageService {
     // Handle legacy URLs or full paths
     try {
       const url = new URL(rawPath);
+      
+      // Handle /objects/ paths
       if (url.pathname.startsWith("/objects/")) {
         return url.pathname;
       }
+      
+      // Handle /api/upload/{objectId} paths - convert to /objects/uploads/{objectId}
+      const uploadMatch = url.pathname.match(/^\/api\/upload\/([^/]+)$/);
+      if (uploadMatch) {
+        const objectId = uploadMatch[1];
+        return `/objects/uploads/${objectId}`;
+      }
     } catch {
-      // Not a URL, return as-is
+      // Not a URL - might be a path
+    }
+    
+    // Handle direct /api/upload/ paths (without full URL)
+    const uploadMatch = rawPath.match(/^\/api\/upload\/([^/]+)$/);
+    if (uploadMatch) {
+      const objectId = uploadMatch[1];
+      return `/objects/uploads/${objectId}`;
     }
     
     return rawPath;
