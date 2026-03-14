@@ -1809,8 +1809,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           reference_id: message.id
         }],
         application_context: {
-          return_url: `${getBaseUrl()}/m/${slug}?paypal=success`,
-          cancel_url: `${getBaseUrl()}/m/${slug}?paypal=cancel`,
+          return_url: `${getBaseUrl({ req })}/m/${slug}?paypal=success`,
+          cancel_url: `${getBaseUrl({ req })}/m/${slug}?paypal=cancel`,
           brand_name: 'Secret Message',
           user_action: 'PAY_NOW'
         }
@@ -1826,9 +1826,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const order = await orderResponse.json();
+      
+      // Log PayPal response for debugging
+      if (!orderResponse.ok) {
+        console.error('[PayPal] Order creation failed:', order);
+        throw new Error(`PayPal API error: ${order.message || JSON.stringify(order)}`);
+      }
+      
       const approveLink = order.links?.find((l: any) => l.rel === 'approve')?.href;
       
       if (!approveLink) {
+        console.error('[PayPal] No approve link in response:', order);
         throw new Error('No approval link in PayPal response');
       }
       
@@ -1838,8 +1846,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
     } catch (error: any) {
-      console.error('Error creating PayPal checkout:', error);
-      res.status(500).json({ error: 'Failed to create PayPal checkout' });
+      console.error('[PayPal Checkout] Error:', error);
+      res.status(500).json({ 
+        error: 'Failed to create PayPal checkout',
+        details: error.message 
+      });
     }
   });
 
