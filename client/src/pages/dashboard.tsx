@@ -77,15 +77,34 @@ export default function Dashboard() {
 
   // Calculate analytics
   const analytics = useMemo(() => {
-    if (!messages || !allPayments) return { totalEarnings: 0, totalPlatformFees: 0, unlockCount: 0, messageCount: 0, conversionRate: 0 };
+    if (!messages) return { 
+      totalEarnings: 0, 
+      potentialEarnings: 0, 
+      totalPlatformFees: 0, 
+      unlockCount: 0, 
+      messageCount: 0, 
+      lockedCount: 0,
+      conversionRate: 0 
+    };
     
-    const totalEarnings = allPayments.reduce((sum, payment) => sum + parseFloat(payment.senderEarnings || '0'), 0);
-    const totalPlatformFees = allPayments.reduce((sum, payment) => sum + parseFloat(payment.platformFee || '0'), 0);
-    const unlockCount = allPayments.length;
+    const totalEarnings = allPayments?.reduce((sum, payment) => sum + parseFloat(payment.senderEarnings || '0'), 0) || 0;
+    const totalPlatformFees = allPayments?.reduce((sum, payment) => sum + parseFloat(payment.platformFee || '0'), 0) || 0;
+    
+    // Calculate potential earnings from locked messages
+    // Use 85% of price (assuming 15% platform fee for conservative estimate)
+    const lockedMessages = messages.filter(m => !m.unlocked && m.active);
+    const potentialEarnings = lockedMessages.reduce((sum, msg) => {
+      const price = parseFloat(msg.price);
+      const estimatedEarnings = msg.isAdultContent ? price * 0.85 : price * 0.97; // 15% or 3% fee
+      return sum + estimatedEarnings;
+    }, 0);
+    
+    const unlockCount = allPayments?.length || 0;
     const messageCount = messages.length;
+    const lockedCount = lockedMessages.length;
     const conversionRate = messageCount > 0 ? (unlockCount / messageCount) * 100 : 0;
 
-    return { totalEarnings, totalPlatformFees, unlockCount, messageCount, conversionRate };
+    return { totalEarnings, potentialEarnings, totalPlatformFees, unlockCount, messageCount, lockedCount, conversionRate };
   }, [messages, allPayments]);
 
   const toggleActiveMutation = useMutation({
@@ -357,20 +376,20 @@ export default function Dashboard() {
         </Card>
 
         {messages && messages.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-muted-foreground">Your Earnings</p>
-                  <DollarSign className="w-4 h-4 text-muted-foreground" />
+                  <p className="text-sm font-medium text-muted-foreground">Actual Earnings</p>
+                  <DollarSign className="w-4 h-4 text-green-500" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-heading font-bold" data-testid="text-total-earnings">
+                <div className="text-3xl font-heading font-bold text-green-600" data-testid="text-total-earnings">
                   ${analytics.totalEarnings.toFixed(2)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  After platform fees (${analytics.totalPlatformFees.toFixed(2)})
+                  From {analytics.unlockCount} unlock{analytics.unlockCount !== 1 ? 's' : ''}
                 </p>
               </CardContent>
             </Card>
@@ -378,16 +397,33 @@ export default function Dashboard() {
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-muted-foreground">Unlocks</p>
-                  <Unlock className="w-4 h-4 text-muted-foreground" />
+                  <p className="text-sm font-medium text-muted-foreground">Potential Earnings</p>
+                  <Lock className="w-4 h-4 text-orange-500" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-heading font-bold" data-testid="text-unlock-count">
-                  {analytics.unlockCount}
+                <div className="text-3xl font-heading font-bold text-orange-600" data-testid="text-potential-earnings">
+                  ${analytics.potentialEarnings.toFixed(2)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Total messages unlocked
+                  From {analytics.lockedCount} locked message{analytics.lockedCount !== 1 ? 's' : ''}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-muted-foreground">Total Messages</p>
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-heading font-bold" data-testid="text-message-count">
+                  {analytics.messageCount}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {analytics.unlockCount} unlocked, {analytics.lockedCount} locked
                 </p>
               </CardContent>
             </Card>
