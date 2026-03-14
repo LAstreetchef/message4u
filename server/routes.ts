@@ -889,6 +889,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Get pending payments for review
+  app.get('/api/admin/pending-payments', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const pending = await storage.db
+        .select()
+        .from(storage.schema.pendingPayments)
+        .leftJoin(storage.schema.messages, storage.schema.messages.id.eq(storage.schema.pendingPayments.messageId))
+        .where(storage.schema.pendingPayments.status.eq('pending'))
+        .orderBy(storage.schema.pendingPayments.createdAt.desc());
+      
+      res.json(pending);
+    } catch (error) {
+      console.error("Error fetching pending payments:", error);
+      res.status(500).json({ message: "Failed to fetch pending payments" });
+    }
+  });
+
+  // Admin: Approve pending payment
+  app.post('/api/admin/pending-payments/:id/approve', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const adminId = req.user.id;
+      
+      // Get pending payment
+      const pending = await storage.db
+        .select()
+        .from(storage.schema.pendingPayments)
+        .where(storage.schema.pendingPayments.id.eq(id))
+        .limit(1);
+      
+      if (pending.length === 0) {
+        return res.status(404).json({ message: "Pending payment not found" });
+      }
+      
+      const payment = pending[0];
+      
+      if (payment.status !== 'pending') {
+        return res.status(400).json({ message: "Payment already processed" });
+      }
+      
+      // Unlock message
+      await storage.unlockMessage(payment.messageId);
+      
+      // Create payment record
+      const message = await storage.getMessageById(payment.messageId);
+      const { platformFee, senderEarnings } = calculatePlatformFee(parseFloat(payment.amount), message?.isAdultContent || false);
+      
+      await storage.insertPayment({
+        messageId: payment.messageId,
+        paymentProvider: payment.paymentMethod,
+        amount: payment.amount,
+        platformFee: platformFee.toString(),
+        senderEarnings: senderEarnings.toString(),
+      });
+      
+      // Update pending payment status
+      await storage.db
+        .update(storage.schema.pendingPayments)
+        .set({
+          status: 'approved',
+          reviewedBy: adminId,
+          reviewedAt: new Date()
+        })
+        .where(storage.schema.pendingPayments.id.eq(id));
+      
+      res.json({ message: "Payment approved and message unlocked" });
+    } catch (error) {
+      console.error("Error approving payment:", error);
+      res.status(500).json({ message: "Failed to approve payment" });
+    }
+  });
+
+  // Admin: Reject pending payment
+  app.post('/api/admin/pending-payments/:id/reject', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const adminId = req.user.id;
+      
+      await storage.db
+        .update(storage.schema.pendingPayments)
+        .set({
+          status: 'rejected',
+          reviewedBy: adminId,
+          reviewedAt: new Date()
+        })
+        .where(storage.schema.pendingPayments.id.eq(id));
+      
+      res.json({ message: "Payment rejected" });
+    } catch (error) {
+      console.error("Error rejecting payment:", error);
+      res.status(500).json({ message: "Failed to reject payment" });
+    }
+  });
+
   // Admin: Reset user password
   app.post('/api/admin/users/reset-password', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
@@ -1581,7 +1675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Confirm P2P payment and unlock message
+  // Submit P2P payment for review
   app.post('/api/messages/:slug/confirm-payment', async (req, res) => {
     try {
       const { slug } = req.params;
@@ -1596,39 +1690,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (message.unlocked) {
         return res.json({ 
           success: true, 
+          status: 'unlocked',
           message: 'Already unlocked',
           fileUrl: message.fileUrl 
         });
       }
       
-      // For now, honor system - unlock immediately
-      // TODO: Add verification for crypto (blockchain check), manual review for others
-      await storage.unlockMessage(message.id);
+      // Check if already has pending payment
+      const existingPending = await storage.db
+        .select()
+        .from(storage.schema.pendingPayments)
+        .where(storage.schema.pendingPayments.messageId.eq(message.id))
+        .where(storage.schema.pendingPayments.status.eq('pending'))
+        .limit(1);
       
-      // Create payment record
-      const { platformFee, senderEarnings } = calculatePlatformFee(parseFloat(message.price), message.isAdultContent);
+      if (existingPending.length > 0) {
+        return res.json({
+          success: true,
+          status: 'pending',
+          message: 'Payment already submitted for review'
+        });
+      }
       
-      await storage.insertPayment({
+      // Create pending payment for manual review
+      await storage.db.insert(storage.schema.pendingPayments).values({
         messageId: message.id,
-        paymentProvider: paymentMethod || 'p2p',
+        paymentMethod: paymentMethod || 'p2p',
+        transactionId: transactionId || null,
         amount: message.price,
-        platformFee: platformFee.toString(),
-        senderEarnings: senderEarnings.toString(),
+        status: 'pending'
       });
-      
-      // Get unlocked message
-      const unlockedMessage = await storage.getMessageBySlug(slug);
       
       res.json({
         success: true,
-        message: 'Payment confirmed - message unlocked!',
-        fileUrl: unlockedMessage?.fileUrl,
-        messageBody: unlockedMessage?.messageBody
+        status: 'pending',
+        message: 'Payment submitted for review. You will be notified when approved.'
       });
       
     } catch (error: any) {
-      console.error('Error confirming payment:', error);
-      res.status(500).json({ error: 'Failed to confirm payment' });
+      console.error('Error submitting payment:', error);
+      res.status(500).json({ error: 'Failed to submit payment' });
     }
   });
 

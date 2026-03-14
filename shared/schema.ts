@@ -119,6 +119,30 @@ export const insertPaymentSchema = createInsertSchema(payments).pick({
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
 
+// Pending payments table (for manual review before unlock)
+export const pendingPayments = pgTable("pending_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  messageId: varchar("message_id").notNull().references(() => messages.id),
+  paymentMethod: varchar("payment_method", { length: 50 }).notNull(),
+  transactionId: text("transaction_id"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, approved, rejected
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertPendingPaymentSchema = createInsertSchema(pendingPayments).pick({
+  messageId: true,
+  paymentMethod: true,
+  transactionId: true,
+  amount: true,
+  status: true,
+});
+
+export type InsertPendingPayment = z.infer<typeof insertPendingPaymentSchema>;
+export type PendingPayment = typeof pendingPayments.$inferSelect;
+
 // Payout history table (tracks completed payouts to users)
 export const payoutHistory = pgTable("payout_history", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

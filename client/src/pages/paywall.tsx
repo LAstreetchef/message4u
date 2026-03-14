@@ -35,27 +35,36 @@ export default function Paywall() {
   });
 
   const confirmPaymentMutation = useMutation({
-    mutationFn: async (paymentMethod: string) => {
+    mutationFn: async ({ paymentMethod, transactionId }: { paymentMethod: string; transactionId?: string }) => {
       const response = await apiRequest("POST", `/api/messages/${params?.slug}/confirm-payment`, {
         paymentMethod,
-        transactionId: "p2p-payment" // Honor system for now
+        transactionId: transactionId || null
       });
       return await response.json();
     },
     onSuccess: (data) => {
-      toast({
-        title: "Message Unlocked!",
-        description: "Your payment has been confirmed",
-      });
-      // Redirect to unlocked page
-      window.location.href = `/m/${params?.slug}/unlocked`;
+      if (data.status === 'unlocked') {
+        toast({
+          title: "Message Unlocked!",
+          description: "Your payment has been confirmed",
+        });
+        window.location.href = `/m/${params?.slug}/unlocked`;
+      } else if (data.status === 'pending') {
+        toast({
+          title: "Payment Submitted",
+          description: "Your payment is being reviewed. You'll be notified when approved.",
+          duration: 10000,
+        });
+        setIsProcessing(false);
+      }
     },
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to confirm payment",
+        description: error.message || "Failed to submit payment",
         variant: "destructive",
       });
+      setIsProcessing(false);
     },
   });
 
@@ -364,15 +373,24 @@ export default function Paywall() {
                           variant="outline"
                           className="w-full rounded-full text-lg hover:bg-primary/10"
                           onClick={() => {
+                            setIsProcessing(true);
                             if (pm.paymentLink) {
                               // Open payment link in new window
                               window.open(pm.paymentLink, '_blank');
-                              // Show confirmation dialog after a delay
+                              // Ask for transaction ID
                               setTimeout(() => {
-                                if (confirm('Have you completed the payment? Click OK to unlock your message.')) {
-                                  confirmPaymentMutation.mutate(pm.method);
+                                const transactionId = prompt('After completing payment, enter your transaction ID or confirmation number:');
+                                if (transactionId) {
+                                  confirmPaymentMutation.mutate({ paymentMethod: pm.method, transactionId });
+                                } else {
+                                  toast({
+                                    title: "Transaction ID Required",
+                                    description: "Please enter your transaction ID to submit for review",
+                                    variant: "destructive",
+                                  });
+                                  setIsProcessing(false);
                                 }
-                              }, 2000);
+                              }, 3000);
                             } else if (pm.method === 'crypto') {
                               // Show wallet address for crypto
                               toast({
@@ -381,10 +399,18 @@ export default function Paywall() {
                                 duration: 10000,
                               });
                               setTimeout(() => {
-                                if (confirm('Have you sent the crypto payment? Click OK to unlock your message.')) {
-                                  confirmPaymentMutation.mutate(pm.method);
+                                const txHash = prompt('After sending payment, enter the transaction hash:');
+                                if (txHash) {
+                                  confirmPaymentMutation.mutate({ paymentMethod: pm.method, transactionId: txHash });
+                                } else {
+                                  toast({
+                                    title: "Transaction Hash Required",
+                                    description: "Please enter your transaction hash to submit for review",
+                                    variant: "destructive",
+                                  });
+                                  setIsProcessing(false);
                                 }
-                              }, 2000);
+                              }, 3000);
                             } else {
                               // Fallback for methods without links (like Zelle)
                               toast({
@@ -393,10 +419,18 @@ export default function Paywall() {
                                 duration: 10000,
                               });
                               setTimeout(() => {
-                                if (confirm('Have you completed the payment? Click OK to unlock your message.')) {
-                                  confirmPaymentMutation.mutate(pm.method);
+                                const transactionId = prompt('After completing payment, enter your transaction ID or confirmation number:');
+                                if (transactionId) {
+                                  confirmPaymentMutation.mutate({ paymentMethod: pm.method, transactionId });
+                                } else {
+                                  toast({
+                                    title: "Transaction ID Required",
+                                    description: "Please enter your transaction ID to submit for review",
+                                    variant: "destructive",
+                                  });
+                                  setIsProcessing(false);
                                 }
-                              }, 2000);
+                              }, 3000);
                             }
                           }}
                           disabled={isProcessing}
