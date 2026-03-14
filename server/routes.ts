@@ -61,6 +61,34 @@ function calculatePlatformFee(amount: number, isAdultContent: boolean = false): 
   };
 }
 
+// Generate payment link for P2P payments
+function generatePaymentLink(method: string, address: string, amount: number): string | null {
+  switch (method.toLowerCase()) {
+    case 'paypal':
+      // PayPal.me link format: https://paypal.me/username/amount
+      // Extract username from email or use as-is if it's already a username
+      const paypalUsername = address.includes('@') ? address.split('@')[0] : address;
+      return `https://paypal.me/${paypalUsername}/${amount}`;
+    
+    case 'venmo':
+      // Venmo deep link format: venmo://paycharge?txn=pay&recipients=username&amount=X&note=SecretMessage
+      const venmoUsername = address.startsWith('@') ? address.substring(1) : address;
+      return `venmo://paycharge?txn=pay&recipients=${venmoUsername}&amount=${amount}&note=Secret%20Message%20Unlock`;
+    
+    case 'cashapp':
+      // CashApp deep link format: https://cash.app/$username/X
+      const cashtag = address.startsWith('$') ? address.substring(1) : address;
+      return `https://cash.app/$${cashtag}/${amount}`;
+    
+    case 'zelle':
+      // Zelle doesn't have a direct payment link - user must manually pay
+      return null;
+    
+    default:
+      return null;
+  }
+}
+
 // Admin middleware - only allows specific admin email
 const ADMIN_EMAIL = "message4u@secretmessage4u.com";
 
@@ -1501,6 +1529,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching message:", error);
       res.status(500).json({ message: "Failed to fetch message" });
+    }
+  });
+
+  // Get creator's payment methods for a message
+  app.get('/api/messages/:slug/payment-methods', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const message = await storage.getMessageBySlug(slug);
+      
+      if (!message) {
+        return res.status(404).json({ error: 'Message not found' });
+      }
+      
+      // Get creator's user info
+      const creator = await storage.getUser(message.userId);
+      if (!creator) {
+        return res.status(404).json({ error: 'Creator not found' });
+      }
+      
+      // Return available payment methods
+      const paymentMethods: any[] = [];
+      
+      if (creator.payoutMethod && creator.payoutAddress) {
+        paymentMethods.push({
+          method: creator.payoutMethod,
+          address: creator.payoutAddress,
+          // Generate payment link based on method
+          paymentLink: generatePaymentLink(creator.payoutMethod, creator.payoutAddress, parseFloat(message.price))
+        });
+      }
+      
+      // Add crypto if available
+      if (creator.cryptoWalletAddress && creator.cryptoWalletType) {
+        paymentMethods.push({
+          method: 'crypto',
+          address: creator.cryptoWalletAddress,
+          walletType: creator.cryptoWalletType,
+          paymentLink: null // User will copy wallet address
+        });
+      }
+      
+      res.json({
+        messageId: message.id,
+        price: message.price,
+        paymentMethods
+      });
+    } catch (error: any) {
+      console.error('Error fetching payment methods:', error);
+      res.status(500).json({ error: 'Failed to fetch payment methods' });
+    }
+  });
+
+  // Confirm P2P payment and unlock message
+  app.post('/api/messages/:slug/confirm-payment', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const { paymentMethod, transactionId } = req.body;
+      
+      const message = await storage.getMessageBySlug(slug);
+      
+      if (!message) {
+        return res.status(404).json({ error: 'Message not found' });
+      }
+      
+      if (message.unlocked) {
+        return res.json({ 
+          success: true, 
+          message: 'Already unlocked',
+          fileUrl: message.fileUrl 
+        });
+      }
+      
+      // For now, honor system - unlock immediately
+      // TODO: Add verification for crypto (blockchain check), manual review for others
+      await storage.unlockMessage(message.id);
+      
+      // Create payment record
+      const { platformFee, senderEarnings } = calculatePlatformFee(parseFloat(message.price), message.isAdultContent);
+      
+      await storage.insertPayment({
+        messageId: message.id,
+        paymentProvider: paymentMethod || 'p2p',
+        amount: message.price,
+        platformFee: platformFee.toString(),
+        senderEarnings: senderEarnings.toString(),
+      });
+      
+      // Get unlocked message
+      const unlockedMessage = await storage.getMessageBySlug(slug);
+      
+      res.json({
+        success: true,
+        message: 'Payment confirmed - message unlocked!',
+        fileUrl: unlockedMessage?.fileUrl,
+        messageBody: unlockedMessage?.messageBody
+      });
+      
+    } catch (error: any) {
+      console.error('Error confirming payment:', error);
+      res.status(500).json({ error: 'Failed to confirm payment' });
     }
   });
 

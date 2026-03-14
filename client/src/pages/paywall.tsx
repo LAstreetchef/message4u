@@ -25,6 +25,40 @@ export default function Paywall() {
     enabled: !!params?.slug,
   });
 
+  // Fetch creator's payment methods for NSFW content
+  const { data: paymentMethods } = useQuery<{
+    paymentMethods: Array<{ method: string; address: string; paymentLink: string | null; walletType?: string }>;
+    price: string;
+  }>({
+    queryKey: ["/api/messages", params?.slug, "payment-methods"],
+    enabled: !!params?.slug && !!message?.isAdultContent,
+  });
+
+  const confirmPaymentMutation = useMutation({
+    mutationFn: async (paymentMethod: string) => {
+      const response = await apiRequest("POST", `/api/messages/${params?.slug}/confirm-payment`, {
+        paymentMethod,
+        transactionId: "p2p-payment" // Honor system for now
+      });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Message Unlocked!",
+        description: "Your payment has been confirmed",
+      });
+      // Redirect to unlocked page
+      window.location.href = `/m/${params?.slug}/unlocked`;
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to confirm payment",
+        variant: "destructive",
+      });
+    },
+  });
+
   const stripePaymentMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/create-payment-intent", {
@@ -301,73 +335,85 @@ export default function Paywall() {
             </div>
 
             {message.isAdultContent ? (
-              // NSFW content - show alternative payment options
+              // NSFW content - show P2P payment options from creator
               <div className="space-y-4">
                 <div className="p-4 rounded-lg bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-orange-500/10 border border-pink-500/30">
                   <p className="text-sm font-semibold text-center mb-2">
-                    🚀 Card payments coming soon for NSFW content
+                    💰 Pay the Creator Directly (3% fee)
                   </p>
                   <p className="text-xs text-center text-muted-foreground">
-                    Use instant payment options below with <strong>lower fees</strong> (3% vs 15%)
+                    Lower fees than card payments. Choose your preferred method:
                   </p>
                 </div>
 
-                <div className="grid gap-3">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full rounded-full text-lg hover:bg-primary/10"
-                    onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: "Crypto payments will be available shortly!",
-                      });
-                    }}
-                    data-testid="button-pay-crypto"
-                  >
-                    <span className="flex items-center gap-2">
-                      💎 Pay with Crypto (3% fee)
-                    </span>
-                  </Button>
-
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full rounded-full text-lg hover:bg-primary/10"
-                    onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: "PayPal payments will be available shortly!",
-                      });
-                    }}
-                    data-testid="button-pay-paypal"
-                  >
-                    <span className="flex items-center gap-2">
-                      💳 Pay with PayPal (3% fee)
-                    </span>
-                  </Button>
-
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full rounded-full text-lg hover:bg-primary/10"
-                    onClick={() => {
-                      toast({
-                        title: "Coming Soon",
-                        description: "Venmo payments will be available shortly!",
-                      });
-                    }}
-                    data-testid="button-pay-venmo"
-                  >
-                    <span className="flex items-center gap-2">
-                      📱 Pay with Venmo (3% fee)
-                    </span>
-                  </Button>
-                </div>
-
-                <p className="text-xs text-center text-muted-foreground">
-                  All payment options launching soon
-                </p>
+                {paymentMethods && paymentMethods.paymentMethods.length > 0 ? (
+                  <div className="grid gap-3">
+                    {paymentMethods.paymentMethods.map((pm) => {
+                      const methodNames: Record<string, string> = {
+                        paypal: '💳 PayPal',
+                        venmo: '📱 Venmo', 
+                        cashapp: '💵 Cash App',
+                        zelle: '💰 Zelle',
+                        crypto: '💎 Crypto'
+                      };
+                      
+                      return (
+                        <Button
+                          key={pm.method}
+                          size="lg"
+                          variant="outline"
+                          className="w-full rounded-full text-lg hover:bg-primary/10"
+                          onClick={() => {
+                            if (pm.paymentLink) {
+                              // Open payment link in new window
+                              window.open(pm.paymentLink, '_blank');
+                              // Show confirmation dialog after a delay
+                              setTimeout(() => {
+                                if (confirm('Have you completed the payment? Click OK to unlock your message.')) {
+                                  confirmPaymentMutation.mutate(pm.method);
+                                }
+                              }, 2000);
+                            } else if (pm.method === 'crypto') {
+                              // Show wallet address for crypto
+                              toast({
+                                title: "Send Crypto to:",
+                                description: pm.address,
+                                duration: 10000,
+                              });
+                              setTimeout(() => {
+                                if (confirm('Have you sent the crypto payment? Click OK to unlock your message.')) {
+                                  confirmPaymentMutation.mutate(pm.method);
+                                }
+                              }, 2000);
+                            } else {
+                              // Fallback for methods without links (like Zelle)
+                              toast({
+                                title: `Pay via ${methodNames[pm.method]}`,
+                                description: `Send $${message.price} to: ${pm.address}`,
+                                duration: 10000,
+                              });
+                              setTimeout(() => {
+                                if (confirm('Have you completed the payment? Click OK to unlock your message.')) {
+                                  confirmPaymentMutation.mutate(pm.method);
+                                }
+                              }, 2000);
+                            }
+                          }}
+                          disabled={isProcessing}
+                          data-testid={`button-pay-${pm.method}`}
+                        >
+                          <span className="flex items-center gap-2">
+                            {methodNames[pm.method] || pm.method} (3% fee)
+                          </span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-sm text-muted-foreground">
+                    Creator hasn't set up payment methods yet. Contact them directly.
+                  </div>
+                )}
               </div>
             ) : (
               // Standard content - show Stripe button
