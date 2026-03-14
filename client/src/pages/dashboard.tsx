@@ -442,23 +442,35 @@ export default function Dashboard() {
                     <h3 className="font-heading font-semibold text-lg line-clamp-2" data-testid={`text-title-${message.id}`}>
                       {message.title}
                     </h3>
-                    <Badge 
-                      variant={message.unlocked ? "default" : "secondary"}
-                      className="flex-shrink-0"
-                      data-testid={`badge-status-${message.id}`}
-                    >
-                      {message.unlocked ? (
-                        <>
-                          <Unlock className="w-3 h-3 mr-1" />
-                          Unlocked
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="w-3 h-3 mr-1" />
-                          Locked
-                        </>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {message.isAdultContent && (
+                        <Badge 
+                          variant="outline"
+                          className="bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-orange-500/20 border-pink-500/40"
+                          data-testid={`badge-nsfw-${message.id}`}
+                        >
+                          <span className="text-xs font-bold bg-gradient-to-r from-pink-400 via-purple-400 to-orange-400 bg-clip-text text-transparent">
+                            NSFW
+                          </span>
+                        </Badge>
                       )}
-                    </Badge>
+                      <Badge 
+                        variant={message.unlocked ? "default" : "secondary"}
+                        data-testid={`badge-status-${message.id}`}
+                      >
+                        {message.unlocked ? (
+                          <>
+                            <Unlock className="w-3 h-3 mr-1" />
+                            Unlocked
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3 h-3 mr-1" />
+                            Locked
+                          </>
+                        )}
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4 pb-4">
