@@ -105,6 +105,47 @@ export default function Paywall() {
     }
   }, [message, params?.slug]);
 
+  // Handle PayPal return
+  useEffect(() => {
+    const checkPayPalReturn = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paypalStatus = urlParams.get('paypal');
+      const token = urlParams.get('token');
+      
+      if (paypalStatus === 'success' && token && params?.slug) {
+        setIsProcessing(true);
+        try {
+          const response = await apiRequest("GET", `/api/messages/${params.slug}/paypal-capture?token=${token}`, {});
+          const data = await response.json();
+          
+          if (data.unlocked) {
+            toast({
+              title: "Payment Successful!",
+              description: "Your message has been unlocked",
+            });
+            window.location.href = `/m/${params.slug}/unlocked`;
+          }
+        } catch (error: any) {
+          toast({
+            title: "Payment Error",
+            description: error.message || "Failed to process PayPal payment",
+            variant: "destructive",
+          });
+          setIsProcessing(false);
+        }
+      } else if (paypalStatus === 'cancel') {
+        toast({
+          title: "Payment Cancelled",
+          description: "You cancelled the PayPal payment",
+        });
+      }
+    };
+    
+    if (message && !message.unlocked) {
+      checkPayPalReturn();
+    }
+  }, [message, params?.slug]);
+
   // Check if message is inactive
   if (message && !message.active) {
     return (
@@ -372,8 +413,30 @@ export default function Paywall() {
                           size="lg"
                           variant="outline"
                           className="w-full rounded-full text-lg hover:bg-primary/10"
-                          onClick={() => {
+                          onClick={async () => {
                             setIsProcessing(true);
+                            
+                            // PayPal: Create checkout order dynamically
+                            if (pm.method === 'paypal') {
+                              try {
+                                const response = await apiRequest("POST", `/api/messages/${params?.slug}/paypal-checkout`, {});
+                                const data = await response.json();
+                                if (data.checkoutUrl) {
+                                  window.location.href = data.checkoutUrl;
+                                } else {
+                                  throw new Error('No checkout URL received');
+                                }
+                              } catch (error: any) {
+                                toast({
+                                  title: "PayPal Error",
+                                  description: error.message || "Failed to create PayPal checkout",
+                                  variant: "destructive",
+                                });
+                                setIsProcessing(false);
+                              }
+                              return;
+                            }
+                            
                             if (pm.paymentLink) {
                               // Open payment link in new window
                               window.open(pm.paymentLink, '_blank');

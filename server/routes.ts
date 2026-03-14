@@ -1647,11 +1647,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paymentMethods: any[] = [];
       
       if (creator.payoutMethod && creator.payoutAddress) {
+        // For PayPal, don't generate broken paypal.me link
+        // Instead, we'll create a checkout order dynamically
+        const paymentLink = creator.payoutMethod === 'paypal' 
+          ? null // Will be generated on-demand
+          : generatePaymentLink(creator.payoutMethod, creator.payoutAddress, parseFloat(message.price));
+        
         paymentMethods.push({
           method: creator.payoutMethod,
           address: creator.payoutAddress,
-          // Generate payment link based on method
-          paymentLink: generatePaymentLink(creator.payoutMethod, creator.payoutAddress, parseFloat(message.price))
+          paymentLink
         });
       }
       
@@ -1673,6 +1678,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Error fetching payment methods:', error);
       res.status(500).json({ error: 'Failed to fetch payment methods' });
+    }
+  });
+
+  // Handle PayPal return after payment
+  app.get('/api/messages/:slug/paypal-capture', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const { token } = req.query; // PayPal order ID
+      
+      if (!token) {
+        return res.status(400).json({ error: 'No PayPal order ID' });
+      }
+      
+      const message = await storage.getMessageBySlug(slug);
+      if (!message) {
+        return res.status(404).json({ error: 'Message not found' });
+      }
+      
+      // Get access token
+      const accessToken = await (async () => {
+        const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
+        const url = process.env.PAYPAL_MODE === 'live' 
+          ? 'https://api-m.paypal.com/v1/oauth2/token'
+          : 'https://api-m.sandbox.paypal.com/v1/oauth2/token';
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: 'grant_type=client_credentials',
+        });
+        const data = await response.json();
+        return data.access_token;
+      })();
+      
+      // Capture the order
+      const captureUrl = process.env.PAYPAL_MODE === 'live'
+        ? `https://api-m.paypal.com/v2/checkout/orders/${token}/capture`
+        : `https://api-m.sandbox.paypal.com/v2/checkout/orders/${token}/capture`;
+      
+      const captureResponse = await fetch(captureUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const captureData = await captureResponse.json();
+      
+      if (captureData.status === 'COMPLETED') {
+        // Unlock message
+        await storage.unlockMessage(message.id);
+        
+        // Create payment record
+        const { platformFee, senderEarnings } = calculatePlatformFee(parseFloat(message.price), message.isAdultContent);
+        
+        await storage.insertPayment({
+          messageId: message.id,
+          paymentProvider: 'paypal',
+          amount: message.price,
+          platformFee: platformFee.toString(),
+          senderEarnings: senderEarnings.toString(),
+        });
+        
+        return res.json({ success: true, unlocked: true });
+      } else {
+        return res.status(400).json({ error: 'Payment not completed', status: captureData.status });
+      }
+      
+    } catch (error: any) {
+      console.error('Error capturing PayPal payment:', error);
+      res.status(500).json({ error: 'Failed to capture payment' });
+    }
+  });
+
+  // Create PayPal payment for P2P (creates order on-demand)
+  app.post('/api/messages/:slug/paypal-checkout', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const message = await storage.getMessageBySlug(slug);
+      
+      if (!message) {
+        return res.status(404).json({ error: 'Message not found' });
+      }
+      
+      if (message.unlocked) {
+        return res.json({ unlocked: true });
+      }
+      
+      // Get creator
+      const creator = await storage.getUser(message.userId);
+      if (!creator?.payoutAddress || creator.payoutMethod !== 'paypal') {
+        return res.status(400).json({ error: 'Creator PayPal not configured' });
+      }
+      
+      // Create PayPal order with creator as payee
+      const accessToken = await (async () => {
+        const auth = Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64');
+        const url = process.env.PAYPAL_MODE === 'live' 
+          ? 'https://api-m.paypal.com/v1/oauth2/token'
+          : 'https://api-m.sandbox.paypal.com/v1/oauth2/token';
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${auth}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: 'grant_type=client_credentials',
+        });
+        const data = await response.json();
+        return data.access_token;
+      })();
+      
+      const createOrderUrl = process.env.PAYPAL_MODE === 'live'
+        ? 'https://api-m.paypal.com/v2/checkout/orders'
+        : 'https://api-m.sandbox.paypal.com/v2/checkout/orders';
+      
+      const orderData = {
+        intent: 'CAPTURE',
+        purchase_units: [{
+          amount: {
+            currency_code: 'USD',
+            value: message.price
+          },
+          payee: {
+            email_address: creator.payoutAddress
+          },
+          description: `Secret Message Unlock - ${message.title}`,
+          custom_id: message.id
+        }],
+        application_context: {
+          return_url: `${getBaseUrl()}/m/${slug}?paypal=success`,
+          cancel_url: `${getBaseUrl()}/m/${slug}?paypal=cancel`,
+          brand_name: 'Secret Message',
+          user_action: 'PAY_NOW'
+        }
+      };
+      
+      const orderResponse = await fetch(createOrderUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+      
+      const order = await orderResponse.json();
+      const approveLink = order.links?.find((l: any) => l.rel === 'approve')?.href;
+      
+      if (!approveLink) {
+        throw new Error('No approval link in PayPal response');
+      }
+      
+      res.json({ 
+        checkoutUrl: approveLink,
+        orderId: order.id 
+      });
+      
+    } catch (error: any) {
+      console.error('Error creating PayPal checkout:', error);
+      res.status(500).json({ error: 'Failed to create PayPal checkout' });
     }
   });
 
