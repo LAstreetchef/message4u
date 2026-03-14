@@ -1804,11 +1804,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currency_code: 'USD',
             value: message.price
           },
-          payee: {
-            email_address: creator.payoutAddress
-          },
           description: `Secret Message Unlock - ${message.title}`,
-          custom_id: message.id
+          custom_id: message.id,
+          reference_id: message.id
         }],
         application_context: {
           return_url: `${getBaseUrl()}/m/${slug}?paypal=success`,
