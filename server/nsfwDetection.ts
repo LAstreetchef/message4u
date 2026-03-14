@@ -1,5 +1,5 @@
 // NudeNet API configuration
-const NUDENET_API_URL = process.env.NUDENET_API_URL || 'https://nudenet-api.onrender.com';
+const NUDENET_API_URL = process.env.NUDENET_API_URL || 'https://nudenet-api-jn3c.onrender.com';
 
 let isServiceAvailable = false;
 
