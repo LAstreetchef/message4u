@@ -447,189 +447,92 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Creator Growth Tools */}
-        {messages && messages.length > 0 && (
+        {/* Share Your Messages - Growth Motivator */}
+        {messages && messages.length > 0 && analytics.lockedCount > 0 && (
           <Card className="mb-8 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-chart-2/5">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-primary" />
-                  <h2 className="text-xl font-heading font-semibold">Grow Your Earnings</h2>
+                  <Share2 className="w-5 h-5 text-primary" />
+                  <h2 className="text-xl font-heading font-semibold">Share & Earn</h2>
                 </div>
                 <Badge variant="outline" className="bg-primary/10">
-                  Creator Tools
+                  ${analytics.potentialEarnings.toFixed(2)} potential
                 </Badge>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Share your messages and reach more people to maximize your earnings
-              </p>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                
-                {/* Quick Share */}
-                <Card className="border-2 hover:border-primary/50 transition-colors">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <Share2 className="w-4 h-4 text-primary" />
-                      <h3 className="font-semibold">Quick Share</h3>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        const firstMessage = messages[0];
-                        const shareText = `Check out my secret message! 🔒 ${window.location.origin}/m/${firstMessage.slug}`;
-                        navigator.clipboard.writeText(shareText);
-                        toast({
-                          title: "Share text copied!",
-                          description: "Paste it anywhere to share your message",
-                        });
-                      }}
-                    >
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy Share Text
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        toast({
-                          title: "Coming Soon",
-                          description: "Social media sharing will be available soon!",
-                        });
-                      }}
-                    >
-                      <Twitter className="w-4 h-4 mr-2" />
-                      Share to Twitter
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        toast({
-                          title: "Coming Soon",
-                          description: "Instagram story sharing coming soon!",
-                        });
-                      }}
-                    >
-                      <Instagram className="w-4 h-4 mr-2" />
-                      Instagram Story
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Contact Upload */}
-                <Card className="border-2 hover:border-primary/50 transition-colors">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-primary" />
-                      <h3 className="font-semibold">Upload Contacts</h3>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-xs text-muted-foreground mb-3">
-                      Import your contacts to send messages directly
+            <CardContent className="space-y-4">
+              <div className="p-4 rounded-lg bg-gradient-to-r from-orange-500/10 to-pink-500/10 border border-orange-500/20">
+                <div className="flex items-start gap-3">
+                  <TrendingUp className="w-5 h-5 text-orange-500 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground mb-1">
+                      💡 Unlock Your Potential Earnings
                     </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        toast({
-                          title: "Coming Soon",
-                          description: "CSV upload will be available soon!",
-                        });
-                      }}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload CSV
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        toast({
-                          title: "Coming Soon",
-                          description: "Google Contacts sync coming soon!",
-                        });
-                      }}
-                    >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Google Contacts
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Bulk Actions */}
-                <Card className="border-2 hover:border-primary/50 transition-colors">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 text-primary" />
-                      <h3 className="font-semibold">Bulk Send</h3>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-xs text-muted-foreground mb-3">
-                      Send your messages to multiple recipients at once
+                    <p className="text-xs text-muted-foreground">
+                      You have <strong className="text-orange-600">{analytics.lockedCount} locked message{analytics.lockedCount !== 1 ? 's' : ''}</strong> worth{' '}
+                      <strong className="text-orange-600">${analytics.potentialEarnings.toFixed(2)}</strong>.
+                      Share them to start earning!
                     </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        toast({
-                          title: "Coming Soon",
-                          description: "Bulk email sending will be available soon!",
-                        });
-                      }}
-                    >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Send via Email
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        toast({
-                          title: "Coming Soon",
-                          description: "SMS campaigns coming soon!",
-                        });
-                      }}
-                    >
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Send via SMS
-                    </Button>
-                  </CardContent>
-                </Card>
-
-              </div>
-
-              {/* Growth Stats */}
-              {analytics.lockedCount > 0 && (
-                <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-orange-500/10 to-pink-500/10 border border-orange-500/20">
-                  <div className="flex items-start gap-3">
-                    <TrendingUp className="w-5 h-5 text-orange-500 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-foreground mb-1">
-                        💡 Boost Your Earnings
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        You have <strong className="text-orange-600">{analytics.lockedCount} locked message{analytics.lockedCount !== 1 ? 's' : ''}</strong> worth{' '}
-                        <strong className="text-orange-600">${analytics.potentialEarnings.toFixed(2)}</strong> in potential earnings.
-                        Share them to start converting!
-                      </p>
-                    </div>
                   </div>
                 </div>
-              )}
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                <p className="text-sm font-medium">Quick share your newest message:</p>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      const newestMessage = messages.filter(m => !m.unlocked).sort((a, b) => 
+                        new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+                      )[0] || messages[0];
+                      const shareText = `Check out my secret message! 🔒 ${window.location.origin}/m/${newestMessage.slug}`;
+                      navigator.clipboard.writeText(shareText);
+                      toast({
+                        title: "Link copied!",
+                        description: "Paste it anywhere to share",
+                      });
+                    }}
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Link
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      const newestMessage = messages.filter(m => !m.unlocked).sort((a, b) => 
+                        new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+                      )[0] || messages[0];
+                      const shareText = encodeURIComponent(`Check out my secret message! 🔒`);
+                      const url = encodeURIComponent(`${window.location.origin}/m/${newestMessage.slug}`);
+                      window.open(`https://twitter.com/intent/tweet?text=${shareText}&url=${url}`, '_blank', 'width=550,height=420');
+                    }}
+                  >
+                    <Twitter className="w-4 h-4 mr-2" />
+                    Share on X
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      const newestMessage = messages.filter(m => !m.unlocked).sort((a, b) => 
+                        new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+                      )[0] || messages[0];
+                      const url = encodeURIComponent(`${window.location.origin}/m/${newestMessage.slug}`);
+                      window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'width=550,height=420');
+                    }}
+                  >
+                    <Facebook className="w-4 h-4 mr-2" />
+                    Share on Facebook
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
