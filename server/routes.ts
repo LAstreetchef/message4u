@@ -14,6 +14,7 @@ import { NOWPaymentsPayoutService } from "./nowpaymentsPayoutService";
 import { getBaseUrl } from "./url";
 import { palClient } from "./palClient";
 import { checkImageNSFW, isImageFile, isNSFWDetectionAvailable } from "./nsfwDetection";
+import { verifyPayPalTransaction } from "./paypalVerification";
 
 // PAL (Payment Abstraction Layer) configuration
 const USE_PAL = process.env.USE_PAL === 'true';
@@ -1712,7 +1713,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Create pending payment for manual review
+      // Auto-verify PayPal transactions
+      let autoApproved = false;
+      if (paymentMethod === 'paypal' && transactionId) {
+        try {
+          const verification = await verifyPayPalTransaction(transactionId, message.price);
+          if (verification.verified) {
+            // Auto-approve PayPal payment
+            await storage.unlockMessage(message.id);
+            
+            const { platformFee, senderEarnings } = calculatePlatformFee(parseFloat(message.price), message.isAdultContent);
+            
+            await storage.insertPayment({
+              messageId: message.id,
+              paymentProvider: 'paypal',
+              amount: message.price,
+              platformFee: platformFee.toString(),
+              senderEarnings: senderEarnings.toString(),
+            });
+            
+            // Record in pending_payments as auto-approved
+            await storage.db.insert(storage.schema.pendingPayments).values({
+              messageId: message.id,
+              paymentMethod: 'paypal',
+              transactionId: transactionId,
+              amount: message.price,
+              status: 'approved'
+            });
+            
+            const unlockedMessage = await storage.getMessageBySlug(slug);
+            
+            return res.json({
+              success: true,
+              status: 'unlocked',
+              message: 'PayPal payment verified - message unlocked!',
+              fileUrl: unlockedMessage?.fileUrl,
+              messageBody: unlockedMessage?.messageBody
+            });
+          }
+        } catch (error) {
+          console.error('PayPal verification failed:', error);
+          // Fall through to manual review
+        }
+      }
+      
+      // Create pending payment for manual review (non-PayPal or verification failed)
       await storage.db.insert(storage.schema.pendingPayments).values({
         messageId: message.id,
         paymentMethod: paymentMethod || 'p2p',
@@ -1724,7 +1769,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         status: 'pending',
-        message: 'Payment submitted for review. You will be notified when approved.'
+        message: paymentMethod === 'paypal' 
+          ? 'PayPal verification pending. Checking transaction...'
+          : 'Payment submitted for review. You will be notified when approved.'
       });
       
     } catch (error: any) {
@@ -2628,3 +2675,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   return httpServer;
 }
+
+  // PayPal webhook - auto-approve payments
+  app.post('/api/webhook/paypal', async (req, res) => {
+    try {
+      const event = req.body;
+      
+      console.log('[PayPal Webhook]', event.event_type);
+      
+      // Handle payment capture completed
+      if (event.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
+        const capture = event.resource;
+        const transactionId = capture.id;
+        const amount = capture.amount.value;
+        
+        // Find pending payment with this transaction ID
+        const pending = await storage.db
+          .select()
+          .from(storage.schema.pendingPayments)
+          .where(storage.schema.pendingPayments.transactionId.eq(transactionId))
+          .where(storage.schema.pendingPayments.status.eq('pending'))
+          .limit(1);
+        
+        if (pending.length > 0) {
+          const payment = pending[0];
+          
+          // Verify amount matches
+          if (parseFloat(amount) >= parseFloat(payment.amount)) {
+            // Auto-approve
+            await storage.unlockMessage(payment.messageId);
+            
+            const message = await storage.getMessageById(payment.messageId);
+            const { platformFee, senderEarnings } = calculatePlatformFee(
+              parseFloat(payment.amount), 
+              message?.isAdultContent || false
+            );
+            
+            await storage.insertPayment({
+              messageId: payment.messageId,
+              paymentProvider: 'paypal',
+              amount: payment.amount,
+              platformFee: platformFee.toString(),
+              senderEarnings: senderEarnings.toString(),
+            });
+            
+            // Update pending payment
+            await storage.db
+              .update(storage.schema.pendingPayments)
+              .set({
+                status: 'approved',
+                reviewedAt: new Date()
+              })
+              .where(storage.schema.pendingPayments.id.eq(payment.id));
+            
+            console.log('[PayPal Webhook] Auto-approved payment:', transactionId);
+          }
+        }
+      }
+      
+      res.json({ received: true });
+    } catch (error) {
+      console.error('[PayPal Webhook] Error:', error);
+      res.status(500).json({ error: 'Webhook processing failed' });
+    }
+  });
