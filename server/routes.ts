@@ -2671,11 +2671,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
-
-  return httpServer;
-}
-
   // PayPal webhook - auto-approve payments
   app.post('/api/webhook/paypal', async (req, res) => {
     try {
@@ -2739,3 +2734,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
+
+  const httpServer = createServer(app);
+
+  return httpServer;
+}
